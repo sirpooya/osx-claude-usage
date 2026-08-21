@@ -64,8 +64,6 @@ class DataRefreshManager: ObservableObject {
     @Published private(set) var codexNeedsRelogin = false
     /// The Codex expiry notification has been sent, so it is not repeated
     private var codexSessionExpiredNotified = false
-    /// When the last successful Claude fetch landed. Drives the "showing cached data" note.
-    @Published private(set) var lastClaudeSuccessAt: Date?
     /// While set, automatic polls are skipped: the server told us to back off (429).
     /// Manual refreshes still go through, because the user explicitly asked.
     private var claudeBackoffUntil: Date?
@@ -133,16 +131,34 @@ class DataRefreshManager: ObservableObject {
     // MARK: - Data Fetching
 
     /// Fetch usage data (Claude and Codex concurrently)
-    func fetchUsage() {
+    /// - Parameter isManual: the user asked for this one, so it ignores the 429 backoff window
+    func fetchUsage(isManual: Bool = false) {
+        let claudeAvailable = shouldFetchClaudeUsage
+        let codexAvailable = shouldFetchCodexUsage
+
+        // A 429 means the server asked us to stop, so automatic polls sit out the backoff window.
+        // Note this only skips the *request*: the cached data stays on screen either way.
+        let claudeBackedOff = !isManual && claudeAvailable && isWithinClaudeBackoff
+        if claudeBackedOff && !codexAvailable {
+            Logger.menuBar.debug("Automatic poll skipped, still inside the rate limit backoff window")
+            return
+        }
+
         isLoading = true
-        errorMessage = nil
+        // Only clear the Claude note when we are actually about to retry Claude, otherwise a
+        // Codex-only round would silently drop a rate limit note that still applies.
+        if claudeAvailable && !claudeBackedOff {
+            errorMessage = nil
+        }
         codexErrorMessage = nil
         lastAPIFetchTime = Date()
 
-        let fetchClaude = shouldFetchClaudeUsage
-        let fetchCodex = shouldFetchCodexUsage
+        let fetchClaude = claudeAvailable && !claudeBackedOff
+        let fetchCodex = codexAvailable
 
-        if !fetchClaude {
+        // Clear only when the account itself is gone. A failed or skipped fetch keeps the last
+        // good data, which is the whole point of caching it.
+        if !claudeAvailable {
             clearClaudeUsageState()
         }
         if !fetchCodex {
@@ -203,7 +219,7 @@ class DataRefreshManager: ObservableObject {
                     let previousData = self.usageData
                     self.usageData = data
                     self.errorMessage = nil
-                    self.lastClaudeSuccessAt = Date()
+                    self.refreshState.lastUpdatedAt = Date()
                     self.claudeBackoffUntil = nil
                     self.persistCachedUsage(data)
                     monitoringUtilizations[.claude] = data.percentage
@@ -426,7 +442,7 @@ class DataRefreshManager: ObservableObject {
         }
 
         // Kick off the refresh
-        fetchUsage()
+        fetchUsage(isManual: true)
     }
 
     /// Refresh Claude data only (triggered by a click on the Claude ring)
@@ -816,4 +832,41 @@ class DataRefreshManager: ObservableObject {
     deinit {
         cleanup()
     }
+
+    // MARK: - Cached Snapshot
+
+    /// True while the last 429's backoff window is still open
+    private var isWithinClaudeBackoff: Bool {
+        guard let until = claudeBackoffUntil else { return false }
+        if until > Date() { return true }
+        claudeBackoffUntil = nil
+        return false
+    }
+
+    /// Whether an error means "the server told us to slow down"
+    private static func isRateLimit(_ error: Error) -> Bool {
+        if case UsageError.rateLimited = error { return true }
+        if case UsageError.httpError(let statusCode) = error, statusCode == 429 { return true }
+        return false
+    }
+
+    /// Save the last good fetch so a cold start has real numbers instead of a spinner or an error.
+    /// Percentages and reset times only, no credentials, so UserDefaults is the right place.
+    private func persistCachedUsage(_ data: UsageData) {
+        guard let encoded = try? JSONEncoder().encode(data) else { return }
+        UserDefaults.standard.set(encoded, forKey: cachedUsageKey)
+        UserDefaults.standard.set(Date(), forKey: cachedUsageAtKey)
+    }
+
+    /// Load the last good fetch at launch. Shown with its timestamp until a live fetch replaces it.
+    private func restoreCachedUsage() {
+        guard let encoded = UserDefaults.standard.data(forKey: cachedUsageKey),
+              let decoded = try? JSONDecoder().decode(UsageData.self, from: encoded) else {
+            return
+        }
+        usageData = decoded
+        refreshState.lastUpdatedAt = UserDefaults.standard.object(forKey: cachedUsageAtKey) as? Date
+        Logger.menuBar.debug("Restored the cached usage snapshot from the last session")
+    }
+
 }

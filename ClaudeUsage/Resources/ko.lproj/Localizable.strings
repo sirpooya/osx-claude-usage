@@ -42,6 +42,8 @@
 "usage.run_diagnostic" = "진단 실행";
 "usage.codex_title" = "Codex 사용 현황";
 "usage.codex_relogin" = "다시 로그인";
+"usage.stale_notice" = "새로 고침 실패 · %@ 기준 데이터";
+"usage.stale_notice_unknown" = "새로 고침 실패 · 캐시된 데이터";
 
 // MARK: - Settings - Tabs
 "settings.tab.general" = "일반";

@@ -79,6 +79,11 @@ enum L {
         static var runDiagnostic: String { localized("usage.run_diagnostic") }
         static var codexTitle: String { localized("usage.codex_title") }
         static var codexRelogin: String { localized("usage.codex_relogin") }
+        /// Note under the bars when a refresh failed and cached numbers are still shown
+        static func staleNotice(_ time: String) -> String {
+            String(format: localized("usage.stale_notice"), time)
+        }
+        static var staleNoticeUnknown: String { localized("usage.stale_notice_unknown") }
     }
     
     // MARK: - Settings Tabs

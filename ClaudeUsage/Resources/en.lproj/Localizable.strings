@@ -42,6 +42,8 @@
 "usage.run_diagnostic" = "Run Diagnostic";
 "usage.codex_title" = "Codex Usage";
 "usage.codex_relogin" = "Sign In Again";
+"usage.stale_notice" = "Couldn't refresh · showing %@";
+"usage.stale_notice_unknown" = "Couldn't refresh · showing cached data";
 
 // MARK: - Settings - Tabs
 "settings.tab.general" = "General";

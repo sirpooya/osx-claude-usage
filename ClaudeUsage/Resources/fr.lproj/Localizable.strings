@@ -42,6 +42,8 @@
 "usage.run_diagnostic" = "Lancer le diagnostic";
 "usage.codex_title" = "Utilisation de Codex";
 "usage.codex_relogin" = "Se reconnecter";
+"usage.stale_notice" = "Échec de l'actualisation · données de %@";
+"usage.stale_notice_unknown" = "Échec de l'actualisation · données en cache";
 
 // MARK: - Settings - Tabs
 "settings.tab.general" = "Général";

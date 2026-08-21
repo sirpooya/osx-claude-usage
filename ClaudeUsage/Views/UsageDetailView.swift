@@ -21,6 +21,8 @@ private enum PopoverMetrics {
     static let chromeHeight: CGFloat = 18 + 20 + 20
     /// Empty states (signed out / error / loading) use a fixed height: an icon, copy and a button are taller than the bar list
     static let stateHeight: CGFloat = 210
+    /// The "couldn't refresh" note under the bars: 10pt text plus the row spacing above it
+    static let staleNoticeHeight: CGFloat = 13 + rowSpacing
 
     /// Height taken by n limit rows
     static func rowsHeight(_ rowCount: Int) -> CGFloat {
@@ -129,14 +131,25 @@ struct UsageDetailView: View {
         return max(types.count, 1)
     }
 
-    /// Height in single provider (Claude) mode
-    private var dynamicHeight: CGFloat {
-        if errorMessage != nil || usageData == nil {
-            return PopoverMetrics.stateHeight
-        }
+    /// Extra height for the stale note, which only appears when cached data is on screen
+    private var staleNoticeAllowance: CGFloat {
+        (errorMessage != nil && usageData != nil) ? PopoverMetrics.staleNoticeHeight : 0
+    }
+
+    /// Height of the Claude column. Mirrors `claudeMainContent`: as long as there is data, even
+    /// stale data, the bars are what gets rendered, so the row height is what has to be reserved.
+    /// Only a completely empty state falls back to `stateHeight`.
+    private var claudeColumnHeight: CGFloat {
+        guard usageData != nil else { return PopoverMetrics.stateHeight }
         return PopoverMetrics.chromeHeight
             + contentSpacing
             + PopoverMetrics.rowsHeight(claudeRowCount(for: usageData))
+            + staleNoticeAllowance
+    }
+
+    /// Height in single provider (Claude) mode
+    private var dynamicHeight: CGFloat {
+        claudeColumnHeight
     }
 
     /// Height in Codex only mode
@@ -151,10 +164,7 @@ struct UsageDetailView: View {
 
     /// Height in dual provider mode (the taller of the two columns)
     private var multiProviderHeight: CGFloat {
-        let claudeHeight: CGFloat = (errorMessage != nil || usageData == nil)
-            ? PopoverMetrics.stateHeight
-            : PopoverMetrics.chromeHeight + contentSpacing
-                + PopoverMetrics.rowsHeight(claudeRowCount(for: usageData))
+        let claudeHeight = claudeColumnHeight
 
         let codexHeight: CGFloat = codexUsageData == nil
             ? PopoverMetrics.stateHeight
@@ -239,7 +249,12 @@ struct UsageDetailView: View {
 
     @ViewBuilder
     private var claudeMainContent: some View {
-        if let error = errorMessage {
+        if let data = usageData {
+            // Data always wins. A failed refresh (a 429 above all) must never replace numbers we
+            // already have with an error screen: it annotates them with a "couldn't refresh" note
+            // and leaves the bars in place. The error branch below is only for having nothing at all.
+            claudeLimitRows(data: data)
+        } else if let error = errorMessage {
             // Not being signed in is not an error, so it is treated as an empty state; only a genuine error gets the warning icon.
             // This used to guess between the two cases with error.contains("Authentication"/"configured"),
             // while the real copy is "Please configure authentication information...",
@@ -248,39 +263,6 @@ struct UsageDetailView: View {
                 signedOutState
             } else {
                 errorState(error)
-            }
-        } else if let data = usageData {
-            // Usage data: one full width bar per limit. A click toggles between reset time and time left
-            VStack(spacing: PopoverMetrics.rowSpacing) {
-                ForEach(activeDisplayTypes, id: \.self) { type in
-                    UnifiedLimitRow(
-                        type: type,
-                        data: data,
-                        showRemainingMode: showRemainingMode,
-                        isRefreshing: isClaudeRefreshing
-                    )
-                }
-                // The first two models take the opus and sonnet slots above; the third and later ones
-                // (when Fable, Opus and Sonnet all appear) are filled in here in Claude API order,
-                // with the colors alternating between the two slots and the labels taken from the API's model names.
-                // Only smart mode expands them all; custom mode respects the fixed slots the user checked.
-                if UserSettings.shared.displayMode == .smart {
-                    let overflow = Array(data.weeklyModels.enumerated()).dropFirst(2)
-                    ForEach(overflow, id: \.offset) { entry in
-                        UnifiedLimitRow(
-                            type: entry.offset % 2 == 0 ? .opusWeekly : .sonnetWeekly,
-                            data: data,
-                            showRemainingMode: showRemainingMode,
-                            isRefreshing: isClaudeRefreshing,
-                            weeklyModelOverride: entry.element
-                        )
-                    }
-                }
-            }
-            .padding(.horizontal, PopoverMetrics.horizontalPadding)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                toggleRemainingMode()
             }
         } else {
             // Loading
@@ -293,6 +275,69 @@ struct UsageDetailView: View {
             }
             .frame(height: 100)
         }
+    }
+
+    /// One full width bar per limit. A click toggles between reset time and time left.
+    @ViewBuilder
+    private func claudeLimitRows(data: UsageData) -> some View {
+        VStack(spacing: PopoverMetrics.rowSpacing) {
+            ForEach(activeDisplayTypes, id: \.self) { type in
+                UnifiedLimitRow(
+                    type: type,
+                    data: data,
+                    showRemainingMode: showRemainingMode,
+                    isRefreshing: isClaudeRefreshing
+                )
+            }
+            // The first two models take the opus and sonnet slots above; the third and later ones
+            // (when Fable, Opus and Sonnet all appear) are filled in here in Claude API order,
+            // with the colors alternating between the two slots and the labels taken from the API's model names.
+            // Only smart mode expands them all; custom mode respects the fixed slots the user checked.
+            if UserSettings.shared.displayMode == .smart {
+                let overflow = Array(data.weeklyModels.enumerated()).dropFirst(2)
+                ForEach(overflow, id: \.offset) { entry in
+                    UnifiedLimitRow(
+                        type: entry.offset % 2 == 0 ? .opusWeekly : .sonnetWeekly,
+                        data: data,
+                        showRemainingMode: showRemainingMode,
+                        isRefreshing: isClaudeRefreshing,
+                        weeklyModelOverride: entry.element
+                    )
+                }
+            }
+
+            staleNotice
+        }
+        .padding(.horizontal, PopoverMetrics.horizontalPadding)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            toggleRemainingMode()
+        }
+    }
+
+    /// Shown under the bars when the last refresh failed but cached numbers are still on screen.
+    /// This is the whole answer to "too many requests": say the data is stale, keep showing it.
+    @ViewBuilder
+    private var staleNotice: some View {
+        if errorMessage != nil {
+            HStack(spacing: 4) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 9))
+                Text(staleNoticeText)
+                    .font(.system(size: 10))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            .foregroundColor(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var staleNoticeText: String {
+        guard let updatedAt = refreshState.lastUpdatedAt else {
+            return L.Usage.staleNoticeUnknown
+        }
+        return L.Usage.staleNotice(TimeFormatHelper.formatTimeOnly(updatedAt))
     }
 
     // MARK: - Header Buttons

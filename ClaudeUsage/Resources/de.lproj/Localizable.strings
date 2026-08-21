@@ -41,6 +41,8 @@
 "usage.run_diagnostic" = "Diagnose starten";
 "usage.codex_title" = "Codex Usage";
 "usage.codex_relogin" = "Neu anmelden";
+"usage.stale_notice" = "Aktualisierung fehlgeschlagen · Stand %@";
+"usage.stale_notice_unknown" = "Aktualisierung fehlgeschlagen · gespeicherte Daten";
 
 // MARK: - Settings - Tabs
 "settings.tab.general" = "Allgemein";

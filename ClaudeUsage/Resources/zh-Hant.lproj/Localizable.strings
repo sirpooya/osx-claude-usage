@@ -42,6 +42,8 @@
 "usage.run_diagnostic" = "執行診斷";
 "usage.codex_title" = "Codex 使用狀況";
 "usage.codex_relogin" = "重新登入";
+"usage.stale_notice" = "重新整理失敗 · 顯示 %@ 的資料";
+"usage.stale_notice_unknown" = "重新整理失敗 · 顯示快取資料";
 
 // MARK: - Settings - Tabs
 "settings.tab.general" = "一般";

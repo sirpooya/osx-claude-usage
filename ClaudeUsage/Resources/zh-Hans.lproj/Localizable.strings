@@ -42,6 +42,8 @@
 "usage.run_diagnostic" = "运行诊断";
 "usage.codex_title" = "Codex 使用情况";
 "usage.codex_relogin" = "重新登录";
+"usage.stale_notice" = "刷新失败 · 显示 %@ 的数据";
+"usage.stale_notice_unknown" = "刷新失败 · 显示缓存数据";
 
 // MARK: - Settings - Tabs
 "settings.tab.general" = "通用";

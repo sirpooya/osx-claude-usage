@@ -25,6 +25,10 @@ class RefreshState: ObservableObject {
     @Published var notificationMessage: String?
     /// Notification type
     @Published var notificationType: NotificationType = .loading
+    /// When the currently displayed Claude data was actually fetched.
+    /// Set from the cached snapshot at launch, then from every successful fetch. The popover uses
+    /// it to say how old the numbers are when a refresh fails, instead of hiding them behind an error.
+    @Published var lastUpdatedAt: Date?
     
     /// Notification type
     enum NotificationType {

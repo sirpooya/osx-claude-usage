@@ -42,6 +42,8 @@
 "usage.run_diagnostic" = "診断を実行";
 "usage.codex_title" = "Codex使用状況";
 "usage.codex_relogin" = "再ログイン";
+"usage.stale_notice" = "更新できません · %@ 時点のデータ";
+"usage.stale_notice_unknown" = "更新できません · キャッシュされたデータ";
 
 // MARK: - Settings - Tabs
 "settings.tab.general" = "一般";
