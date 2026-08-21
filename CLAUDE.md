@@ -788,6 +788,16 @@ What has been changed from upstream so far:
   so it had the wrong box size, corner radius and blue, no focus ring, no mixed state and none of
   the system's disabled or accent handling, while every other checkbox on the page was a real
   `Toggle(.checkbox)`. Now it is one too, with the limit's shape glyph and name as its label.
+- **The custom limit list stays one checkbox per line.** A wrapped 3-per-row grid was tried,
+  copied from upstream's welcome screen setup step (recovered from `48850a8^`,
+  `reference/Usage4Claude/.../SetupStepView.swift`), and reverted immediately: with three to a row
+  the checkbox of one column lands right beside the *label* of the column before it, so the boxes
+  stop forming a single scannable edge and each row reads as one run-on line. One per line keeps
+  every box on the same x, which is the whole point of a checkbox list. Do not re-flow this.
+- **The Color By picker sits in a `SettingRow`**, label left and segments right with the
+  description underneath, the same shape as every switch in that card. Stacked full width under
+  its own heading it read as a different kind of setting from its neighbours and left the row's
+  right half empty. `.fixedSize()` on the picker, or the three segments stretch across that half.
 - **The custom limit list lost its `Divider()` and its "Select Limit Types to Display" heading.**
   The list only ever appears directly under the radio that reveals it, so the radio already names
   it. That radio is now **Custom Limit Type Display** (was "Custom Display"), translated in all 7

@@ -64,15 +64,19 @@ struct GeneralSettingsDisplaySection: View {
         )
     }
 
-    /// Segmented, because the three are peers and one is always active. The description below is
-    /// the selected mode's own, so the card explains the current choice instead of listing all
-    /// three and leaving the reader to work out which one applies.
+    /// Segmented, because the three are peers and one is always active.
+    ///
+    /// Sits in a `SettingRow` like every switch in this card: label on the left, control on the
+    /// right, description underneath. Stacked full width under its own heading it read as a
+    /// different kind of setting from its neighbours and left the row's right half empty.
+    ///
+    /// The description is the selected mode's own, so the card explains the current choice instead
+    /// of listing all three and leaving the reader to work out which one applies.
     private var colorModePicker: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(L.Display.colorMode)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(.primary)
-
+        SettingRow(
+            title: L.Display.colorMode,
+            description: colorMode.wrappedValue.description
+        ) {
             Picker("", selection: colorMode) {
                 ForEach(ColorMode.allCases) { mode in
                     Text(mode.title).tag(mode)
@@ -81,11 +85,9 @@ struct GeneralSettingsDisplaySection: View {
             .pickerStyle(.segmented)
             .labelsHidden()
             .focusable(false)
-
-            Text(colorMode.wrappedValue.description)
-                .font(.system(size: 11))
-                .foregroundColor(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            // Intrinsic width would let the three segments stretch across the row's whole right
+            // half; this keeps them tight next to the label without clipping the longest one.
+            .fixedSize()
         }
     }
 
@@ -143,7 +145,10 @@ struct GeneralSettingsDisplaySection: View {
                                 }
                             }
                         )) {
+                            // Same 13pt medium face as the row titles and the Display Content
+                            // heading, so the three read as one type style rather than three
                             Text(L.Display.showIcon)
+                                .font(.system(size: 13, weight: .medium))
                         }
                         .toggleStyle(.checkbox)
                         .focusable(false)
@@ -163,6 +168,7 @@ struct GeneralSettingsDisplaySection: View {
                             }
                         )) {
                             Text(L.Display.showPercentage)
+                                .font(.system(size: 13, weight: .medium))
                         }
                         .toggleStyle(.checkbox)
                         .focusable(false)

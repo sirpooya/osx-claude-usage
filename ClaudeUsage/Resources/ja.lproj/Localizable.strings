@@ -141,7 +141,7 @@
 
 /* The three mutually exclusive bar / icon coloring modes */
 "display.color_mode" = "色の基準";
-"display.color_mode_type" = "種類";
+"display.color_mode_type" = "上限";
 "display.color_mode_usage" = "使用量";
 "display.color_mode_monochrome" = "モノクロ";
 "display.color_mode_type_desc" = "各上限が固有の色を保ち、上限に近づくほど濃くなります。";

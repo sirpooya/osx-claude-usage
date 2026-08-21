@@ -141,7 +141,7 @@
 
 /* The three mutually exclusive bar / icon coloring modes */
 "display.color_mode" = "Couleur selon";
-"display.color_mode_type" = "Type";
+"display.color_mode_type" = "Limite";
 "display.color_mode_usage" = "Utilisation";
 "display.color_mode_monochrome" = "Monochrome";
 "display.color_mode_type_desc" = "Chaque limite garde sa propre couleur, qui s'intensifie à l'approche du plafond.";

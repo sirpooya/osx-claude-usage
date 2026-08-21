@@ -39,18 +39,8 @@ struct GeneralSettingsDisplayOptionsSection: View {
                     // so the radio already names it and a rule plus a second label just repeated
                     // the same step twice.
                     VStack(alignment: .leading, spacing: 12) {
-                        VStack(alignment: .leading, spacing: 8) {
-                            ForEach(LimitType.allCases, id: \.self) { limitType in
-                                LimitTypeCheckbox(
-                                    limitType: limitType,
-                                    isSelected: settings.customDisplayTypes.contains(limitType),
-                                    isDisabled: shouldDisableCheckbox(for: limitType)
-                                ) {
-                                    toggleLimitType(limitType)
-                                }
-                            }
-                        }
-                        .padding(.leading, 20)
+                        limitTypeGrid
+                            .padding(.leading, 20)
 
                         // Constraint hints
                         if hasOnlyOneCircularIcon {
@@ -92,6 +82,25 @@ struct GeneralSettingsDisplayOptionsSection: View {
                                 .padding(.leading, 20)
                         }
                     }
+                }
+            }
+        }
+    }
+
+    /// The limit type checkboxes, one per line.
+    ///
+    /// A wrapped grid was tried and reverted: three to a row put the checkbox of one column right
+    /// next to the *label* of the one before it, so the boxes no longer formed a single scannable
+    /// edge and the rows read as one run-on line. One per line keeps every box on the same x.
+    private var limitTypeGrid: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(LimitType.allCases, id: \.self) { limitType in
+                LimitTypeCheckbox(
+                    limitType: limitType,
+                    isSelected: settings.customDisplayTypes.contains(limitType),
+                    isDisabled: shouldDisableCheckbox(for: limitType)
+                ) {
+                    toggleLimitType(limitType)
                 }
             }
         }

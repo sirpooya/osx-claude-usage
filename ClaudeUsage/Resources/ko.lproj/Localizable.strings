@@ -141,7 +141,7 @@
 
 /* The three mutually exclusive bar / icon coloring modes */
 "display.color_mode" = "색상 기준";
-"display.color_mode_type" = "유형";
+"display.color_mode_type" = "한도";
 "display.color_mode_usage" = "사용량";
 "display.color_mode_monochrome" = "단색";
 "display.color_mode_type_desc" = "각 한도가 고유한 색을 유지하며, 한도에 가까워질수록 진해집니다.";
