@@ -10,8 +10,8 @@ goal is to improve that app in place, not to rewrite it. See "Fork status" below
 
 Non-negotiable. A build that only exists in DerivedData is useless.
 
-1. Rebuild.
-2. Replace `/Applications/ClaudeUsage.app` and ad hoc sign it.
+1. Rebuild (`xcodebuild` ad hoc signs it for us).
+2. Replace `/Applications/ClaudeUsage.app`, then verify the signature rather than re-signing.
 3. Launch from `/Applications`, never from DerivedData or a temp path.
 4. Update this file with what changed.
 
@@ -21,7 +21,8 @@ xcodebuild -project ClaudeUsage.xcodeproj -scheme ClaudeUsage -configuration Deb
   -derivedDataPath <scratch>/dd build CODE_SIGN_IDENTITY="-"
 rm -rf /Applications/ClaudeUsage.app
 cp -R <scratch>/dd/Build/Products/Debug/ClaudeUsage.app /Applications/ClaudeUsage.app
-codesign --force --deep --sign - /Applications/ClaudeUsage.app
+codesign -v --strict /Applications/ClaudeUsage.app      # do NOT re-sign, see gotchas
+codesign -d --entitlements - /Applications/ClaudeUsage.app | grep -A2 app-sandbox   # expect false
 open -a /Applications/ClaudeUsage.app
 pgrep -lf "/Applications/ClaudeUsage.app"   # confirm it actually came up
 ```
@@ -31,7 +32,21 @@ Gotchas that cost time already:
   shell exits, which looks exactly like a crash in the log.
 - To screenshot a window, get its id from `CGWindowListCopyWindowInfo` and use
   `screencapture -l <id>`. Region captures (`-R`) get occluded by whatever is in front.
-- `defaults delete com.claudeusage.ClaudeUsage` resets first-launch state to re-test onboarding.
+- `defaults delete com.claudeusage.ClaudeUsage` resets first-launch onboarding state, but **not**
+  the accounts: those live in our own Keychain item via `AccountStore`/`KeychainManager`, so the
+  app still has credentials after a defaults wipe.
+- Entitlements do not come from `Config/ClaudeUsage.entitlements` alone. Xcode 26 merges
+  build-setting-derived keys over that file, so `ENABLE_APP_SANDBOX` in `project.pbxproj` wins.
+  Editing only the plist left `app-sandbox = true` in the signature (the giveaway was a
+  `files.user-selected.read-write` key that appears in no file we own). Both configs are now `NO`.
+- The `codesign --force --deep --sign -` step in the loop above **strips all entitlements**.
+  `xcodebuild` with `CODE_SIGN_IDENTITY="-"` already ad hoc signs the product correctly, so
+  prefer `cp -R` plus `codesign -v --strict` to verify, and re-sign only if verification fails.
+  Every `/Applications` build installed before this was discovered had therefore been running
+  with no entitlements at all, which is why its data sits outside `~/Library/Containers`.
+- `sips -c H W --cropOffset Y X` measures the offset **from the image centre**, not the top left,
+  which makes menu bar crops land in the middle of the screen. `screencapture -x -R x,y,w,h`
+  against the real menu bar strip is the reliable way to photograph the status items.
 - Changing the bundle id can make Control Center hide the menu bar icon. See the
   `menubar-fix` skill.
 
@@ -289,6 +304,45 @@ What has been changed from upstream so far:
     AppKit re-enables any item that has a target and an action.
   - `menu.quit` is now just "Quit", not "Quit ClaudeUsage", and the item carries no icon.
 - Translated all hardcoded Chinese in UI strings and the 148 logger messages to English.
+- **CLI Account Sync**: the app now logs itself in from Claude Code's own Keychain entry, so a
+  fresh install needs no pasted session key and no browser round trip. This is the login method
+  the 3.3k-star `hamed-elfayome/Claude-Usage-Tracker` uses (its `CLI Account` credential row,
+  alongside `Claude.ai` cookie and `API Console`), and the reason it feels zero-setup next to
+  everything else in the field. New and changed pieces:
+  - `Services/ClaudeCodeCredentials.swift` reads the entry with the Security framework, never by
+    shelling out to `security(1)` (which would put the plaintext token in another process's
+    pipe). It enumerates *attributes* first to find every `Claude Code-credentials*` service
+    (suffixed variants exist per `CLAUDE_CONFIG_DIR`), and only reads secret data for the chosen
+    one, so the authorization prompt happens once rather than per candidate.
+  - `Services/ClaudeCodeSyncService.swift` turns that entry into a normal Claude account, pulling
+    `/api/oauth/profile` for the display name. `pinnedService` (persisted at
+    `cliSync.pinnedService`) lets a multi-config user nail the sync to one entry.
+  - `Account` gained `credentialSource` (`.manual` / `.claudeCodeCLI`) and `keychainService`, both
+    `decodeIfPresent` so existing stored accounts migrate untouched.
+  - `ClaudeAPIService.fetchCLISyncedUsage` re-reads the Keychain on **every** poll and uses the
+    CLI's `accessToken` directly while it is still valid, which costs zero extra requests and
+    leaves the CLI's refresh token alone. Only when it has actually expired do we run the refresh
+    grant ourselves, and then we **write the rotated pair back into Claude Code's Keychain entry**
+    (preserving the entry's other fields). That write-back is not optional: refresh tokens are
+    single use, so skipping it would silently log the user out of their own CLI on our next poll.
+  - Startup gate in `ClaudeUsageMonitorApp.applicationDidFinishLaunching` tries the sync before
+    deciding whether to show the welcome window, and marks first launch complete when it lands.
+    It deliberately backs off when accounts already exist, so it never overrides a manual login.
+  - `AuthSettingsView+CLIAccount.swift` is the settings card: sync status, masked access token,
+    subscription type, scopes, Re-sync / Remove, plus the Keychain entry picker (shown only when
+    more than one entry exists). Only the masked token is ever displayed.
+- **App Sandbox is now off** (`ENABLE_APP_SANDBOX = NO` in both configs, and the entitlements
+  file documents why). Inside the sandbox, Keychain access is confined to the app's own access
+  group, so reading Claude Code's entry is impossible no matter what else is granted. The
+  competitor ships unsandboxed for exactly this reason. Cost: no Mac App Store, which the
+  Homebrew cask plan never wanted anyway.
+- Added the mandatory `User-Agent: claude-cli/2.0.0 (external, cli)` header to both
+  `/api/oauth/usage` and `/api/oauth/profile` (`ClaudeOAuthConfig.userAgent`). Upstream omitted
+  it, which is the instant-persistent-429 trap documented under "Data sources" above.
+- Dropped the "Advanced:" prefix from the manual session key label in all 7 locales
+  (`welcome.manual_session_key`). It is a plain alternative input, not a hazardous setting.
+- New `L.CLISync` localization namespace. The 21 keys carry English copy in all 7 locale files;
+  de / fr / ja / ko / zh-Hans / zh-Hant still need real translations.
   New keys added by this fork are written in all 7 locales, not English-only.
 - Dead code left behind by the above: `MenuBarIconPreview` and `HorizontalRadioGroup` in
   `WelcomeSupportingViews.swift` now have no callers.
@@ -373,9 +427,13 @@ different wrong fixes all produced byte-identical coordinates. Measure with
   project file currently says.
 - Upstream code comments are in Chinese. When editing their files, match the surrounding style.
 - `LSUIElement` true. No Dock icon, no main window.
+- App Sandbox off, deliberately, so CLI Account Sync can read Claude Code's Keychain entry.
+  See "Fork status". Do not re-enable it without removing that feature first.
 - MIT license.
 - No telemetry, no analytics, no account, no network calls except `api.anthropic.com`.
 - Never write, log, or display the access token. Read from Keychain at point of use only.
+  The CLI Account settings card shows a masked token only (`ClaudeCodeCredentials.maskedAccessToken`),
+  and there is deliberately no reveal or copy affordance for it.
 - Never bundle an API key or ship credentials.
 - No em dashes in any UI copy, comments, commits, or docs.
 

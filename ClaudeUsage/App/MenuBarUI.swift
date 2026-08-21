@@ -263,7 +263,6 @@ class MenuBarUI {
                 keyEquivalent: ""
             )
             accountItem.submenu = accountSubmenu
-            setMenuItemIcon(accountItem, systemName: "person.2")
             menu.addItem(accountItem)
             hasAccountMenuItems = true
         }
@@ -277,7 +276,6 @@ class MenuBarUI {
                 keyEquivalent: ""
             )
             codexItem.submenu = codexSubmenu
-            setMenuItemIcon(codexItem, systemName: "person.2.fill")
             menu.addItem(codexItem)
             hasAccountMenuItems = true
         }
@@ -293,7 +291,6 @@ class MenuBarUI {
             keyEquivalent: ","
         )
         settingsItem.target = target
-        setMenuItemIcon(settingsItem, systemName: "gearshape")
         menu.addItem(settingsItem)
 
         // 检查更新
@@ -318,18 +315,9 @@ class MenuBarUI {
             let attributedTitle = createRainbowText(title, highlightRange: highlightRange)
             updateItem.attributedTitle = attributedTitle
 
-            // 徽章图标：仅在用户未确认时显示
-            if shouldShowBadge {
-                if let badgeImage = createBadgeIcon() {
-                    updateItem.image = badgeImage
-                }
-            } else {
-                setMenuItemIcon(updateItem, systemName: "arrow.triangle.2.circlepath")
-            }
         } else {
             // 无更新：普通样式
             updateItem.title = L.Menu.checkUpdates
-            setMenuItemIcon(updateItem, systemName: "arrow.triangle.2.circlepath")
         }
 
         // Sparkle 的 appcast 地址仍指向上游的死链，所以先禁用这一项
@@ -344,52 +332,7 @@ class MenuBarUI {
             keyEquivalent: ""
         )
         aboutItem.target = target
-        setMenuItemIcon(aboutItem, systemName: "info.circle")
         menu.addItem(aboutItem)
-
-        menu.addItem(NSMenuItem.separator())
-
-        if !settings.accounts.isEmpty {
-            let claudeStatusItem = NSMenuItem(
-                title: L.Menu.claudeStatus,
-                action: #selector(MenuBarManager.openClaudeStatus),
-                keyEquivalent: ""
-            )
-            claudeStatusItem.target = target
-            setMenuItemIcon(claudeStatusItem, systemName: "safari")
-            menu.addItem(claudeStatusItem)
-        }
-
-        if !settings.codexAccounts.isEmpty {
-            let codexStatusItem = NSMenuItem(
-                title: L.Menu.codexStatus,
-                action: #selector(MenuBarManager.openCodexStatus),
-                keyEquivalent: ""
-            )
-            codexStatusItem.target = target
-            setMenuItemIcon(codexStatusItem, systemName: "safari.fill")
-            menu.addItem(codexStatusItem)
-        }
-
-        // Buy Me A Coffee
-        let coffeeItem = NSMenuItem(
-            title: L.Menu.coffee,
-            action: #selector(MenuBarManager.openCoffee),
-            keyEquivalent: ""
-        )
-        coffeeItem.target = target
-        setMenuItemIcon(coffeeItem, systemName: "cup.and.saucer")
-        menu.addItem(coffeeItem)
-
-        // GitHub Sponsor
-        let sponsorItem = NSMenuItem(
-            title: L.Menu.githubSponsor,
-            action: #selector(MenuBarManager.openGithubSponsor),
-            keyEquivalent: ""
-        )
-        sponsorItem.target = target
-        setMenuItemIcon(sponsorItem, systemName: "heart")
-        menu.addItem(sponsorItem)
 
         menu.addItem(NSMenuItem.separator())
 

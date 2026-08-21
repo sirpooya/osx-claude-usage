@@ -353,41 +353,22 @@ struct UsageDetailView: View {
                 }
 
                 Button(action: { onMenuAction?(.generalSettings) }) {
-                    Label(L.Menu.settings, systemImage: "gearshape")
+                    Text(L.Menu.settings)
                 }
                 // Sparkle 的 appcast 地址仍指向上游的死链，所以先禁用这一项
                 if hasAvailableUpdate {
                     Button(action: { onMenuAction?(.checkForUpdates) }) {
-                        Label { Text(createUpdateMenuText()) } icon: {
-                            Image(systemName: "exclamationmark.arrow.trianglehead.2.clockwise.rotate.90")
-                        }
+                        Text(createUpdateMenuText())
                     }
                     .disabled(true)
                 } else {
                     Button(action: { onMenuAction?(.checkForUpdates) }) {
-                        Label(L.Menu.checkUpdates, systemImage: "arrow.triangle.2.circlepath")
+                        Text(L.Menu.checkUpdates)
                     }
                     .disabled(true)
                 }
                 Button(action: { onMenuAction?(.about) }) {
-                    Label(L.Menu.about, systemImage: "info.circle")
-                }
-                Divider()
-                if !UserSettings.shared.accounts.isEmpty {
-                    Button(action: { onMenuAction?(.claudeStatus) }) {
-                        Label(L.Menu.claudeStatus, systemImage: "safari")
-                    }
-                }
-                if !UserSettings.shared.codexAccounts.isEmpty {
-                    Button(action: { onMenuAction?(.codexStatus) }) {
-                        Label(L.Menu.codexStatus, systemImage: "safari.fill")
-                    }
-                }
-                Button(action: { onMenuAction?(.coffee) }) {
-                    Label(L.Menu.coffee, systemImage: "cup.and.saucer")
-                }
-                Button(action: { onMenuAction?(.githubSponsor) }) {
-                    Label(L.Menu.githubSponsor, systemImage: "heart")
+                    Text(L.Menu.about)
                 }
                 Divider()
                 Button(action: { onMenuAction?(.quit) }) {
