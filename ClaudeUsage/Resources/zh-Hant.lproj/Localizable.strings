@@ -407,7 +407,7 @@
 "notification.section" = "通知";
 "notification.hint" = "用量達到閾值或重設時發送通知";
 "notification.enable" = "啟用用量通知";
-"notification.description" = "當任意限制達到 90%%，或用量重設時，發送系統通知。";
+"notification.description" = "當任意限制達到 90%，或用量重設時，發送系統通知。";
 "notification.warning_title" = "用量警告";
 "notification.warning_body" = "%@ 已達到 %d%% 用量";
 "notification.reset_title" = "用量已重設";

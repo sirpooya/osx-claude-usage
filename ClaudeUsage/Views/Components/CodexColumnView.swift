@@ -27,8 +27,10 @@ struct CodexColumnView: View {
     // MARK: - Body
 
     var body: some View {
-        // One full width bar per limit, the same layout as the Claude column
-        VStack(spacing: 12) {
+        // One full width bar per limit, the same layout as the Claude column.
+        // The spacing has to match `PopoverMetrics.rowSpacing`, which is private to
+        // UsageDetailView.swift, or the two columns stop lining up and the height math is off.
+        VStack(spacing: 14) {
             ForEach(activeCodexTypes, id: \.self) { type in
                 UnifiedLimitRow(
                     type: type,

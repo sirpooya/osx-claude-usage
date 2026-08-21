@@ -130,19 +130,6 @@ struct GeneralSettingsView: View {
                     .focusable(false)
                 }
 
-                // Reset button
-                HStack {
-                    Spacer()
-                    // Destructive, so bordered with a red tint rather than filled prominent:
-                    // the contract in CredentialsChrome.swift reserves the filled style for a
-                    // card's primary action. Accent-filled read like the thing to click.
-                    Button(L.SettingsGeneral.resetButton) {
-                        settings.resetToDefaults()
-                    }
-                    .buttonStyle(.bordered)
-                    .tint(.red)
-                }
-                .padding(.top, 8)
             }
             .padding()
         }

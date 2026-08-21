@@ -34,7 +34,7 @@ enum MenuBarPerDisplayIcon {
 
     /// Alpha for the icon on an inactive menu bar, eyeballed against the system's dimming
     /// of template icons.
-    static let inactiveDimAlpha: CGFloat = 0.01
+    static let inactiveDimAlpha: CGFloat = 0.45
 
     // MARK: - Dynamic icon
 

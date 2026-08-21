@@ -407,7 +407,7 @@
 "notification.section" = "通知";
 "notification.hint" = "使用量がしきい値に達した時やリセット時に通知";
 "notification.enable" = "使用量通知を有効にする";
-"notification.description" = "いずれかの制限が90%%に達した時、または使用量がリセットされた時にシステム通知を送信します。";
+"notification.description" = "いずれかの制限が90%に達した時、または使用量がリセットされた時にシステム通知を送信します。";
 "notification.warning_title" = "使用量警告";
 "notification.warning_body" = "%@が%d%%の使用量に達しました";
 "notification.reset_title" = "使用量リセット";

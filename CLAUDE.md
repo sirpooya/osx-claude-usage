@@ -300,7 +300,7 @@ What has been changed from upstream so far:
     uses `formattedCompactRemaining` like every other row. No week unit: no limit window is
     longer than 7 days, so days is the largest useful one.
   - Both columns use the same rows, so Claude and Codex line up in two-provider mode.
-  - Popover height is computed in `PopoverMetrics` (row 26, row spacing 12, chrome 18 + 20 + 10,
+  - Popover height is computed in `PopoverMetrics` (row 26, row spacing 14, chrome 18 + 20 + 10,
     empty states 210) plus `contentSpacing`, the fixed 16 between the title row and the bars.
     The bottom is deliberately the tightest of the three gaps: leftover slack lands there and
     reads as dead space, while the bars need air under the title. `contentSpacing` used to
@@ -358,7 +358,7 @@ What has been changed from upstream so far:
     credentials.
   - When stale data is on screen, a one line note under the bars says so:
     "Couldn't refresh · showing 9:20 PM" (`usage.stale_notice`, 7 locales). `PopoverMetrics`
-    `staleNoticeHeight` reserves its height (text 13 + row spacing 12 + `staleNoticeTopGap` 8:
+    `staleNoticeHeight` reserves its height (text 13 + row spacing + `staleNoticeTopGap` 8:
     it is not a limit row, so it does not sit at the same rhythm as one), and `claudeColumnHeight`
     is now the single place that decides the Claude column's height, so the height rule and the
     render rule cannot drift apart.
@@ -823,7 +823,7 @@ Everything lives in `MenuBarPerDisplayIcon.swift` plus the colour path of
   `SLSCopyActiveMenuBarDisplayIdentifier(SLSMainConnectionID())`, dlsym'd and runtime-guarded
   (unavailable = full brightness everywhere). The handler maps the appearance it is drawing
   for back to the bars that have it: when every such bar is inactive, the draw is dimmed to
-  `inactiveDimAlpha` (0.01). When both bars share one appearance the mapping is ambiguous and
+  `inactiveDimAlpha` (0.45). When both bars share one appearance the mapping is ambiguous and
   nothing dims; full brightness is the safe wrong answer.
 - The dim state is baked into the per-appearance cached variant, so `refreshDimIfNeeded()`
   rebuilds the wrapper (a new NSImage instance, one write to the main button) whenever the

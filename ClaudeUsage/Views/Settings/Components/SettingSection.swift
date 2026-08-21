@@ -87,3 +87,52 @@ struct SettingSectionDivider: View {
             .frame(height: 1)
     }
 }
+
+/// One row inside a `SettingSection`: title on the left, control pinned to the **trailing** edge,
+/// with an optional description under the title.
+///
+/// The trailing edge is the point of this component. The controls used to sit immediately after
+/// their labels, so four switches landed at four different x positions depending on how long each
+/// label was, leaving a ragged column and a lot of dead space to the right. Same shape as
+/// `SettingsRow` in osx-autoconnect and osx-launchpad, and what macOS System Settings does.
+struct SettingRow<Trailing: View>: View {
+    let title: String
+    var description: String? = nil
+    @ViewBuilder var trailing: Trailing
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 10) {
+                Text(title)
+                    .font(.system(size: 13, weight: .medium))
+                Spacer(minLength: 10)
+                trailing
+            }
+
+            if let description, !description.isEmpty {
+                Text(description)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+}
+
+/// A `SettingRow` whose control is the standard small switch. One component so a screenful of
+/// toggles cannot drift into several sizes.
+struct SettingToggleRow: View {
+    let title: String
+    var description: String? = nil
+    @Binding var isOn: Bool
+
+    var body: some View {
+        SettingRow(title: title, description: description) {
+            Toggle("", isOn: $isOn)
+                .toggleStyle(.switch)
+                .controlSize(.small)
+                .labelsHidden()
+                .focusable(false)
+        }
+    }
+}

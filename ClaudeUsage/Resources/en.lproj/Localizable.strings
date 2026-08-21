@@ -407,7 +407,7 @@
 "notification.section" = "Notifications";
 "notification.hint" = "Get notified when usage reaches threshold or resets";
 "notification.enable" = "Enable Usage Notifications";
-"notification.description" = "Receive a notification when any limit reaches 90%%, or when usage resets.";
+"notification.description" = "Receive a notification when any limit reaches 90%, or when usage resets.";
 "notification.warning_title" = "Usage Warning";
 "notification.warning_body" = "%@ has reached %d%% usage";
 "notification.reset_title" = "Usage Reset";

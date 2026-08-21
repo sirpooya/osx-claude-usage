@@ -13,8 +13,10 @@ import SwiftUI
 private enum PopoverMetrics {
     /// Height of one limit row: title row 15 + spacing 5 + bar 5, plus 1 of slack
     static let rowHeight: CGFloat = 26
-    /// Spacing between limit rows
-    static let rowSpacing: CGFloat = 12
+    /// Spacing between limit rows.
+    /// `CodexColumnView` carries the same number so the two columns line up in two provider mode,
+    /// and it cannot read this one (this enum is private to this file), so change both together.
+    static let rowSpacing: CGFloat = 14
     /// Horizontal padding of the limit list
     static let horizontalPadding: CGFloat = 16
     /// Padding above the title bar + the title row + the bottom padding.
