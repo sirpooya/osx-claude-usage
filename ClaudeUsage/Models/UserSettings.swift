@@ -421,6 +421,24 @@ class UserSettings: ObservableObject {
         }
     }
 
+    /// The tier as it reads next to the popover title, so "team" and "claude_team" both give "Team".
+    /// Normalized generically rather than matched against a fixed list: the raw value comes from the
+    /// server, so a tier this build has never heard of still prints instead of vanishing.
+    /// Empty for the tiers not worth a badge (no subscription, or nothing known yet).
+    var claudeSubscriptionTierLabel: String {
+        var value = claudeSubscriptionTier
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+        if value.hasPrefix("claude_") {
+            value = String(value.dropFirst("claude_".count))
+        }
+        guard !["", "free", "none", "unknown"].contains(value) else { return "" }
+        return value
+            .split(whereSeparator: { $0 == "_" || $0 == "-" || $0 == " " })
+            .map { $0.prefix(1).uppercased() + $0.dropFirst() }
+            .joined(separator: " ")
+    }
+
     /// Battery style display: show remaining capacity instead of used percentage.
     /// Flips the displayed number and the ring/bar fill everywhere; status colors stay keyed off used.
     @Published var showRemainingPercentage: Bool {

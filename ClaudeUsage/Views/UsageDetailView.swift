@@ -50,6 +50,9 @@ struct UsageDetailView: View {
     /// Menu action callback
     var onMenuAction: ((MenuAction) -> Void)? = nil
     @StateObject private var localization = LocalizationManager.shared
+    /// Observed so the header picks up the subscription tier the moment a poll resolves it,
+    /// rather than waiting for the next thing that happens to rebuild the popover
+    @ObservedObject private var settings = UserSettings.shared
     /// Whether an update is available (drives the text and the badge)
     @Binding var hasAvailableUpdate: Bool
     /// Whether the update badge should show (only while the user has not acknowledged it)
@@ -406,6 +409,19 @@ struct UsageDetailView: View {
 
             Text(provider == .claude ? L.Usage.title : L.Usage.codexTitle)
                 .font(.headline)
+
+            // Subscription tier next to the title, so the header reads "Claude Team".
+            // Dimmed and regular weight: it names the plan, it is not a second title.
+            // Not localized, it is the plan's own name.
+            if provider == .claude {
+                let tier = settings.claudeSubscriptionTierLabel
+                if !tier.isEmpty {
+                    Text(tier)
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+            }
 
             Spacer()
 

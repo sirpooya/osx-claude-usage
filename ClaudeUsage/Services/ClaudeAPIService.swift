@@ -492,6 +492,15 @@ class ClaudeAPIService {
                 return
             }
 
+            // The entry carries the subscription type, so the popover title can read "Claude Team".
+            // Refreshed here rather than only at sync time, so an account that synced before this
+            // existed, or one whose plan changed, still ends up with the right tier.
+            if !credentials.subscriptionType.isEmpty {
+                DispatchQueue.main.async {
+                    UserSettings.shared.claudeSubscriptionTier = credentials.subscriptionType
+                }
+            }
+
             // The access_token is still valid: use it and leave the refresh_token alone
             if credentials.isAccessTokenUsable {
                 self.fetchClaudeOAuthUsageData(

@@ -520,6 +520,10 @@ class MenuBarManager: ObservableObject {
             // their mouse-down race against a background drag.
             settingsWindow?.isMovableByWindowBackground = true
             settingsWindow?.setFrameAutosaveName("ClaudeUsage.SettingsWindow")
+            // The autosave restore happens here, carrying whatever size the window had the last
+            // time it closed. That would override a change to SettingsView.contentSize, so
+            // re-apply it: the size is fixed and owned by the view, only the position is restored.
+            settingsWindow?.setContentSize(SettingsView.contentSize)
 
             // Remove the old observer (if there is one)
             if let observer = windowCloseObserver {

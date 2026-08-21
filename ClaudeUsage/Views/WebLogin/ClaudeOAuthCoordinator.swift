@@ -202,7 +202,7 @@ final class ClaudeOAuthCoordinator: ObservableObject {
         }
     }
 
-    private func createAccount(tokens: ClaudeOAuthTokens, profile: Result<(email: String, orgId: String, orgName: String), Error>) {
+    private func createAccount(tokens: ClaudeOAuthTokens, profile: Result<(email: String, orgId: String, orgName: String, tier: String), Error>) {
         guard !finished else { return }
 
         var email = ""
@@ -210,6 +210,10 @@ final class ClaudeOAuthCoordinator: ObservableObject {
         if case .success(let p) = profile {
             email = p.email
             orgId = p.orgId
+            // Tier for the popover title; a browser login has no Keychain entry to fall back on
+            if !p.tier.isEmpty {
+                UserSettings.shared.claudeSubscriptionTier = p.tier
+            }
         }
         let displayName = email.isEmpty ? "Claude" : email
         // organizationId holds the organization uuid (falling back to the email), the same dedupe identity as older cookie accounts

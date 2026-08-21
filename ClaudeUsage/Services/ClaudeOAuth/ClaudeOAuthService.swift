@@ -57,11 +57,11 @@ enum ClaudeOAuthService {
 
     // MARK: - Account info (for the account display name)
 
-    /// Fetch the profile, returning (email, organization uuid, organization name)
+    /// Fetch the profile, returning (email, organization uuid, organization name, subscription tier)
     /// The organization uuid is used as the account's organizationId (the same dedupe identity as older cookie accounts, which eases migration)
     static func fetchProfile(
         accessToken: String,
-        completion: @escaping (Result<(email: String, orgId: String, orgName: String), Error>) -> Void
+        completion: @escaping (Result<(email: String, orgId: String, orgName: String, tier: String), Error>) -> Void
     ) {
         guard let url = URL(string: ClaudeOAuthConfig.profileURL) else {
             completion(.failure(UsageError.invalidURL))
@@ -82,7 +82,17 @@ enum ClaudeOAuthService {
             let org = json["organization"] as? [String: Any]
             let orgId = org?["uuid"] as? String ?? ""
             let orgName = org?["name"] as? String ?? email
-            completion(.success((email: email, orgId: orgId, orgName: orgName)))
+            // Tier for the popover title. `organization_type` ("claude_team") is the reliable one on a
+            // team or enterprise seat; a personal account carries it on the account block instead.
+            var tier = org?["organization_type"] as? String ?? ""
+            if tier.isEmpty {
+                if account["has_claude_max"] as? Bool == true {
+                    tier = "max"
+                } else if account["has_claude_pro"] as? Bool == true {
+                    tier = "pro"
+                }
+            }
+            completion(.success((email: email, orgId: orgId, orgName: orgName, tier: tier)))
         }.resume()
     }
 

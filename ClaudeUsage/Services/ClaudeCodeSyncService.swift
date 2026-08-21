@@ -191,7 +191,7 @@ final class ClaudeCodeSyncService: ObservableObject {
     }
 
     /// Fetch the profile to fill in the account display name, a failure does not abort the sync
-    private func fetchProfile(credentials: ClaudeCodeCredentials) async -> (email: String, orgId: String, orgName: String)? {
+    private func fetchProfile(credentials: ClaudeCodeCredentials) async -> (email: String, orgId: String, orgName: String, tier: String)? {
         guard credentials.isAccessTokenUsable else { return nil }
         return await withCheckedContinuation { continuation in
             ClaudeOAuthService.fetchProfile(accessToken: credentials.accessToken) { result in
@@ -206,11 +206,19 @@ final class ClaudeCodeSyncService: ObservableObject {
     /// Create or update the CLI synced account
     private func upsertAccount(
         credentials: ClaudeCodeCredentials,
-        profile: (email: String, orgId: String, orgName: String)?
+        profile: (email: String, orgId: String, orgName: String, tier: String)?
     ) {
         let settings = UserSettings.shared
         let email = profile?.email ?? ""
         let orgId = profile?.orgId ?? ""
+
+        // Tier for the popover title. The profile is the richer source ("claude_team"), but the Keychain
+        // entry carries one too ("team") and is readable even when the access token has already expired.
+        let profileTier = profile?.tier ?? ""
+        let tier = profileTier.isEmpty ? credentials.subscriptionType : profileTier
+        if !tier.isEmpty {
+            settings.claudeSubscriptionTier = tier
+        }
         let displayName = email.isEmpty ? L.CLISync.defaultAccountName : email
         // Same dedupe identity as browser OAuth login: the organization uuid, falling back to the email,
         // and to the Keychain service name when neither exists (so one entry cannot create two accounts)

@@ -11,6 +11,13 @@ import SwiftUI
 /// Settings view
 /// A toolbar style layout with four tabs: general settings, authentication, history and about
 struct SettingsView: View {
+    /// Single source of truth for the window size, used by both this view's `.frame` and the
+    /// window that hosts it. The window carries a frame autosave name, and the restore happens
+    /// after creation, so a previously saved width would otherwise win over a change made here.
+    /// MenuBarManager re-applies this as the content size for that reason. If the two disagree,
+    /// the window opens at the stale saved width.
+    static let contentSize = NSSize(width: 556, height: 600)
+
     @ObservedObject private var settings = UserSettings.shared
     @State private var selectedTab: Int
     @Environment(\.dismiss) private var dismiss
@@ -82,7 +89,7 @@ struct SettingsView: View {
                 }
             }
         }
-        .frame(width: 720, height: 600)   // wide enough for the credentials sidebar plus its detail pane
+        .frame(width: Self.contentSize.width, height: Self.contentSize.height)
         .id(localization.updateTrigger)  // Rebuild the view when the language changes
     }
 }
