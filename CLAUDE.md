@@ -157,6 +157,27 @@ Takeaway: the entire field splits into cookie-scrapers (fragile) and local-log-p
 - Never bundle an API key or ship credentials.
 - No em dashes in any UI copy, comments, commits, or docs.
 
+## App icon
+
+`Assets/AppIcon.icon` is an Icon Composer bundle (Xcode 26 native format), authored from a single
+1024pt SVG of the Claude-orange pixel glyph.
+
+- Source layer: `Assets/AppIcon.icon/Assets/appicon.svg`, fill `#D97757`
+  (display-p3 0.8510 0.4667 0.3412). Scaled 0.9 with a +26.48pt y translation so the glyph
+  sits optically centred inside the squircle.
+- `icon.json` config: fill `system-light`, `glass: false`, neutral shadow at 0.5,
+  translucency 0.5. Squares shared across platforms, circles for watchOS.
+- Wire it up by adding the `.icon` to the Xcode target and setting
+  `ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon`. `actool` emits `CFBundleIconName` and
+  `CFBundleIconFile` into the partial plist, so do not hand-write those keys in `Info.plist`.
+- Verify a change without a full build:
+  `xcrun actool --compile <out> --app-icon AppIcon --output-partial-info-plist <out>/p.plist
+   --platform macosx --minimum-deployment-target 14.0 --include-all-app-icons Assets/AppIcon.icon`
+  then `sips -s format png <out>/AppIcon.icns --out preview.png` to eyeball the render.
+- Because `LSUIElement` is true there is no Dock icon. This asset only shows in Finder, Get Info,
+  Spotlight, notification banners, and the DMG. The menu bar needs a separate small monochrome
+  template image (`isTemplate = true`), not this one. Do not reuse the colour glyph there.
+
 ## Verified environment
 
 - `claude` 2.1.220 at `/opt/homebrew/bin/claude`
