@@ -17,12 +17,18 @@ private enum PopoverMetrics {
     static let rowSpacing: CGFloat = 12
     /// Horizontal padding of the limit list
     static let horizontalPadding: CGFloat = 16
-    /// Padding above the title bar + the title row + the bottom padding
-    static let chromeHeight: CGFloat = 18 + 20 + 20
+    /// Padding above the title bar + the title row + the bottom padding.
+    /// The bottom is deliberately tighter than the header-to-bars gap: the bars need air under the
+    /// title, and any slack left over lands at the bottom, where it reads as dead space.
+    static let chromeHeight: CGFloat = 18 + 20 + 10
     /// Empty states (signed out / error / loading) use a fixed height: an icon, copy and a button are taller than the bar list
     static let stateHeight: CGFloat = 210
-    /// The "couldn't refresh" note under the bars: 10pt text plus the row spacing above it
-    static let staleNoticeHeight: CGFloat = 13 + rowSpacing
+    /// Extra breathing room above the "couldn't refresh" note, on top of the row spacing it
+    /// already inherits from the bars stack. It is a different kind of line from a limit row, so
+    /// it should not sit at the same rhythm as one.
+    static let staleNoticeTopGap: CGFloat = 8
+    /// The "couldn't refresh" note under the bars: 10pt text, the row spacing above it, plus that gap
+    static let staleNoticeHeight: CGFloat = 13 + rowSpacing + staleNoticeTopGap
 
     /// Height taken by n limit rows
     static func rowsHeight(_ rowCount: Int) -> CGFloat {
@@ -174,10 +180,9 @@ struct UsageDetailView: View {
         return max(claudeHeight, codexHeight)
     }
 
-    private var contentSpacing: CGFloat {
-        let visibleTypeCount = isCodexOnlyActive ? activeCodexDisplayTypes.count : activeDisplayTypes.count
-        return visibleTypeCount >= 2 ? 10 : 16
-    }
+    /// Gap between the title row and the bars group. Fixed now: it used to tighten to 10 for two
+    /// or more limits, which mattered when a 114pt ring sat under the title and does not any more.
+    private var contentSpacing: CGFloat { 16 }
 
     private var multiProviderDividerHeight: CGFloat {
         max(35, multiProviderHeight - 28)
@@ -330,6 +335,7 @@ struct UsageDetailView: View {
             }
             .foregroundColor(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, PopoverMetrics.staleNoticeTopGap)
         }
     }
 

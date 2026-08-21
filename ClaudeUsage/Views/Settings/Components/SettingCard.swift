@@ -9,7 +9,9 @@
 import SwiftUI
 
 /// Reusable settings card
-/// A consistent card layout with an icon, a title, content and a hint
+/// A consistent card layout with a title, content and a hint. The icon
+/// parameters are accepted but no longer rendered, so the many call sites
+/// did not have to change when the header glyphs were dropped.
 struct SettingCard<Content: View>: View {
     let icon: String
     let iconColor: Color
@@ -33,17 +35,10 @@ struct SettingCard<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Title row: icon plus title
-            HStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.title3)
-                    .foregroundColor(iconColor)
-                    .frame(width: 24)
-
-                Text(title)
-                    .font(.headline)
-                    .foregroundColor(.primary)
-            }
+            // Title row
+            Text(title)
+                .font(.headline)
+                .foregroundColor(.primary)
 
             Divider()
 
@@ -51,7 +46,6 @@ struct SettingCard<Content: View>: View {
             VStack(alignment: .leading, spacing: 8) {
                 content
             }
-            .padding(.leading, 32)
 
             // Hint
             if !hint.isEmpty {
@@ -65,7 +59,6 @@ struct SettingCard<Content: View>: View {
                         .foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                .padding(.leading, 32)
                 .padding(.top, 4)
             }
         }

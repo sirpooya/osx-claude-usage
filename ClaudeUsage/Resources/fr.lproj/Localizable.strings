@@ -150,7 +150,7 @@
 "language.german" = "Deutsch";
 
 // MARK: - Window Titles
-"window.settings_title" = "Réglages ClaudeUsage";
+"window.settings_title" = "Réglages";
 "window.welcome_title" = "Bienvenue";
 "window.login_title" = "Connexion";
 

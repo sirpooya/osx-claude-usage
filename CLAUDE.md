@@ -278,8 +278,12 @@ What has been changed from upstream so far:
     uses `formattedCompactRemaining` like every other row. No week unit: no limit window is
     longer than 7 days, so days is the largest useful one.
   - Both columns use the same rows, so Claude and Codex line up in two-provider mode.
-  - Popover height is computed in `PopoverMetrics` (row 26, spacing 12, chrome 58, empty states
-    210). `claudeRowCount` also counts the third-and-later model rows, which the old ring-era
+  - Popover height is computed in `PopoverMetrics` (row 26, row spacing 12, chrome 18 + 20 + 10,
+    empty states 210) plus `contentSpacing`, the fixed 16 between the title row and the bars.
+    The bottom is deliberately the tightest of the three gaps: leftover slack lands there and
+    reads as dead space, while the bars need air under the title. `contentSpacing` used to
+    tighten to 10 for two or more limits, which only made sense while a 114pt ring sat under the
+    title. `claudeRowCount` also counts the third-and-later model rows, which the old ring-era
     math left out, so a Fable + Opus + Sonnet account no longer gets its last row clipped.
   - Deleted with the ring: `MiniProgressIcon`, `DetailUsageRingCenterText`,
     `DetailUsageRingSweep`, `AnimationTypeHintView`, the ring trim helpers, every ring loading
@@ -332,8 +336,10 @@ What has been changed from upstream so far:
     credentials.
   - When stale data is on screen, a one line note under the bars says so:
     "Couldn't refresh · showing 9:20 PM" (`usage.stale_notice`, 7 locales). `PopoverMetrics`
-    `staleNoticeHeight` reserves its height, and `claudeColumnHeight` is now the single place that
-    decides the Claude column's height, so the height rule and the render rule cannot drift apart.
+    `staleNoticeHeight` reserves its height (text 13 + row spacing 12 + `staleNoticeTopGap` 8:
+    it is not a limit row, so it does not sit at the same rhythm as one), and `claudeColumnHeight`
+    is now the single place that decides the Claude column's height, so the height rule and the
+    render rule cannot drift apart.
   - A 429 also arms a 10 minute backoff (`claudeBackoffUntil`): automatic polls sit it out, the
     Refresh button ignores it because the user asked. Skipping a poll never clears the cached data.
   - A Codex failure keeps its last data too (it used to call `clearCodexUsageState`).
@@ -426,7 +432,9 @@ What has been changed from upstream so far:
   caption, accent-tinted when selected over a 0.05 primary pill (0.035 on hover), intrinsic width
   with `minWidth: 52`, radius-9 continuous pill. Items sit centred with 2pt spacing instead of
   splitting the bar into thirds; `TabDivider.swift` deleted (no other callers). The divider under
-  the bar is softened with `.overlay(Color.primary.opacity(0.03))`.
+  the bar is softened with `.overlay(Color.primary.opacity(0.03))`. The English
+  `settings.tab.auth` label is "Authentication", not "Authentication Settings" (other locales
+  already had the short form).
 - **Sparkle updates are live again.** `SUPublicEDKey` in `Config/Info.plist` is now this
   machine's own Sparkle keypair (public `XPeIzL4GHFXBMLCP+A/vxqQE4Bn8tGi7jkw9sRBHXSc=`, private
   key in the login Keychain, shared with the other osx-* apps; `generate_keys -p` prints it).
@@ -536,6 +544,32 @@ Wiring, in `MenuBarUI.updateMenuBarIcon`:
 - The icon cache stores the dynamic wrapper, which re-resolves per appearance, so cached icons
   stay correct across per-display appearance changes.
 - Template icons skip both fixes: wrapping a template would break AppKit's own tinting.
+
+**Inactive-bar dimming.** macOS dims menu bar items on the display whose menu bar is inactive,
+but only through the template tint. Measured live with lldb: `appearsDisabled` is NO on every
+button and every window's alpha is 1, so a colour image never dims and sits at full brightness
+next to everyone else's dimmed icons. Emulated in `MenuBarPerDisplayIcon`:
+
+- The signal is `SLSCopyActiveMenuBarDisplayIdentifier(SLSMainConnectionID())`, private
+  SkyLight, dlsym'd and runtime-guarded (unavailable = everything stays full brightness).
+  Windows map to displays via `NSScreenNumber` -> `CGDisplayCreateUUIDFromDisplayID` (public
+  but deprecated, also dlsym'd). Note `nm -gU` on the framework stub finds nothing because the
+  binary lives in the dyld shared cache; probe with `dlopen`/`dlsym`, which is how these two
+  were verified present on macOS 26.
+- `isBarActive(on:)` compares a window's display UUID against the active one;
+  `dimmed(_:alpha:)` flattens the render at `inactiveDimAlpha` 0.45 (eyeballed against the
+  system's own dimming).
+- The replicant pass dims inactive bars, and the main button gets the same treatment: a dimmed
+  static render while its bar is inactive, the dynamic wrapper restored when active again.
+  Template mode is untouched, the system already dims those.
+- Re-run triggers: the undocumented `NSWorkspaceActiveDisplayDidChangeNotification` plus public
+  `didActivateApplicationNotification` and `activeSpaceDidChangeNotification`, all on
+  `NSWorkspace.shared.notificationCenter`.
+
+Debugging notes from getting there: three `NSStatusBarWindow` instances can exist with two
+displays (an extra per-Space window), and killing the app mid-draw can leave the status item
+invisible on every bar with a valid image assigned; a clean relaunch fixes it. Check the
+Control Center blocklist (`menubar-fix` skill) before suspecting it, it was clean here.
 
 ## Centring an NSWindow around SwiftUI
 
