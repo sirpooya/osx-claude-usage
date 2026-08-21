@@ -22,8 +22,8 @@ struct GeneralSettingsDebugSection: View {
         SettingCard(
             icon: "ladybug.fill",
             iconColor: .orange,
-            title: "调试模式",
-            hint: "切换场景后，点击刷新按钮查看效果"
+            title: "Debug Mode",
+            hint: "After switching scenario, click refresh to see the effect"
         ) {
             VStack(alignment: .leading, spacing: 12) {
                 // 启用调试模式开关
@@ -34,11 +34,11 @@ struct GeneralSettingsDebugSection: View {
                         .focusable(false)
                         .labelsHidden()
 
-                    Text("启用调试模式")
+                    Text("Enable debug mode")
 
                     Spacer()
 
-                    Text("仅Debug编译可见")
+                    Text("Debug builds only")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -52,7 +52,7 @@ struct GeneralSettingsDebugSection: View {
                         // 5小时限制
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
-                                Text("5小时限制百分比：")
+                                Text("5 hour limit percentage:")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                                 Spacer()
@@ -68,7 +68,7 @@ struct GeneralSettingsDebugSection: View {
                         // 7天限制
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
-                                Text("7天限制百分比：")
+                                Text("7 day limit percentage:")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                                 Spacer()
@@ -84,7 +84,7 @@ struct GeneralSettingsDebugSection: View {
                         // Extra Usage 限制
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
-                                Text("Extra Usage 百分比：")
+                                Text("Extra Usage percentage:")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                                 Spacer()
@@ -100,7 +100,7 @@ struct GeneralSettingsDebugSection: View {
                         // Opus Weekly 限制
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
-                                Text("Opus Weekly 百分比：")
+                                Text("Opus Weekly percentage:")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                                 Spacer()
@@ -116,7 +116,7 @@ struct GeneralSettingsDebugSection: View {
                         // Sonnet Weekly 限制
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
-                                Text("Sonnet Weekly 百分比：")
+                                Text("Sonnet Weekly percentage:")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                                 Spacer()
@@ -140,7 +140,7 @@ struct GeneralSettingsDebugSection: View {
                         // Codex 5小时窗口
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
-                                Text("Codex 5小时百分比：")
+                                Text("Codex 5 hour percentage:")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                                 Spacer()
@@ -156,7 +156,7 @@ struct GeneralSettingsDebugSection: View {
                         // Codex 7天窗口
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
-                                Text("Codex 7天百分比：")
+                                Text("Codex 7 day percentage:")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                                 Spacer()
@@ -172,7 +172,7 @@ struct GeneralSettingsDebugSection: View {
                         // Codex Extra Usage
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
-                                Text("Codex Extra Usage 百分比：")
+                                Text("Codex Extra Usage percentage:")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                                 Spacer()
@@ -199,12 +199,12 @@ struct GeneralSettingsDebugSection: View {
                         .focusable(false)
                         .labelsHidden()
 
-                    Text("模拟有可用更新")
+                    Text("Simulate an available update")
                         .font(.subheadline)
 
                     Spacer()
 
-                    Text("实时显示红点标识")
+                    Text("Shows the red dot badge live")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -220,12 +220,12 @@ struct GeneralSettingsDebugSection: View {
                         .focusable(false)
                         .labelsHidden()
 
-                    Text("形状图标可单独显示")
+                    Text("Show the shape icon on its own")
                         .font(.subheadline)
 
                     Spacer()
 
-                    Text("方便截图")
+                    Text("Convenient for screenshots")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -241,12 +241,12 @@ struct GeneralSettingsDebugSection: View {
                         .focusable(false)
                         .labelsHidden()
 
-                    Text("保持详情窗口始终打开")
+                    Text("Keep the detail window always open")
                         .font(.subheadline)
 
                     Spacer()
 
-                    Text("背景变为不透明纯白色")
+                    Text("Background becomes opaque white")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -265,9 +265,9 @@ struct GeneralSettingsDebugSection: View {
                                 isTestingTokenRefresh = false
                                 switch result {
                                 case .success(let token):
-                                    tokenRefreshStatus = "✓ 成功 (\(token.prefix(16))…)"
+                                    tokenRefreshStatus = "Success (\(token.prefix(16))…)"
                                 case .failure:
-                                    tokenRefreshStatus = "✗ 失败"
+                                    tokenRefreshStatus = "Failed"
                                 }
                             }
                         }
@@ -275,7 +275,7 @@ struct GeneralSettingsDebugSection: View {
                         if isTestingTokenRefresh {
                             ProgressView().controlSize(.small)
                         } else {
-                            Text("Level 1：SSR 刷新")
+                            Text("Level 1: SSR refresh")
                         }
                     }
                     .disabled(isTestingTokenRefresh || !settings.hasValidCodexCredentials)
@@ -303,16 +303,16 @@ struct GeneralSettingsDebugSection: View {
                             isTestingSilentRefresh = false
                             switch result {
                             case .success:
-                                silentRefreshStatus = "✓ 成功"
+                                silentRefreshStatus = "Success"
                             case .failure(let error):
-                                silentRefreshStatus = "✗ 失败: \(error.localizedDescription)"
+                                silentRefreshStatus = "Failed: \(error.localizedDescription)"
                             }
                         }
                     }) {
                         if isTestingSilentRefresh {
                             ProgressView().controlSize(.small)
                         } else {
-                            Text("Level 2：WebView 刷新")
+                            Text("Level 2: WebView refresh")
                         }
                     }
                     .disabled(isTestingSilentRefresh || !settings.hasValidCodexCredentials)
@@ -326,7 +326,7 @@ struct GeneralSettingsDebugSection: View {
 
                     Spacer()
 
-                    Text("隐藏 WebView 读取 cookie")
+                    Text("Reads the cookie with a hidden WebView")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }

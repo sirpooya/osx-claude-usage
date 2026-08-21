@@ -649,15 +649,15 @@ class UserSettings: ObservableObject {
         var displayName: String {
             switch self {
             case .realData:
-                return "真实数据"
+                return "Real data"
             case .fiveHourOnly:
-                return "仅5小时限制"
+                return "5 hour limit only"
             case .sevenDayOnly:
-                return "仅7天限制"
+                return "7 day limit only"
             case .both:
-                return "双限制"
+                return "Both limits"
             case .allFive:
-                return "全部5种限制"
+                return "All five limits"
             }
         }
     }
@@ -941,10 +941,10 @@ class UserSettings: ObservableObject {
     ///   - to: 新模式
     private func logModeTransition(from: MonitoringMode, to: MonitoringMode) {
         let modeNames: [MonitoringMode: String] = [
-            .active: "活跃 (1分钟)",
-            .idleShort: "短期静默 (3分钟)",
-            .idleMedium: "中期静默 (5分钟)",
-            .idleLong: "长期静默 (10分钟)"
+            .active: "active (1 min)",
+            .idleShort: "short idle (3 min)",
+            .idleMedium: "medium idle (5 min)",
+            .idleLong: "long idle (10 min)"
         ]
         Logger.settings.debug("监控模式切换: \(modeNames[from] ?? "") -> \(modeNames[to] ?? "")")
     }

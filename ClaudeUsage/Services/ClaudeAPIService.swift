@@ -722,7 +722,7 @@ enum UsageError: LocalizedError {
         case .rateLimited:
             return L.Error.rateLimited
         case .httpError(let statusCode):
-            return "HTTP 错误: \(statusCode)"
+            return "HTTP error: \(statusCode)"
         }
     }
 }
