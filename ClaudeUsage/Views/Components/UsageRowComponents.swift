@@ -106,8 +106,12 @@ struct UsageLimitBar: View {
 
 // MARK: - Usage Limit Bar Row
 
-/// One limit row: title on the upper left, "percentage, reset time" on the upper right, full width bar underneath
+/// One limit row: title and countdown on the upper left, percentage on the upper right, full width bar underneath
 struct UsageLimitBarRow: View {
+    /// One size for all three labels in the row, so title, countdown and percentage sit on one optical line.
+    /// Hierarchy comes from weight and color instead, never from size.
+    private static let labelSize: CGFloat = 12
+
     let title: String
     let percentage: Double?
     let color: Color
@@ -121,21 +125,31 @@ struct UsageLimitBarRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(title)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.system(size: Self.labelSize, weight: .medium))
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
+                    .layoutPriority(1)
 
-                Spacer(minLength: 8)
-
-                // TimelineView refreshes this line at minute granularity itself (minute precision is all it needs, so 60s is enough)
+                // The countdown sits with the title rather than out on the right edge, so the row
+                // reads as one phrase ("5-Hour Limit, 26m left") and the percentage stands alone.
+                // TimelineView refreshes it at minute granularity itself (minute precision is all it needs, so 60s is enough)
                 TimelineView(.periodic(from: .now, by: 60)) { _ in
-                    Text(trailingText)
-                        .font(.system(size: 11))
+                    Text(trailing())
+                        .font(.system(size: Self.labelSize))
                         .foregroundColor(.secondary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.85)
+                }
+
+                Spacer(minLength: 8)
+
+                if let percentageText {
+                    Text(percentageText)
+                        .font(.system(size: Self.labelSize))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
                 }
             }
 
@@ -147,10 +161,10 @@ struct UsageLimitBarRow: View {
         }
     }
 
-    private var trailingText: String {
-        let value = trailing()
-        guard let percentage else { return value }
-        return "\(Int(UsagePercentDisplay.displayPercentage(percentage)))% · \(value)"
+    /// nil when the limit carries no percentage at all, so the row does not print a bare "%"
+    private var percentageText: String? {
+        guard let percentage else { return nil }
+        return "\(Int(UsagePercentDisplay.displayPercentage(percentage)))%"
     }
 }
 
@@ -168,6 +182,8 @@ struct UnifiedLimitRow: View {
     /// and `type` only picks the color slot. Used by the popover to show the third and later models
     /// beyond the first two slots (when Fable, Opus and Sonnet all appear at once).
     var weeklyModelOverride: UsageData.WeeklyModelLimit? = nil
+    /// Observed so flipping the Monochrome icon setting recolors open popover rows live
+    @ObservedObject private var settings = UserSettings.shared
 
     var body: some View {
         UsageLimitBarRow(
@@ -203,8 +219,18 @@ struct UnifiedLimitRow: View {
 
     /// Bar color. Each limit type keeps its own palette and escalates to the warning color with the percentage,
     /// so the color says both which limit this is and how close it is to the cap.
+    /// In Monochrome icon mode the Claude bars drop the palette and all use the brand color instead;
+    /// closeness to the cap stays readable from the percentage text.
     private var barColor: Color {
         let percentage = percentageValue ?? 0
+        if settings.iconStyleMode == .monochrome {
+            switch type {
+            case .fiveHour, .sevenDay, .opusWeekly, .sonnetWeekly, .extraUsage:
+                return UsageColorScheme.brand
+            case .codexPrimary, .codexSecondary, .codexExtraUsage:
+                break
+            }
+        }
         switch type {
         case .fiveHour:
             return UsageColorScheme.fiveHourColorSwiftUI(percentage, opacity: 1.0)

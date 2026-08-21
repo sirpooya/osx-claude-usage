@@ -415,6 +415,16 @@ What has been changed from upstream so far:
   status colors carry the information and monochrome is the opt in. Per the
   `menubar-icon-theming` skill, which encodes this preference.
   New keys added by this fork are written in all 7 locales, not English-only.
+  - **Monochrome now also recolors the popover bars.** With it on, every Claude limit bar in the
+    popover drops its per-limit palette (green / purple / orange / blue / pink) and draws in
+    `UsageColorScheme.brand` (#D97757), the same brand color as the login CTA and the app icon,
+    so the whole app reads as one color rather than the menu bar alone going quiet. Handled in
+    `UnifiedLimitRow.barColor` in `UsageRowComponents.swift`, ahead of the palette switch; the
+    row observes `UserSettings.shared` so an open popover recolors the moment the switch flips.
+    Codex bars keep their own teal / blue / amber palette: the setting is about Claude's brand
+    color, and monochrome Codex rows would be indistinguishable from Claude's in two-provider
+    mode. Percentages and reset times are unchanged, so how close a limit is to its cap is
+    still legible from the text once the color stops escalating.
 - Dead code left behind by the above: `MenuBarIconPreview` and `HorizontalRadioGroup` in
   `WelcomeSupportingViews.swift` now have no callers.
 - About page: GitHub Sponsor button removed, and Buy Me A Coffee now opens `ko-fi.com/pooya`
@@ -452,6 +462,41 @@ What has been changed from upstream so far:
 - **SettingCard header glyphs removed** on the General tab: the card renders title only; the
   `icon`/`iconColor` parameters are still accepted but ignored so no call site changed, and the
   32pt content indent that existed to align under the glyph is gone.
+- **SettingCard hint lightbulb removed.** The `hint` row was a `lightbulb.fill` glyph plus the
+  text; it is now the text alone. That glyph prefixed every description on the General tab (one
+  per card), so removing it in the one shared component covers all of them. The only other
+  `lightbulb.fill` in the app is in `AuthSettingsView+AddAccount.swift`, which is a different
+  page and deliberately untouched.
+- **Battery style display: `showRemainingPercentage`.** New `UserSettings` flag (default off,
+  key `showRemainingPercentage`, posts `.settingsChanged`), surfaced as a **Show Remaining**
+  switch in the Display Settings card with the description "Display remaining capacity instead
+  of used percentage (like macOS battery)". Ported from the competitor's
+  `appearance.show_remaining_*` setting. New keys `display.show_remaining` and
+  `display.show_remaining_desc` in all 7 locales, plus `L.Display.showRemaining` /
+  `showRemainingDesc`.
+  - `UsagePercentDisplay.displayPercentage(_:)` / `displayFraction(_:)` in
+    `UsageRowComponents.swift` are the single place the flip happens: they return `100 - used`
+    when the flag is on. Every number and every fill routes through them, so there is one
+    inversion point rather than one per renderer.
+  - **Status colours deliberately stay keyed off the used percentage**, in all four renderers.
+    Escalation has to keep meaning "close to the limit"; inverting the colour too would make a
+    nearly exhausted limit render green. `monochromeOpacity(for:)` likewise still takes `used`.
+  - Applied in the popover rows (`UsageLimitBarRow`: both the trailing "NN% · <countdown>" text
+    and the bar fill) and in all four menu bar icon renderers: `createCircleImage` and
+    `createCircleTemplateImage` in `MenuBarIconRenderer.swift`, and the rounded square, diamond
+    and hexagon draws in `ShapeIconRenderer.swift`. Each shape's sweep length, its
+    `>= 100` butt/round cap and font-size branches, its `> 0` draw guard and its glyph all read
+    the display value; only the colour calls still read `used`.
+  - `MenuBarUI.generateCacheKey` gained a `_rem` component. The flag changes the rendered image
+    without changing any percentage in the data, so without it the cache would serve the old
+    icon after a toggle.
+  - `UsageLimitBarRow` observes `UserSettings.shared` so an open popover re-renders on toggle.
+  - Verified live on the real menu bar: used mode drew 83 / 65 / 52, remaining mode drew
+    17 / 35 / 48 (exact complements) with shorter sweeps and unchanged colours.
+- The Display Settings card's hint (`menubarHint`, "Choose what to display in the menu bar") is
+  now rendered inline under the Display Content checkboxes instead of in the card's `hint` slot.
+  `SettingCard` always renders its hint last, so once Show Remaining was appended to the card
+  that line fell underneath the new switch and read as if it described it.
 - **Sparkle updates are live again.** `SUPublicEDKey` in `Config/Info.plist` is now this
   machine's own Sparkle keypair (public `XPeIzL4GHFXBMLCP+A/vxqQE4Bn8tGi7jkw9sRBHXSc=`, private
   key in the login Keychain, shared with the other osx-* apps; `generate_keys -p` prints it).
@@ -462,6 +507,41 @@ What has been changed from upstream so far:
   `MenuBarUI.createStandardMenu`. ⚠️ Until the cleaned appcast is pushed to main, the raw
   feed URL still serves the old committed appcast listing v3.3.0, which the new public key
   would refuse anyway; push before testing an update check.
+- **History tab in Settings** (tab index 2; About moved to 3 in `SettingsView` and both
+  `MenuBarManager` deep links, `openAbout` and `.about`). First slice of differentiator #1.
+  Ported from the competitor's Usage History (`_sample/`, MIT, user-approved):
+  - `Views/Settings/Tabs/HistorySettingsView.swift` draws session (solid accent, gradient area)
+    and weekly (dashed indigo) as Swift Charts step lines (`.stepEnd`) on one 0-100 axis over a
+    5h / 24h / 7d / 30d window, pageable by half a window per chevron with a Now snap-back;
+    below it an API Billing bar chart of Console spend samples. First `import Charts` in the
+    app; fine on the macOS 13.0 deployment target.
+  - `UsageHistoryStore` (Services) records a `UsageSnapshot` (Models/UsageHistory.swift:
+    session, weekly and per-model percentages; per-model recorded but not charted yet) on every
+    successful Claude fetch, hooked at both DataRefreshManager success paths, throttled inside
+    the store to one per 5 min; and a `BillingSnapshot` after every successful Console
+    `current_spend` fetch (hook in `ConsoleAPIService.refresh`), one per hour. Retention 90
+    days, pruned on save.
+  - Storage is `~/Library/Application Support/ClaudeUsage/usageHistory.json`, deliberately not
+    UserDefaults: the competitor's issue #260 showed multi-MB history blobs blow the 4 MB
+    CFPreferences domain limit and CFPreferences then silently drops ALL writes to the domain,
+    credentials included.
+  - `UsageHistoryStore.swift` needs `import Combine`. It declares `ObservableObject` plus an
+    `@Published`, and `import Foundation` alone does not re-export those, so the file failed to
+    compile with "does not conform to protocol 'ObservableObject'" and "initializer
+    'init(wrappedValue:)' is not available due to missing import of defining module 'Combine'".
+  - 14 new keys (`settings.tab.history`, `history.*`) with real translations in all 7 locales.
+    The window range label is a localized "%1$@ to %2$@" format (bis/à/〜/~/至), not the
+    competitor's spaced en dash.
+  - Competitor bugs deliberately not carried over: zero-param `onChange` (macOS 14 only, we
+    target 13, use the one-param form), duplicated billing chart title, hardcoded `$` on the
+    billing y axis (non-USD now shows the ISO code), legend dashes knocked out with
+    `controlBackgroundColor` (drawn as positive marks instead), and forward paging that could
+    overshoot past "now" (clamped with `min(..., 0)`).
+  - Verified live by seeding a synthetic 24 h `usageHistory.json`, driving the window open via
+    lldb (`postNotificationName:@"openSettings" userInfo:@{@"tab": @2}`; the status item popover
+    is invisible to AX scripting) and screenshotting. Synthetic file then deleted along with the
+    `usageHistory.lastRecordedAt` / `lastBillingRecordedAt` throttle keys; on the clean
+    relaunch the store recorded its first real snapshot within seconds.
 
 Deliberately **not** translated, because doing so breaks non-English locales:
 

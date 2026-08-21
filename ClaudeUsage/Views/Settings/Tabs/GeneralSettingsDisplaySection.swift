@@ -17,8 +17,7 @@ struct GeneralSettingsDisplaySection: View {
         SettingCard(
             icon: "gauge.with.dots.needle.0percent",
             iconColor: .blue,
-            title: L.SettingsGeneral.displaySection,
-            hint: L.SettingsGeneral.menubarHint
+            title: L.SettingsGeneral.displaySection
         ) {
             VStack(alignment: .leading, spacing: 16) {
                 // One switch rather than two sibling radios: naming the modes as peers
@@ -91,6 +90,14 @@ struct GeneralSettingsDisplaySection: View {
                         .focusable(false)
                         .disabled(settings.iconDisplayMode == .percentageOnly)
                     }
+
+                    // Inline rather than the card's hint slot: SettingCard renders its hint
+                    // last, which would put this line under Show Remaining and read as if it
+                    // described that switch instead of these checkboxes.
+                    Text(L.SettingsGeneral.menubarHint)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Divider()

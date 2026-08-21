@@ -89,23 +89,6 @@ struct GeneralSettingsView: View {
                     }
                 }
 
-                // Appearance settings card
-                SettingCard(
-                    icon: "circle.lefthalf.filled",
-                    iconColor: .indigo,
-                    title: L.SettingsGeneralAppearance.section,
-                    hint: L.SettingsGeneralAppearance.hint
-                ) {
-                    Picker("", selection: $settings.appearance) {
-                        ForEach(AppAppearance.allCases, id: \.self) { mode in
-                            Text(mode.localizedName).tag(mode)
-                        }
-                    }
-                    .pickerStyle(.radioGroup)
-                    .labelsHidden()
-                    .focusable(false)
-                }
-
                 // Time format settings card
                 SettingCard(
                     icon: "clock",

@@ -409,6 +409,18 @@ class UserSettings: ObservableObject {
         }
     }
 
+    /// The account's subscription tier, cached for display next to the popover title ("Claude Team").
+    /// Cached rather than fetched on demand: the only free sources are read on a background queue
+    /// (Claude Code's Keychain entry on every CLI synced poll, the OAuth profile at login), and the
+    /// header cannot touch the Keychain while rendering. Empty means unknown, and the header then
+    /// shows the plain title.
+    @Published var claudeSubscriptionTier: String {
+        didSet {
+            guard claudeSubscriptionTier != oldValue else { return }
+            defaults.set(claudeSubscriptionTier, forKey: "claude.subscriptionTier")
+        }
+    }
+
     /// Battery style display: show remaining capacity instead of used percentage.
     /// Flips the displayed number and the ring/bar fill everywhere; status colors stay keyed off used.
     @Published var showRemainingPercentage: Bool {
@@ -739,6 +751,8 @@ class UserSettings: ObservableObject {
             // Color by default: the status colors carry the information, monochrome is the opt-in
             self.iconStyleMode = .colorTranslucent
         }
+
+        self.claudeSubscriptionTier = defaults.string(forKey: "claude.subscriptionTier") ?? ""
         
         // Load the refresh mode, smart by default
         if let modeString = defaults.string(forKey: "refreshMode"),
