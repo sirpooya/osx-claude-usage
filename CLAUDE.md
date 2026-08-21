@@ -303,6 +303,44 @@ What has been changed from upstream so far:
     appcast URL is repointed. This also required `menu.autoenablesItems = false`, otherwise
     AppKit re-enables any item that has a target and an action.
   - `menu.quit` is now just "Quit", not "Quit ClaudeUsage", and the item carries no icon.
+- A failed refresh can no longer blank the popover. This is the "Too many requests, please try
+  again later" screen that replaced perfectly good numbers on any transient 429:
+  - Root cause of the errors themselves: `ClaudeOAuthService.post` (the token endpoint at
+    `console.anthropic.com/v1/oauth/token`, used by both the initial exchange and every refresh)
+    was the one request in the app **not** sending `User-Agent`. The usage and profile calls both
+    set it. Without it this endpoint family answers a valid token with an instant 429, so once an
+    access token expired (~60 min) every fetch failed. Fixed; see "Data sources" above.
+  - The 429 actually observed on 2026-08-21 was a genuine server side limit from restarting the
+    app in a tight loop (two agent sessions doing install-and-run at once), not the header bug.
+    Verified by probing `/api/oauth/usage` directly with the app's exact headers: HTTP 200 while
+    the popover was showing the error. Both causes are now handled the same way.
+  - What the UI does now, which is what [hamed-elfayome/Claude-Usage-Tracker] does structurally:
+    its `UsageRefreshCoordinator` only ever calls `dataStore.saveUsage(...)` on success and its
+    `catch` blocks just log, so its views render the last saved snapshot and a failed request
+    cannot produce a visible state. Ours had `errorMessage` as a UI state that took priority over
+    the data, which is the whole difference.
+  - So: `usageData` is never cleared on failure (it already was not, but `claudeMainContent`
+    checked `errorMessage` **first**, so the error won anyway). Data now wins; the error branch is
+    only reached with nothing cached at all.
+  - Transient errors (429, network blip, 5xx, decode) never get a screen. `RefreshState`
+    `claudeErrorIsTransient` gates that: transient means bars, or the loading state, never an
+    error. Only actionable auth errors (no credentials, unauthorized, session expired, Cloudflare)
+    still get the signed-out or error state, because the user has to do something about those.
+  - The last good fetch is persisted (`cachedClaudeUsage` / `cachedClaudeUsageAt` in UserDefaults,
+    which is why `UsageData` and friends are now `Codable`) and restored in `DataRefreshManager.init`,
+    so a cold start shows real numbers instead of a spinner. Percentages and reset times only, no
+    credentials.
+  - When stale data is on screen, a one line note under the bars says so:
+    "Couldn't refresh · showing 9:20 PM" (`usage.stale_notice`, 7 locales). `PopoverMetrics`
+    `staleNoticeHeight` reserves its height, and `claudeColumnHeight` is now the single place that
+    decides the Claude column's height, so the height rule and the render rule cannot drift apart.
+  - A 429 also arms a 10 minute backoff (`claudeBackoffUntil`): automatic polls sit it out, the
+    Refresh button ignores it because the user asked. Skipping a poll never clears the cached data.
+  - A Codex failure keeps its last data too (it used to call `clearCodexUsageState`).
+- The popover header's ellipsis menu is now a gear that opens Settings directly. Everything that
+  menu carried (account switching, check for updates, About, status pages, Buy me a coffee, Quit)
+  is still on the status item's right click menu, `MenuBarUI.createStandardMenu`. The update dot
+  moved onto the gear so the signal is not lost.
 - Translated all hardcoded Chinese in UI strings and the 148 logger messages to English.
 - **CLI Account Sync**: the app now logs itself in from Claude Code's own Keychain entry, so a
   fresh install needs no pasted session key and no browser round trip. This is the login method

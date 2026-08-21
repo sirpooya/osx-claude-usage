@@ -24,7 +24,16 @@ enum UsageColorScheme {
     /// Detect whether dark mode is active
     /// - Parameter statusButton: optional status item button, used to read the appearance
     /// - Returns: true for dark mode, false for light mode
+    /// Per-display render override. Set while drawing into a specific menu bar window
+    /// (the dynamic image handler and the replicant pass in MenuBarPerDisplayIcon), so a
+    /// render can be forced to that bar's appearance regardless of which display the main
+    /// button sits on. Main thread only, always reset right after the render.
+    static var drawingIsDarkOverride: Bool?
+
     static func isDarkMode(for statusButton: NSStatusBarButton? = nil) -> Bool {
+        // Method 0: per-display override, wins over every probe below
+        if let forced = drawingIsDarkOverride { return forced }
+
         // Method 1: read the appearance from the status item button (most accurate, it reflects the real menu bar appearance)
         if let button = statusButton,
            let appearance = button.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) {

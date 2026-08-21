@@ -37,6 +37,17 @@ class MenuBarUI {
     /// Maximum number of cache entries
     private let maxCacheSize = 50
 
+    // MARK: - Per-Display Icon (Fix B state)
+
+    /// Last color-mode render closure; re-applied when replicant windows on secondary
+    /// displays appear or change appearance. nil while a template icon is shown
+    /// (templates are tinted per display by AppKit, nothing to do).
+    private var lastReplicantRender: ((Bool) -> NSImage)?
+    /// KVO on every status bar window's effectiveAppearance (per-display wallpaper tint)
+    private var replicantAppearanceObservations: [NSKeyValueObservation] = []
+    /// Display connect/disconnect re-applies the replicant pass
+    private var screenParamsObserver: NSObjectProtocol?
+
     // MARK: - Settings Reference
 
     /// User settings instance (injected)
@@ -52,6 +63,17 @@ class MenuBarUI {
     init() {
         setupStatusItem()
         setupPopover()
+
+        // Display connect/disconnect lazily creates or destroys replicant status bar windows
+        screenParamsObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                self?.applyReplicantPass()
+            }
+        }
     }
 
     // MARK: - Status Item Setup
@@ -489,29 +511,71 @@ class MenuBarUI {
         // Build the cache key
         let cacheKey = generateCacheKey(usageData: usageData, codexUsageData: codexUsageData, hasUpdate: showBadge)
 
-        // Try the cache first
+        // Shared re-render closure for the per-display fixes. Appearance comes solely from
+        // UsageColorScheme.drawingIsDarkOverride, so button is nil on purpose. Captures
+        // iconRenderer instead of self to avoid a retain cycle via lastReplicantRender.
+        let render: (Bool) -> NSImage = { [iconRenderer] _ in
+            iconRenderer.createIcon(
+                usageData: usageData,
+                codexUsageData: codexUsageData,
+                hasUpdate: showBadge,
+                button: nil
+            )
+        }
+
+        let icon: NSImage
         if let cachedImage = iconCache[cacheKey] {
-            button.image = cachedImage
-            return
-        }
+            icon = cachedImage
+        } else {
+            // Probe render decides template vs color and fixes the size for the dynamic wrapper
+            let probe = iconRenderer.createIcon(
+                usageData: usageData,
+                codexUsageData: codexUsageData,
+                hasUpdate: showBadge,
+                button: button
+            )
+            // Template icons are tinted per display by AppKit already; only color icons
+            // need the appearance-resolving wrapper (fix A in MenuBarPerDisplayIcon)
+            icon = probe.isTemplate ? probe : MenuBarPerDisplayIcon.dynamicImage(size: probe.size, render: render)
 
-        // Cache miss, build a new icon with IconRenderer
-        let icon = iconRenderer.createIcon(
-            usageData: usageData,
-            codexUsageData: codexUsageData,
-            hasUpdate: showBadge,
-            button: button
-        )
-
-        // Store it in the cache (FIFO eviction, rather than the random eviction an unordered Dictionary walk gives)
-        if iconCache.count >= maxCacheSize, !iconCacheOrder.isEmpty {
-            let oldestKey = iconCacheOrder.removeFirst()
-            iconCache.removeValue(forKey: oldestKey)
+            // Store it in the cache (FIFO eviction, rather than the random eviction an unordered Dictionary walk gives)
+            if iconCache.count >= maxCacheSize, !iconCacheOrder.isEmpty {
+                let oldestKey = iconCacheOrder.removeFirst()
+                iconCache.removeValue(forKey: oldestKey)
+            }
+            iconCache[cacheKey] = icon
+            iconCacheOrder.append(cacheKey)
         }
-        iconCache[cacheKey] = icon
-        iconCacheOrder.append(cacheKey)
 
         button.image = icon
+
+        // Fix B: force-render the replicant windows on secondary displays
+        if icon.isTemplate {
+            lastReplicantRender = nil
+            replicantAppearanceObservations = []
+        } else {
+            lastReplicantRender = render
+            applyReplicantPass()
+            // Replicant windows are created lazily; catch the ones that appear late
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                self?.applyReplicantPass()
+            }
+        }
+    }
+
+    /// Fix B: assign per-appearance images to the replicant status bar windows and
+    /// (re)register the appearance observers on all status bar windows
+    private func applyReplicantPass() {
+        guard let render = lastReplicantRender else { return }
+        MenuBarPerDisplayIcon.applyToReplicants(mainButton: statusItem.button, render: render)
+
+        replicantAppearanceObservations = MenuBarPerDisplayIcon.statusBarWindows().map { window in
+            window.observe(\.effectiveAppearance) { [weak self] _, _ in
+                // Defer out of the KVO callback: applyReplicantPass releases and recreates
+                // the very observation that is firing
+                DispatchQueue.main.async { self?.applyReplicantPass() }
+            }
+        }
     }
 
     /// Clear the icon cache
@@ -632,5 +696,8 @@ class MenuBarUI {
 
     deinit {
         cleanup()
+        if let observer = screenParamsObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
     }
 }
