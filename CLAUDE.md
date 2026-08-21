@@ -1,7 +1,39 @@
 # osx-claude-usage
 
 macOS menu bar app showing Claude usage (session window, weekly, per-model) at a glance.
-Greenfield. Nothing built yet.
+
+**Not greenfield.** The codebase is [f-is-h/Usage4Claude](https://github.com/f-is-h/Usage4Claude)
+(MIT, ~22k LOC Swift), taken as-is on 2026-08-21 and renamed throughout to `ClaudeUsage`. The
+goal is to improve that app in place, not to rewrite it. See "Fork status" below.
+
+## Build and run loop (do this after every change)
+
+Non-negotiable. A build that only exists in DerivedData is useless.
+
+1. Rebuild.
+2. Replace `/Applications/ClaudeUsage.app` and ad hoc sign it.
+3. Launch from `/Applications`, never from DerivedData or a temp path.
+4. Update this file with what changed.
+
+```bash
+pkill -f "ClaudeUsage.app/Contents/MacOS/ClaudeUsage"
+xcodebuild -project ClaudeUsage.xcodeproj -scheme ClaudeUsage -configuration Debug \
+  -derivedDataPath <scratch>/dd build CODE_SIGN_IDENTITY="-"
+rm -rf /Applications/ClaudeUsage.app
+cp -R <scratch>/dd/Build/Products/Debug/ClaudeUsage.app /Applications/ClaudeUsage.app
+codesign --force --deep --sign - /Applications/ClaudeUsage.app
+open -a /Applications/ClaudeUsage.app
+pgrep -lf "/Applications/ClaudeUsage.app"   # confirm it actually came up
+```
+
+Gotchas that cost time already:
+- Do not launch the binary directly from a backgrounded shell. The process dies when that
+  shell exits, which looks exactly like a crash in the log.
+- To screenshot a window, get its id from `CGWindowListCopyWindowInfo` and use
+  `screencapture -l <id>`. Region captures (`-R`) get occluded by whatever is in front.
+- `defaults delete com.claudeusage.ClaudeUsage` resets first-launch state to re-test onboarding.
+- Changing the bundle id can make Control Center hide the menu bar icon. See the
+  `menubar-fix` skill.
 
 ## Goal
 
@@ -159,24 +191,37 @@ Takeaway: the entire field splits into cookie-scrapers (fragile) and local-log-p
 
 ## App icon
 
-`Assets/AppIcon.icon` is an Icon Composer bundle (Xcode 26 native format), authored from a single
-1024pt SVG of the Claude-orange pixel glyph.
+An Icon Composer bundle (Xcode 26 native format), authored from a single 1024pt SVG of the
+Claude-orange pixel glyph. Source of truth for the artwork is `Assets/appicon.svg`, fill
+`#D97757` (display-p3 0.8510 0.4667 0.3412).
 
-- Source layer: `Assets/AppIcon.icon/Assets/appicon.svg`, fill `#D97757`
-  (display-p3 0.8510 0.4667 0.3412). Scaled 0.9 with a +26.48pt y translation so the glyph
-  sits optically centred inside the squircle.
-- `icon.json` config: fill `system-light`, `glass: false`, neutral shadow at 0.5,
-  translucency 0.5. Squares shared across platforms, circles for watchOS.
-- Wire it up by adding the `.icon` to the Xcode target and setting
-  `ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon`. `actool` emits `CFBundleIconName` and
-  `CFBundleIconFile` into the partial plist, so do not hand-write those keys in `Info.plist`.
-- Verify a change without a full build:
-  `xcrun actool --compile <out> --app-icon AppIcon --output-partial-info-plist <out>/p.plist
-   --platform macosx --minimum-deployment-target 14.0 --include-all-app-icons Assets/AppIcon.icon`
-  then `sips -s format png <out>/AppIcon.icns --out preview.png` to eyeball the render.
-- Because `LSUIElement` is true there is no Dock icon. This asset only shows in Finder, Get Info,
-  Spotlight, notification banners, and the DMG. The menu bar needs a separate small monochrome
-  template image (`isTemplate = true`), not this one. Do not reuse the colour glyph there.
+Two distinct assets, and both have to be updated or the logo changes in half the app:
+
+1. **`ClaudeUsage/Resources/appicon.icon`** is the real app icon: Finder, Get Info, Spotlight,
+   notification banners, the DMG. `LSUIElement` is true so there is no Dock icon.
+   - `icon.json` config: fill `system-light`, `glass: false`, neutral shadow at 0.5,
+     translucency 0.5. Glyph scaled 0.9 with a +26.48pt y translation so it sits optically
+     centred inside the squircle. Squares shared across platforms, circles for watchOS.
+   - Wired via `ASSETCATALOG_COMPILER_APPICON_NAME = appicon` in both build configs. The name
+     is lowercase `appicon`, **not** `AppIcon`, because the inherited asset catalog already has
+     an `AppIcon` image set (see below) and two assets cannot share a name.
+   - `actool` emits `CFBundleIconName` and `CFBundleIconFile` into the partial plist, so never
+     hand-write those keys in `Info.plist`.
+   - The `.icon` lives inside the `ClaudeUsage/` folder because the Xcode target uses a
+     `PBXFileSystemSynchronizedRootGroup`, so anything dropped there is compiled automatically.
+
+2. **`ClaudeUsage/Resources/Assets.xcassets/AppIcon.appiconset`** is the *in-app* logo, loaded
+   at runtime by `ImageHelper.createAppIcon` via `NSImage(named: "AppIcon")`. It appears in the
+   onboarding header, About, account rows, and the colour menu bar theme. Changing only the
+   `.icon` leaves this one stale, which is exactly the bug that shipped once already.
+   - Regenerate it from the composed system icon rather than from the raw SVG, so it matches the
+     real app icon including Apple's squircle and material. Install the app, then extract with
+     `NSWorkspace.shared.icon(forFile:)` drawn into a 1024 `NSBitmapImageRep`, and `sips -Z` that
+     down to 16, 32, 64, 128, 256, 512, 1024.
+   - `AppIconReverse.imageset` is the monochrome sibling used by the Monochrome menu bar theme.
+     It is `template-rendering-intent: template`, so only alpha matters. Generate it as a tight
+     square-cropped glyph: `rsvg-convert -w 1024 -h 1024`, then
+     `magick ... -trim +repage -background none -gravity center -extent square -resize 512x512`.
 
 ## Verified environment
 
