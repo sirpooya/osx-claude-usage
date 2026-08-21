@@ -272,7 +272,7 @@ class ShapeIconRenderer {
             progressPath.lineCapStyle = displayPercentage >= 100 ? .butt : .round
 
             if isMonochrome {
-                let opacity = monochromeOpacity(for: escalationPercentage)
+                let opacity = monochromeOpacity(for: percentage)
                 NSColor.controlTextColor.withAlphaComponent(opacity).setStroke()
             } else {
                 (paceColor ?? UsageColorScheme.opusWeeklyColorAdaptive(escalationPercentage, for: button)).setStroke()
@@ -410,7 +410,7 @@ class ShapeIconRenderer {
             progressPath.lineCapStyle = displayPercentage >= 100 ? .butt : .round
 
             if isMonochrome {
-                let opacity = monochromeOpacity(for: escalationPercentage)
+                let opacity = monochromeOpacity(for: percentage)
                 NSColor.controlTextColor.withAlphaComponent(opacity).setStroke()
             } else {
                 (paceColor ?? UsageColorScheme.sonnetWeeklyColorAdaptive(escalationPercentage, for: button)).setStroke()
@@ -549,7 +549,8 @@ class ShapeIconRenderer {
             } else if let colorOverride {
                 colorOverride.setStroke()
             } else {
-                UsageColorScheme.extraUsageColorAdaptive(percentage, for: button).setStroke()
+                // No window to project across, so the Extra Usage colour is always flat
+                UsageColorScheme.extraUsageColorAdaptive(UsageColorScheme.flatPercentage, for: button).setStroke()
             }
             progressHexagon.stroke()
         }

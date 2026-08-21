@@ -145,10 +145,10 @@ struct GeneralSettingsDisplaySection: View {
                                 }
                             }
                         )) {
-                            // Same 13pt medium face as the row titles and the Display Content
-                            // heading, so the three read as one type style rather than three
+                            // Regular weight: these are checkbox labels, not row titles, so
+                            // they should not compete with the Display Content heading above
                             Text(L.Display.showIcon)
-                                .font(.system(size: 13, weight: .medium))
+                                .font(.system(size: 13, weight: .regular))
                         }
                         .toggleStyle(.checkbox)
                         .focusable(false)
@@ -168,7 +168,7 @@ struct GeneralSettingsDisplaySection: View {
                             }
                         )) {
                             Text(L.Display.showPercentage)
-                                .font(.system(size: 13, weight: .medium))
+                                .font(.system(size: 13, weight: .regular))
                         }
                         .toggleStyle(.checkbox)
                         .focusable(false)

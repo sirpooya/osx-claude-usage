@@ -288,10 +288,14 @@ class MenuBarIconRenderer {
     // MARK: - Icon Drawing - Colored Mode
 
     /// The percentage the icon's *colour* escalates on: the projected end-of-window figure when
-    /// pace-aware colours are on, otherwise the current one. The glyph and the sweep always stay
-    /// on actual usage, so only the colour changes meaning, exactly as in the popover rows.
+    /// pace-aware colours are on, and `flatPercentage` otherwise. The glyph and the sweep always
+    /// stay on actual usage, so only the colour changes meaning, exactly as in the popover rows.
+    ///
+    /// Flat is the answer in Limit mode because the palette there names *which* limit this is and
+    /// must not move with the figure. Do not send the real percentage back through here: that was
+    /// the bug where a limit crossing 70% silently darkened its own identity colour.
     func colorPercentage(_ percentage: Double, resetsAt: Date?, type: LimitType) -> Double {
-        guard settings.paceAwareBarColors else { return percentage }
+        guard settings.paceAwareBarColors else { return UsageColorScheme.flatPercentage }
         return UsagePaceCalculator.projectedPercentage(
             usedPercentage: percentage,
             resetsAt: resetsAt,
@@ -707,7 +711,8 @@ class MenuBarIconRenderer {
             return createCircleImage(percentage: percentage, size: NSSize(width: 18, height: 18), colorOverride: color, useDashedStyle: true, button: button, removeBackground: removeBackground, markerFraction: marker)
 
         case .codexExtraUsage:
-            let color = UsageColorScheme.codexExtraUsageColorAdaptive(percentage, for: button)
+            // The Extra Usage buckets have no window to project across, so this is always flat
+            let color = UsageColorScheme.codexExtraUsageColorAdaptive(UsageColorScheme.flatPercentage, for: button)
             return ShapeIconRenderer.createHexagonIcon(percentage: percentage, isMonochrome: isMonochrome, button: button, removeBackground: removeBackground, colorOverride: color)
 
         default:

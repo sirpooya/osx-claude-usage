@@ -21,7 +21,10 @@ struct GeneralSettingsDisplayOptionsSection: View {
             hint: settings.displayMode == .smart ? L.DisplayOptions.smartDisplayDescription : L.DisplayOptions.customDisplayDescription
         ) {
             VStack(alignment: .leading, spacing: 16) {
-                // Display mode picker
+                // No "Display Mode:" label and no info glyph description row. The card's own
+                // header already says Display Options, and the two radios name themselves, so both
+                // only repeated what was on screen. The card's `hint` slot still carries the mode
+                // description, which is where a per-card explanation belongs.
                 VStack(alignment: .leading, spacing: 8) {
                     Picker("", selection: $settings.displayMode) {
                         Text(L.DisplayOptions.smartDisplay).tag(DisplayMode.smart)
@@ -30,17 +33,27 @@ struct GeneralSettingsDisplayOptionsSection: View {
                     .pickerStyle(.radioGroup)
                     .labelsHidden()
                     .focusable(false)
+
+                    // The checkbox list keeps its caption heading and sits indented under the
+                    // radio that reveals it, the placement the recovered welcome screen design used
+                    // (`48850a8^`, `reference/Usage4Claude/.../SetupStepView.swift`).
+                    if settings.displayMode == .custom {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(L.Welcome.selectLimits)
+                                .font(.caption)
+                                .fontWeight(.medium)
+
+                            limitTypeGrid
+                        }
+                        .padding(.top, 4)
+                        .padding(.leading, 20)
+                    }
                 }
 
-                // Custom selection (shown in custom mode only)
+                // The hints and the menu bar switch stay below, outside the mode column, so a
+                // long hint can use the card's full width instead of the column's.
                 if settings.displayMode == .custom {
-                    // No divider and no "Select Limit Types to Display" heading: the checkbox list
-                    // only ever appears directly under the Custom Display radio that reveals it,
-                    // so the radio already names it and a rule plus a second label just repeated
-                    // the same step twice.
                     VStack(alignment: .leading, spacing: 12) {
-                        limitTypeGrid
-                            .padding(.leading, 20)
 
                         // Constraint hints
                         if hasOnlyOneCircularIcon {
@@ -67,20 +80,16 @@ struct GeneralSettingsDisplayOptionsSection: View {
 
                         Divider()
 
-                        // The "menu bar only" switch: when on, the popover uses the smart display
-                        VStack(alignment: .leading, spacing: 6) {
-                            Toggle(isOn: $settings.customDisplayMenuBarOnly) {
-                                Text(L.DisplayOptions.menuBarOnlyToggle)
-                                    .font(.subheadline)
-                            }
-                            .toggleStyle(.checkbox)
-
-                            Text(L.DisplayOptions.menuBarOnlyDescription)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .padding(.leading, 20)
-                        }
+                        // The "menu bar only" switch: when on, the popover uses the smart display.
+                        // A SettingToggleRow like every other switch in these sections: it is a
+                        // setting in its own right, not one of the limit type checkboxes above it,
+                        // so it gets the 13pt medium title, the control on the trailing edge and a
+                        // flush description rather than a checkbox with an indented caption.
+                        SettingToggleRow(
+                            title: L.DisplayOptions.menuBarOnlyToggle,
+                            description: L.DisplayOptions.menuBarOnlyDescription,
+                            isOn: $settings.customDisplayMenuBarOnly
+                        )
                     }
                 }
             }

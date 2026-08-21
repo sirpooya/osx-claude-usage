@@ -348,6 +348,18 @@ class MenuBarUI {
         settingsItem.target = target
         menu.addItem(settingsItem)
 
+        #if DEBUG
+        // Dev only: the deleted welcome flow second page, at the size it shipped at.
+        // Not localized, and compiled out of release builds entirely.
+        let playgroundItem = NoAutoIconMenuItem(
+            title: "Welcome Setup Playground",
+            action: #selector(MenuBarManager.openWelcomeSetupPlayground),
+            keyEquivalent: ""
+        )
+        playgroundItem.target = target
+        menu.addItem(playgroundItem)
+        #endif
+
         // Check for Updates
         let updateItem = NSMenuItem(
             title: "",

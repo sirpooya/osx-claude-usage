@@ -56,6 +56,10 @@ class MenuBarManager: ObservableObject {
     private let dataManager = DataRefreshManager()
     /// Settings window
     private var settingsWindow: NSWindow?
+    #if DEBUG
+    /// The dev-only playground window. Debug builds only, so it cannot reach a release build.
+    private var playgroundWindow: NSWindow?
+    #endif
     /// User settings instance
     @ObservedObject private var settings = UserSettings.shared
     /// Combine subscriptions
@@ -412,6 +416,37 @@ class MenuBarManager: ObservableObject {
     
     // MARK: - Settings Window
     
+    #if DEBUG
+    /// Opens the welcome setup playground: the deleted welcome flow second page at its real size.
+    /// Reached from the status item menu's "Welcome Setup Playground" item in debug builds.
+    @objc func openWelcomeSetupPlayground() {
+        if playgroundWindow == nil {
+            NSApp.setActivationPolicy(.regular)
+
+            let controller = NSHostingController(rootView: WelcomeSetupPlaygroundView())
+            let window = NSWindow(contentViewController: controller)
+            window.title = "Welcome Setup Playground"
+            window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
+            window.setContentSize(NSSize(width: 980, height: 700))
+            window.setFrameAutosaveName("ClaudeUsage.WelcomeSetupPlayground")
+            window.isReleasedWhenClosed = false
+            playgroundWindow = window
+
+            NotificationCenter.default.addObserver(
+                forName: NSWindow.willCloseNotification,
+                object: window,
+                queue: .main
+            ) { [weak self] _ in
+                self?.playgroundWindow = nil
+            }
+        }
+
+        NSApp.activate(ignoringOtherApps: true)
+        playgroundWindow?.makeKeyAndOrderFront(nil)
+        playgroundWindow?.center()
+    }
+    #endif
+
     @objc func openSettings() {
         openSettingsWindow(tab: 0)
     }

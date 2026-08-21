@@ -634,6 +634,9 @@ What has been changed from upstream so far:
   - **Launch at Login moved above Language**, and **Display Content moved to the bottom** of the
     Display Settings section. `Display Content`'s title now uses the same 13pt medium primary face
     as the toggle row titles instead of a secondary subheadline, so it reads as their peer.
+    Its two checkboxes, **Show Icon** and **Show Percentage**, are 13pt **regular**, not medium:
+    they are checkbox labels sitting under that heading, so at medium all three lines read as
+    headings and nothing looked subordinate to anything.
   - **Removed copy**: the "Display Mode" label above the Smart/Custom radios, and the
     "Choose what to display in the menu bar" hint (`settings.general.menubar_hint`, now unused).
   - **Launch at Login's status badge only shows for `.requiresApproval`.** `.notFound` and
@@ -755,8 +758,12 @@ What has been changed from upstream so far:
     Monochrome and back should not silently forget that the user wanted pace colours.
   - The card shows only the **selected** mode's description, not all three, so it explains the
     current choice instead of leaving the reader to work out which line applies.
-  - Labels went through Status (rejected: describes all three) and Limit Type before landing on
-    Type / Usage / Monochrome. 7 new `display.color_mode*` keys, really translated in all 7 locales.
+  - Labels went through Status (rejected: describes all three), Limit Type and Type before landing
+    on **Limit / Usage / Monochrome**. 7 new `display.color_mode*` keys, really translated in all 7
+    locales. "Type" said nothing on its own next to "Usage": the axis is *which limit* a bar is
+    versus *how fast* it is being spent, so the first segment names the limit. Only the
+    `display.color_mode_type` value changed (Limit / Limit / Limite / 上限 / 한도 / 限额 / 限額);
+    the key, `L.Display.colorModeType` and the `ColorMode.limitType` case all keep their names.
 - **The Usage mode's ramp: blue, orange, red on the projected end-of-window figure.** Under 70%
   `systemBlue`, 70-90% `systemOrange`, 90% or more `systemRed`. The ramp only escalates, because
   more usage per unit of elapsed time is always worse.
@@ -783,17 +790,52 @@ What has been changed from upstream so far:
     tick instead of the fill, which meant the pace setting did nothing unless `showTimeMarker` was
     also on. Wrong feature: the setting is about bar colours. The tick stays the neutral
     `labelColor` line it has always been.
+- **Limit colour mode is flat now: the per-limit palettes no longer escalate with usage.** A
+  weekly limit crossing 70% used to darken its own identity colour on its own (light purple
+  `#C084FC` to deep purple `#B450F0`, then `#B41EA0` at 90%), and the same step existed in all
+  eight palettes. That escalation is upstream's, and the Color By picker was layered on top of it
+  without removing it, so **Limit** and **Usage** both encoded usage and only the palette differed.
+  Limit mode now says *which* limit a bar is and nothing else; the number, the fill and the
+  countdown carry how full it is.
+  - `UsageColorScheme.flatPercentage` (0) is the single knob. Every palette's safe step already
+    *is* that limit's identity colour, so asking for 0 returns it without a second set of hex
+    values that could drift from the first. Do not add one.
+  - Render sites repointed: `UnifiedLimitRow.barColor` (popover), `createCircleImage`'s
+    `escalationPercentage` and the Codex branches in `MenuBarIconRenderer`, and the three
+    `ShapeIconRenderer` draws. `UnifiedLimitRow.colorPercentage` became dead and was deleted;
+    `MenuBarIconRenderer.colorPercentage` stays and now returns `flatPercentage` when pace is off,
+    which is what makes the icons and the bars flat-line together.
+  - Escalation survives in the other two modes only, which is the whole point of the picker:
+    the blue / orange / red pace ramp in **Usage**, and `ShapeIconRenderer.monochromeOpacity` in
+    **Monochrome**.
+  - Both Extra Usage buckets are hardcoded to `flatPercentage`. They have no fixed window, so the
+    pace projection was never available to them and there is nothing to escalate on.
+  - `monochromeOpacity` now reads the actual `percentage` in all three shapes. Two of them read
+    `escalationPercentage`, so with Monochrome selected while `paceAwareBarColors` was still
+    stored true (the picker deliberately preserves it) the projection leaked into the opacity of
+    a mode that is not supposed to see it. The hexagon already did this correctly.
+  - Verified live on the real bar: a 71% weekly reads light purple, the same colour it showed at
+    69%, instead of stepping to deep purple.
+
 - **The limit type checkboxes are real checkboxes now.** `LimitTypeCheckbox` was a plain `Button`
   drawing `checkmark.square.fill` / `square` SF Symbols: recognisable but not an AppKit checkbox,
   so it had the wrong box size, corner radius and blue, no focus ring, no mixed state and none of
   the system's disabled or accent handling, while every other checkbox on the page was a real
   `Toggle(.checkbox)`. Now it is one too, with the limit's shape glyph and name as its label.
-- **The custom limit list stays one checkbox per line.** A wrapped 3-per-row grid was tried,
-  copied from upstream's welcome screen setup step (recovered from `48850a8^`,
-  `reference/Usage4Claude/.../SetupStepView.swift`), and reverted immediately: with three to a row
-  the checkbox of one column lands right beside the *label* of the column before it, so the boxes
-  stop forming a single scannable edge and each row reads as one run-on line. One per line keeps
-  every box on the same x, which is the whole point of a checkbox list. Do not re-flow this.
+- **Display Options: the checkbox list keeps the recovered welcome screen placement, the labels
+  around it are gone.** From upstream's setup step (`48850a8^`,
+  `reference/Usage4Claude/.../SetupStepView.swift`), what survives is the list sitting indented
+  under the radio that reveals it, behind its own caption-weight `welcome.select_limits` heading.
+  - **Removed: the fixed 100pt "Display Mode:" label and the blue `info.circle.fill` description
+    row.** Both were restored from the original and then cut: the card header already says Display
+    Options, the two radios name themselves, and the description duplicated the card's `hint`.
+    `L.DisplayOptions.displayModeLabel` is unused again but kept.
+  - The constraint hints and the menu bar switch sit below, outside the radio block, so a long hint
+    gets the card's full width.
+  - The list stays **one checkbox per line**. A wrapped 3-per-row grid from the same original was
+    tried and reverted: three to a row puts one column's checkbox right beside the previous
+    column's *label*, so the boxes stop forming a single scannable edge and each row reads as one
+    run-on line. Do not re-flow this.
 - **The Color By picker sits in a `SettingRow`**, label left and segments right with the
   description underneath, the same shape as every switch in that card. Stacked full width under
   its own heading it read as a different kind of setting from its neighbours and left the row's

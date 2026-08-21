@@ -19,6 +19,19 @@ enum UsageColorScheme {
     /// App brand color #D97757, the same display-p3 value as the app icon
     static let brand = Color(.displayP3, red: 0.8510, green: 0.4667, blue: 0.3412)
 
+    // MARK: - Flat per-limit identity colors
+
+    /// The percentage the per-limit palettes are asked for when the color must not escalate.
+    ///
+    /// In Limit color mode a bar's color says *which* limit it is, never how full it is, so every
+    /// render site calls its palette with this instead of the real figure. Each palette's safe
+    /// step already is that limit's identity color, so this returns it without duplicating a
+    /// second set of hex values that could drift from the first.
+    ///
+    /// Escalation lives in the other two color modes only: the pace ramp in Usage mode, and
+    /// `ShapeIconRenderer.monochromeOpacity` in Monochrome. Do not reintroduce it here.
+    static let flatPercentage: Double = 0
+
     // MARK: - Appearance detection
 
     /// Detect whether dark mode is active

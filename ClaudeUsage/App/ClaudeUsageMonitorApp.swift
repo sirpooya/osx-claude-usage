@@ -97,6 +97,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         menuBarManager = MenuBarManager()
 
+        #if DEBUG
+        // Dev only: `defaults write com.claudeusage.ClaudeUsage openPlaygroundAtLaunch -bool true`
+        // opens the welcome setup playground straight away, so the window can be reached without
+        // clicking through the status item menu (which an .accessory app hides from AX scripting).
+        if UserDefaults.standard.bool(forKey: "openPlaygroundAtLaunch") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+                self?.menuBarManager.openWelcomeSetupPlayground()
+            }
+        }
+        #endif
+
         // Before the login window, try to adopt the account Claude Code CLI already signed in.
         // When the Keychain already holds usable credentials the user sees no window at all (and pastes no key).
         Task { @MainActor in

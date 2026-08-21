@@ -279,10 +279,13 @@ struct UnifiedLimitRow: View {
     ///    cap. This is the whole point of the setting, so it wins over the palette. Falls through
     ///    when there is nothing to project from (no window, too early, no usage yet).
     /// 2. **Monochrome icon mode**, where the Claude bars all take the brand color.
-    /// 3. Otherwise each limit type keeps its own palette, escalating to its warning color with
-    ///    the percentage, so the color says both which limit this is and how close it is.
+    /// 3. Otherwise each limit type takes its own flat identity color, which never moves with the
+    ///    percentage. That is the whole point of Limit mode: the color says *which* limit this is,
+    ///    and the number and the fill say how full it is.
     private var barColor: Color {
-        let percentage = colorPercentage
+        // Limit mode is flat, so the palettes are asked for their identity color, not the real
+        // figure. Pace-aware mode replaces them outright below and never reaches this.
+        let percentage = UsageColorScheme.flatPercentage
         if let pace = paceColor {
             return pace
         }
@@ -350,21 +353,6 @@ struct UnifiedLimitRow: View {
               )
         else { return nil }
         return status.color
-    }
-
-    /// The percentage the bar colour escalates on. Normally the current figure; in pace-aware
-    /// mode the projected end-of-window figure instead, so the colour says whether this limit is
-    /// on track to be hit rather than where it stands right now. The displayed number and the bar
-    /// fill are deliberately untouched: only the colour changes meaning.
-    /// Falls back to the current figure whenever there is nothing sane to project from.
-    private var colorPercentage: Double {
-        let used = percentageValue ?? 0
-        guard settings.paceAwareBarColors else { return used }
-        return UsagePaceCalculator.projectedPercentage(
-            usedPercentage: used,
-            resetsAt: resetsAtValue,
-            type: type
-        ) ?? used
     }
 
     /// Reset time for this row's limit, the anchor the pace projection measures the window from.
