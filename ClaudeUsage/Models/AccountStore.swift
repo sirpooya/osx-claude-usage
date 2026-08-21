@@ -227,7 +227,7 @@ final class AccountStore: ObservableObject {
     func addAccount(_ account: Account) -> Bool {
         // 检查是否已存在相同 organizationId 的账户
         if accounts.contains(where: { $0.organizationId == account.organizationId }) {
-            Logger.settings.notice("账户已存在，跳过: \(account.displayName)")
+            Logger.settings.notice("Account already exists, skipping: \(account.displayName)")
             return false
         }
         let wasFirstClaudeAccount = accounts.isEmpty
@@ -236,7 +236,7 @@ final class AccountStore: ObservableObject {
         if accounts.count == 1 {
             currentAccountId = account.id
         }
-        Logger.settings.notice("添加账户: \(account.displayName)")
+        Logger.settings.notice("Added account: \(account.displayName)")
 
         if wasFirstClaudeAccount {
             postAccountChanged(provider: .claude)
@@ -260,7 +260,7 @@ final class AccountStore: ObservableObject {
             postAccountChanged(provider: .claude)
         }
 
-        Logger.settings.notice("删除账户: \(account.displayName)")
+        Logger.settings.notice("Removed account: \(account.displayName)")
     }
 
     /// 切换到指定账户
@@ -270,7 +270,7 @@ final class AccountStore: ObservableObject {
         guard accounts.contains(where: { $0.id == account.id }) else { return }
 
         currentAccountId = account.id
-        Logger.settings.notice("切换到账户: \(account.displayName)")
+        Logger.settings.notice("Switched to account: \(account.displayName)")
 
         // 发送账户变更通知
         postAccountChanged(provider: .claude)
@@ -284,7 +284,7 @@ final class AccountStore: ObservableObject {
         guard let index = accounts.firstIndex(where: { $0.id == account.id }) else { return }
         accounts[index].alias = alias
         let displayName = accounts[index].displayName
-        Logger.settings.notice("更新账户别名: \(displayName)")
+        Logger.settings.notice("Updated account alias: \(displayName)")
     }
 
     /// 静默更新当前 Claude 账户的 session-token（不触发 accountChanged 通知）
@@ -295,7 +295,7 @@ final class AccountStore: ObservableObject {
         guard accounts[index].sessionKey != token else { return }
         // Account 是 struct，下标赋值触发 accounts.didSet → saveAccounts()，自动持久化
         accounts[index].sessionKey = token
-        Logger.settings.notice("Claude session-token 已静默更新（自动续期）")
+        Logger.settings.notice("Claude session-token updated silently (auto renewal)")
     }
 
     // MARK: - Codex Account Management
@@ -330,7 +330,7 @@ final class AccountStore: ObservableObject {
             if currentCodexAccountId == nil {
                 currentCodexAccountId = codexAccounts[index].id
             }
-            Logger.settings.notice("更新已存在的 Codex 账户: \(self.codexAccounts[index].displayName)")
+            Logger.settings.notice("Updated the existing Codex account: \(self.codexAccounts[index].displayName)")
             postAccountChanged(provider: .codex)
             return (codexAccounts[index], false)
         }
@@ -342,7 +342,7 @@ final class AccountStore: ObservableObject {
         if codexAccounts.count == 1 {
             currentCodexAccountId = storedAccount.id
         }
-        Logger.settings.notice("添加 Codex 账户: \(storedAccount.displayName)")
+        Logger.settings.notice("Added Codex account: \(storedAccount.displayName)")
         postAccountChanged(provider: .codex)
         return (storedAccount, wasFirstCodexAccount)
     }
@@ -356,21 +356,21 @@ final class AccountStore: ObservableObject {
             currentCodexAccountId = codexAccounts.first?.id
             postAccountChanged(provider: .codex)
         }
-        Logger.settings.notice("删除 Codex 账户: \(account.displayName)")
+        Logger.settings.notice("Removed Codex account: \(account.displayName)")
     }
 
     func switchToCodexAccount(_ account: Account) {
         guard account.id != currentCodexAccountId else { return }
         guard codexAccounts.contains(where: { $0.id == account.id }) else { return }
         currentCodexAccountId = account.id
-        Logger.settings.notice("切换到 Codex 账户: \(account.displayName)")
+        Logger.settings.notice("Switched to Codex account: \(account.displayName)")
         postAccountChanged(provider: .codex)
     }
 
     func updateCodexAccount(_ account: Account, alias: String?) {
         guard let index = codexAccounts.firstIndex(where: { $0.id == account.id }) else { return }
         codexAccounts[index].alias = alias
-        Logger.settings.notice("更新 Codex 账户别名: \(self.codexAccounts[index].displayName)")
+        Logger.settings.notice("Updated Codex account alias: \(self.codexAccounts[index].displayName)")
     }
 
     /// 静默更新当前 Codex 账户的 session-token（不触发 accountChanged 通知）
@@ -381,7 +381,7 @@ final class AccountStore: ObservableObject {
         guard codexAccounts[index].sessionKey != token else { return }
         // Account 是 struct，下标赋值触发 codexAccounts.didSet → saveCodexAccounts()，自动持久化
         codexAccounts[index].sessionKey = token
-        Logger.settings.notice("Codex session-token 已静默更新（自动续期）")
+        Logger.settings.notice("Codex session-token updated silently (auto renewal)")
     }
 
     // MARK: - Shared Helpers

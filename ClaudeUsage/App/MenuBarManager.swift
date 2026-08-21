@@ -253,12 +253,12 @@ class MenuBarManager: ObservableObject {
                     self.hasAvailableUpdate = true
                     self.latestVersion = "2.0.0"
                     self.updateMenuBarIcon()
-                    Logger.menuBar.debug("模拟更新已启用")
+                    Logger.menuBar.debug("Simulated update enabled")
                 } else {
                     self.hasAvailableUpdate = false
                     self.latestVersion = nil
                     self.updateMenuBarIcon()
-                    Logger.menuBar.debug("模拟更新已禁用")
+                    Logger.menuBar.debug("Simulated update disabled")
                 }
             }
             .store(in: &cancellables)
@@ -286,7 +286,7 @@ class MenuBarManager: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] notification in
                 guard let self = self else { return }
-                Logger.menuBar.notice("账户已切换，刷新数据")
+                Logger.menuBar.notice("Account switched, refreshing data")
                 let providerRaw = notification.userInfo?[Notification.UserInfoKey.provider] as? String
                 let provider = providerRaw.flatMap { ProviderType(rawValue: $0) }
                 // 清除图标缓存，确保新数据到达时重新渲染
@@ -436,7 +436,7 @@ class MenuBarManager: ObservableObject {
     /// - Parameter sender: 发送菜单项，representedObject 包含 Account 对象
     @objc func switchAccount(_ sender: NSMenuItem) {
         guard let account = sender.representedObject as? Account else {
-            Logger.menuBar.error("切换账户失败：无法获取账户信息")
+            Logger.menuBar.error("Account switch failed: could not read the account info")
             return
         }
 

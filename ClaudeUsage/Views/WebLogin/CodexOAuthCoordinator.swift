@@ -73,7 +73,7 @@ final class CodexOAuthCoordinator: ObservableObject {
         authorizeURL = url
         NSWorkspace.shared.open(url)
         loginState = .waitingForBrowser
-        Logger.settings.notice("CodexOAuth: 已打开系统浏览器等待授权（回调端口 \(port)）")
+        Logger.settings.notice("CodexOAuth: opened the system browser and is waiting for authorization (callback port \(port))")
 
         timeoutTask = Task { [weak self] in
             try? await Task.sleep(nanoseconds: UInt64((self?.loginTimeout ?? 300) * 1_000_000_000))
@@ -115,12 +115,12 @@ final class CodexOAuthCoordinator: ObservableObject {
 
         // 校验 state，防 CSRF
         guard let returnedState = query["state"], returnedState == pkce?.state else {
-            Logger.settings.error("CodexOAuth: state 校验失败")
+            Logger.settings.error("CodexOAuth: state validation failed")
             fail(L.WebLogin.codexOAuthFailed)
             return
         }
         if let error = query["error"] {
-            Logger.settings.error("CodexOAuth: 授权端返回错误 \(error)")
+            Logger.settings.error("CodexOAuth: the authorization server returned an error \(error)")
             fail(L.WebLogin.codexOAuthFailed)
             return
         }
@@ -140,12 +140,12 @@ final class CodexOAuthCoordinator: ObservableObject {
 
         switch result {
         case .failure(let error):
-            Logger.settings.error("CodexOAuth: token 交换失败 \(error.localizedDescription)")
+            Logger.settings.error("CodexOAuth: token exchange failed \(error.localizedDescription)")
             fail(L.WebLogin.codexOAuthFailed)
 
         case .success(let tokens):
             guard !tokens.refreshToken.isEmpty else {
-                Logger.settings.error("CodexOAuth: 响应缺少 refresh_token")
+                Logger.settings.error("CodexOAuth: response is missing refresh_token")
                 fail(L.WebLogin.codexOAuthFailed)
                 return
             }
@@ -164,7 +164,7 @@ final class CodexOAuthCoordinator: ObservableObject {
 
             loginState = .success(accountName: stored.displayName)
             onAccountCreated?(stored)
-            Logger.settings.notice("CodexOAuth: 账户创建成功 - \(stored.displayName)")
+            Logger.settings.notice("CodexOAuth: account created - \(stored.displayName)")
             finishCleanup()
         }
     }

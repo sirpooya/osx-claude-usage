@@ -62,9 +62,9 @@ class CodexAPIService {
         fetchAccessToken(sessionToken: settings.codexSessionToken) { result in
             switch result {
             case .success:
-                Logger.api.debug("Codex accessToken: 主动续期检查完成")
+                Logger.api.debug("Codex accessToken: proactive renewal check finished")
             case .failure(let error):
-                Logger.api.warning("Codex accessToken: 主动续期失败（\(error.localizedDescription)），用量拉取时再试")
+                Logger.api.warning("Codex accessToken: proactive renewal failed (\(error.localizedDescription)), will retry on the next usage fetch")
             }
         }
     }
@@ -156,7 +156,7 @@ class CodexAPIService {
                     break
                 default:
                     if let fallback = await tokenCache.validCachedToken(refreshToken: sessionToken) {
-                        Logger.api.warning("Codex token 刷新失败（\(error.localizedDescription)），回退未过期的缓存 token")
+                        Logger.api.warning("Codex token refresh failed (\(error.localizedDescription)), falling back to the unexpired cached token")
                         await MainActor.run { completion(.success(fallback)) }
                         return
                     }
@@ -200,7 +200,7 @@ class CodexAPIService {
                         let setCookieHeaders = httpResponse.allHeaderFields
                             .filter { ($0.key as? String)?.lowercased() == "set-cookie" }
                             .compactMap { $0.value as? String }
-                        Logger.api.debug("Codex session Set-Cookie 数量=\(setCookieHeaders.count)")
+                        Logger.api.debug("Codex session Set-Cookie count=\(setCookieHeaders.count)")
                         for cookieStr in setCookieHeaders where cookieStr.contains("next-auth.session-token") {
                             Logger.api.info("Codex session Set-Cookie [SESSION-TOKEN] \(cookieStr.prefix(80))")
                         }
@@ -222,7 +222,7 @@ class CodexAPIService {
                     let storedCookies = HTTPCookieStorage.shared.cookies(for: chatgptURL) ?? []
                     if let newToken = CodexWebLoginCoordinator.extractSessionToken(from: storedCookies),
                        newToken != sessionToken {
-                        Logger.api.notice("Codex session: 检测到新 session-token，静默写回")
+                        Logger.api.notice("Codex session: new session-token detected, written back silently")
                         effectiveSessionToken = newToken
                         DispatchQueue.main.async {
                             UserSettings.shared.silentlyUpdateCurrentCodexSessionToken(newToken)
@@ -239,7 +239,7 @@ class CodexAPIService {
                         if let exp {
                             Logger.api.info("Codex accessToken expires at \(exp) (in \(Int(exp.timeIntervalSinceNow / 60)) min)")
                         } else {
-                            Logger.api.debug("Codex accessToken: exp 不可解析，缓存30分钟")
+                            Logger.api.debug("Codex accessToken: exp is not parseable, caching for 30 minutes")
                         }
                         return .success(OAuthTokenCache.Tokens(
                             accessToken: accessToken,
@@ -271,7 +271,7 @@ class CodexAPIService {
 
         let newRefresh = tokens.refreshToken.isEmpty ? refreshToken : tokens.refreshToken
         if newRefresh != refreshToken {
-            Logger.api.notice("Codex OAuth: refresh_token 已轮换，静默写回")
+            Logger.api.notice("Codex OAuth: refresh_token rotated, written back silently")
             await MainActor.run {
                 UserSettings.shared.silentlyUpdateCurrentCodexSessionToken(newRefresh)
             }
@@ -499,6 +499,6 @@ extension CodexAPIService: UsageProvider {
         activeTasks.removeAll()
         tasksLock.unlock()
         tasks.forEach { $0.cancel() }
-        Logger.api.debug("Codex: 已取消所有网络请求")
+        Logger.api.debug("Codex: cancelled all network requests")
     }
 }

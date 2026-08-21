@@ -46,11 +46,11 @@ extension Logger {
 
  使用示例：
  ```swift
- Logger.menuBar.debug("调试信息")
- Logger.menuBar.info("一般信息")
- Logger.menuBar.notice("重要事件")
- Logger.menuBar.error("错误: \(error.localizedDescription)")
- Logger.menuBar.fault("严重错误")
+ Logger.menuBar.debug("debug detail")
+ Logger.menuBar.info("general info")
+ Logger.menuBar.notice("notable event")
+ Logger.menuBar.error("Error: \(error.localizedDescription)")
+ Logger.menuBar.fault("critical failure")
  ```
 
  查看日志：

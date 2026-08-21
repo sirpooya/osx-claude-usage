@@ -107,7 +107,7 @@ enum ClaudeOAuthService {
 
         session.dataTask(with: request) { data, response, error in
             if let error = error {
-                Logger.api.error("Claude OAuth token 请求失败: \(error.localizedDescription)")
+                Logger.api.error("Claude OAuth token request failed: \(error.localizedDescription)")
                 completion(.failure(UsageError.networkError))
                 return
             }

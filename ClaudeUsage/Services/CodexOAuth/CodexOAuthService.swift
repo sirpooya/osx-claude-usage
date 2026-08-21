@@ -94,7 +94,7 @@ enum CodexOAuthService {
     private static func send(_ request: URLRequest, completion: @escaping (Result<CodexOAuthTokens, Error>) -> Void) {
         session.dataTask(with: request) { data, response, error in
             if let error = error {
-                Logger.api.error("Codex OAuth token 请求失败: \(error.localizedDescription)")
+                Logger.api.error("Codex OAuth token request failed: \(error.localizedDescription)")
                 completion(.failure(UsageError.networkError))
                 return
             }

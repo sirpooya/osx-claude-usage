@@ -169,7 +169,7 @@ class DataRefreshManager: ObservableObject {
                     self.processCodexSuccess(codex)
 
                 case .failure(let error):
-                    Logger.menuBar.info("Codex 请求失败（不影响主功能）: \(error.localizedDescription)")
+                    Logger.menuBar.info("Codex request failed (does not affect core functionality): \(error.localizedDescription)")
                     if case UsageError.unauthorized = error {
                         self.attemptTokenRefreshAndRetry()
                     } else {
@@ -208,7 +208,7 @@ class DataRefreshManager: ObservableObject {
 
                 case .failure(let error):
                     self.errorMessage = error.localizedDescription
-                    Logger.menuBar.error("Claude API 请求失败: \(error.localizedDescription)")
+                    Logger.menuBar.error("Claude API request failed: \(error.localizedDescription)")
 
                 case .none:
                     break
@@ -325,7 +325,7 @@ class DataRefreshManager: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Logger.menuBar.debug("系统从睡眠唤醒，立即刷新数据")
+            Logger.menuBar.debug("System woke from sleep, refreshing data immediately")
             // 延迟 3 秒等待网络恢复后再请求
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
                 self?.fetchUsage()
@@ -349,9 +349,9 @@ class DataRefreshManager: ObservableObject {
             // 否则 updateSmartMonitoringMode 的 switchToActiveMode() 会因 guard 直接返回，导致定时器仍以旧间隔运行
             if wasIdle {
                 restartTimer()
-                Logger.menuBar.debug("用户打开界面，从空闲模式切换到活跃模式，重启定时器")
+                Logger.menuBar.debug("UI opened: switching from idle to active mode and restarting the timer")
             } else {
-                Logger.menuBar.debug("用户打开界面，已在活跃模式")
+                Logger.menuBar.debug("UI opened: already in active mode")
             }
         }
 
@@ -383,9 +383,9 @@ class DataRefreshManager: ObservableObject {
             // 同 refreshOnPopoverOpen：若之前是空闲模式，需要重启定时器
             if wasIdle {
                 restartTimer()
-                Logger.menuBar.debug("用户主动刷新，从空闲模式切换到活跃模式，重启定时器")
+                Logger.menuBar.debug("Manual refresh: switching from idle to active mode and restarting the timer")
             } else {
-                Logger.menuBar.debug("用户主动刷新，已在活跃模式")
+                Logger.menuBar.debug("Manual refresh: already in active mode")
             }
         }
 
@@ -485,7 +485,7 @@ class DataRefreshManager: ObservableObject {
             case .failure(let error):
                 self.clearClaudeUsageState()
                 self.errorMessage = error.localizedDescription
-                Logger.menuBar.error("Claude API 请求失败: \(error.localizedDescription)")
+                Logger.menuBar.error("Claude API request failed: \(error.localizedDescription)")
             }
         }
     }
@@ -516,7 +516,7 @@ class DataRefreshManager: ObservableObject {
                     } else {
                         self.codexErrorMessage = error.localizedDescription
                         self.clearCodexUsageState(clearError: false)
-                        Logger.menuBar.info("Codex 请求失败: \(error.localizedDescription)")
+                        Logger.menuBar.info("Codex request failed: \(error.localizedDescription)")
                     }
                 }
             }
@@ -544,35 +544,35 @@ class DataRefreshManager: ObservableObject {
 
     private func attemptTokenRefreshAndRetry() {
         guard !codexNeedsRelogin else {
-            Logger.menuBar.info("Codex 已确认需要重新登录，跳过刷新")
+            Logger.menuBar.info("Codex has confirmed a re-login is required, skipping the refresh")
             markCodexNeedsRelogin()
             return
         }
         // OAuth 账户：refresh_token 已在 fetchUsage 内尝试续期，401 表示 refresh_token 失效。
         // 旧的 chatgpt.com 三级刷新链针对 session-token，对 OAuth 凭据无意义且必然失败，直接要求重新登录。
         if CodexAPIService.isOAuthRefreshToken(UserSettings.shared.codexSessionToken) {
-            Logger.menuBar.info("Codex OAuth refresh_token 失效，需重新登录")
+            Logger.menuBar.info("Codex OAuth refresh_token is no longer valid, sign in again")
             markCodexNeedsRelogin()
             return
         }
         let prefix = UserSettings.shared.codexSessionToken.prefix(16)
-        Logger.menuBar.info("Codex accessToken 已过期，启动三级刷新链（session prefix=\(prefix)…）")
+        Logger.menuBar.info("Codex accessToken expired, starting the three level refresh chain (session prefix=\(prefix)…)")
         attemptLevel1SSRRefresh()
     }
 
     /// 级别 1：SSR bootstrap 刷新 accessToken
     private func attemptLevel1SSRRefresh() {
-        Logger.menuBar.info("Codex 级别1：SSR bootstrap 刷新")
+        Logger.menuBar.info("Codex level 1: SSR bootstrap refresh")
         Task { @MainActor [weak self] in
             guard let self else { return }
             CodexTokenRefreshCoordinator.shared.refresh { [weak self] result in
                 guard let self else { return }
                 switch result {
                 case .success(let freshAccessToken):
-                    Logger.menuBar.notice("Codex 级别1 SSR 刷新成功，用新 accessToken 重试")
+                    Logger.menuBar.notice("Codex level 1 SSR refresh succeeded, retrying with the new accessToken")
                     self.retryCodexWithAccessToken(freshAccessToken)
                 case .failure(let error):
-                    Logger.menuBar.info("Codex 级别1 失败（\(error.localizedDescription)），降级至级别2")
+                    Logger.menuBar.info("Codex level 1 failed (\(error.localizedDescription)), falling back to level 2")
                     self.attemptLevel2WebViewRefresh()
                 }
             }
@@ -581,18 +581,18 @@ class DataRefreshManager: ObservableObject {
 
     /// 级别 2：隐藏 WebView 静默续期 session-token
     private func attemptLevel2WebViewRefresh() {
-        Logger.menuBar.info("Codex 级别2：隐藏 WebView 静默续期")
+        Logger.menuBar.info("Codex level 2: silent renewal with a hidden WebView")
         Task { @MainActor [weak self] in
             guard let self else { return }
             CodexSilentRefreshCoordinator.shared.refresh { [weak self] result in
                 guard let self else { return }
                 switch result {
                 case .success:
-                    Logger.menuBar.notice("Codex 级别2 WebView 续期成功，重新拉取用量")
+                    Logger.menuBar.notice("Codex level 2 WebView renewal succeeded, refetching usage")
                     // session-token 已在 coordinator 内写回，重新走完整的 session→usage 流程
                     self.fetchCodexOnly(retryOnUnauthorized: false)
                 case .failure(let error):
-                    Logger.menuBar.error("Codex 级别2 失败（\(error.localizedDescription)），进入级别3")
+                    Logger.menuBar.error("Codex level 2 failed (\(error.localizedDescription)), moving on to level 3")
                     self.markCodexNeedsRelogin()
                 }
             }
@@ -611,7 +611,7 @@ class DataRefreshManager: ObservableObject {
                 case .success(let data):
                     self.processCodexSuccess(data)
                 case .failure(let error):
-                    Logger.menuBar.error("Codex 新鲜 accessToken 仍失败: \(error.localizedDescription)，降级至级别2")
+                    Logger.menuBar.error("Codex still failed with a fresh accessToken: \(error.localizedDescription), falling back to level 2")
                     self.attemptLevel2WebViewRefresh()
                 }
             }
@@ -635,7 +635,7 @@ class DataRefreshManager: ObservableObject {
         }
         codexErrorMessage = UsageError.sessionExpired.localizedDescription
         clearCodexUsageState(clearError: false)
-        Logger.menuBar.error("Codex 三级刷新均已失败，需要用户重新登录")
+        Logger.menuBar.error("All three Codex refresh levels failed, the user needs to sign in again")
     }
 
     /// 账户切换后只清理并刷新对应 Provider，避免跨账号 previousData 误判重置。
@@ -718,30 +718,30 @@ class DataRefreshManager: ObservableObject {
 
         // 只有重置时间在未来才安排验证
         guard timeUntilReset > 0 else {
-            Logger.menuBar.debug("重置时间已过，跳过验证安排")
+            Logger.menuBar.debug("Reset time has already passed, skipping verification scheduling")
             return
         }
 
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm:ss"
         formatter.timeZone = TimeZone.current
-        Logger.menuBar.debug("安排重置验证 - 重置时间: \(formatter.string(from: resetsAt))")
+        Logger.menuBar.debug("Scheduled reset verification - reset time: \(formatter.string(from: resetsAt))")
 
         // 重置后1秒验证
         timerManager.schedule(TimerID.resetVerify1, interval: timeUntilReset + 1, repeats: false) { [weak self] in
-            Logger.menuBar.debug("重置验证 +1秒 - 开始刷新")
+            Logger.menuBar.debug("Reset verification +1s - refreshing")
             self?.fetchUsage()
         }
 
         // 重置后10秒验证
         timerManager.schedule(TimerID.resetVerify2, interval: timeUntilReset + 10, repeats: false) { [weak self] in
-            Logger.menuBar.debug("重置验证 +10秒 - 开始刷新")
+            Logger.menuBar.debug("Reset verification +10s - refreshing")
             self?.fetchUsage()
         }
 
         // 重置后30秒验证
         timerManager.schedule(TimerID.resetVerify3, interval: timeUntilReset + 30, repeats: false) { [weak self] in
-            Logger.menuBar.debug("重置验证 +30秒 - 开始刷新")
+            Logger.menuBar.debug("Reset verification +30s - refreshing")
             self?.fetchUsage()
         }
     }
@@ -759,22 +759,22 @@ class DataRefreshManager: ObservableObject {
 
         let timeUntilReset = resetsAt.timeIntervalSinceNow
         guard timeUntilReset > 0 else {
-            Logger.menuBar.debug("Codex 重置时间已过，跳过验证安排")
+            Logger.menuBar.debug("Codex reset time has already passed, skipping verification scheduling")
             return
         }
 
         timerManager.schedule(TimerID.codexResetVerify1, interval: timeUntilReset + 1, repeats: false) { [weak self] in
-            Logger.menuBar.debug("Codex 重置验证 +1秒 - 开始刷新")
+            Logger.menuBar.debug("Codex reset verification +1s - refreshing")
             self?.fetchUsage()
         }
 
         timerManager.schedule(TimerID.codexResetVerify2, interval: timeUntilReset + 10, repeats: false) { [weak self] in
-            Logger.menuBar.debug("Codex 重置验证 +10秒 - 开始刷新")
+            Logger.menuBar.debug("Codex reset verification +10s - refreshing")
             self?.fetchUsage()
         }
 
         timerManager.schedule(TimerID.codexResetVerify3, interval: timeUntilReset + 30, repeats: false) { [weak self] in
-            Logger.menuBar.debug("Codex 重置验证 +30秒 - 开始刷新")
+            Logger.menuBar.debug("Codex reset verification +30s - refreshing")
             self?.fetchUsage()
         }
     }

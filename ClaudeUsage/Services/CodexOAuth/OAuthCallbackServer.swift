@@ -54,7 +54,7 @@ final class OAuthCallbackServer {
         do {
             listener = try NWListener(using: params, on: nwPort)
         } catch {
-            Logger.settings.error("OAuthCallbackServer: 端口 \(port) 创建监听失败 - \(error.localizedDescription, privacy: .public)")
+            Logger.settings.error("OAuthCallbackServer: could not create a listener on port \(port) - \(error.localizedDescription, privacy: .public)")
             return false
         }
 
@@ -68,10 +68,10 @@ final class OAuthCallbackServer {
             case .waiting(let error):
                 // 端口被占用时 NWListener 进入 waiting（持续重试），不会 failed。
                 // 立即 signal 以便快速切换到下一个端口，并记录真实原因。
-                Logger.settings.error("OAuthCallbackServer: 端口 \(port) 不可用（\(error.localizedDescription, privacy: .public)），尝试下一个")
+                Logger.settings.error("OAuthCallbackServer: port \(port) is unavailable (\(error.localizedDescription, privacy: .public)), trying the next one")
                 sema.signal()
             case .failed(let error):
-                Logger.settings.error("OAuthCallbackServer: 端口 \(port) 监听失败 - \(error.localizedDescription, privacy: .public)")
+                Logger.settings.error("OAuthCallbackServer: listening on port \(port) failed - \(error.localizedDescription, privacy: .public)")
                 sema.signal()
             case .cancelled:
                 sema.signal()
@@ -88,11 +88,11 @@ final class OAuthCallbackServer {
         _ = sema.wait(timeout: .now() + 2)
         if ready {
             self.listener = listener
-            Logger.settings.info("OAuthCallbackServer: 监听 localhost:\(port)")
+            Logger.settings.info("OAuthCallbackServer: listening on localhost:\(port)")
             return true
         }
         listener.cancel()
-        Logger.settings.error("OAuthCallbackServer: 端口 \(port) 未能在超时内就绪")
+        Logger.settings.error("OAuthCallbackServer: port \(port) did not become ready before the timeout")
         return false
     }
 

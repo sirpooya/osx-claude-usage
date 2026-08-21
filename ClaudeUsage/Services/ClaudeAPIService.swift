@@ -492,7 +492,7 @@ class ClaudeAPIService {
             // refresh_token 轮换：若响应携带新值则静默写回账户
             let newRefresh = tokens.refreshToken.isEmpty ? refreshToken : tokens.refreshToken
             if newRefresh != refreshToken {
-                Logger.api.notice("Claude OAuth: refresh_token 已轮换，静默写回")
+                Logger.api.notice("Claude OAuth: refresh_token rotated, written back silently")
                 await MainActor.run {
                     UserSettings.shared.silentlyUpdateCurrentClaudeSessionToken(newRefresh)
                 }
@@ -502,7 +502,7 @@ class ClaudeAPIService {
             let expiry = tokens.expiresAt ?? Date().addingTimeInterval(30 * 60)
             return OAuthTokenCache.Tokens(accessToken: tokens.accessToken, refreshToken: newRefresh, expiresAt: expiry)
         } catch {
-            Logger.api.error("Claude OAuth refresh 失败: \(error.localizedDescription)")
+            Logger.api.error("Claude OAuth refresh failed: \(error.localizedDescription)")
             throw error
         }
     }
@@ -525,7 +525,7 @@ class ClaudeAPIService {
 
         session.dataTask(with: request) { [weak self] data, response, error in
             if let error = error {
-                Logger.api.error("Claude OAuth usage 网络错误: \(error.localizedDescription)")
+                Logger.api.error("Claude OAuth usage network error: \(error.localizedDescription)")
                 complete(.failure(UsageError.networkError))
                 return
             }
@@ -543,7 +543,7 @@ class ClaudeAPIService {
                     // 用 Task 顺序 await 清缓存再重试，避免 clear 与重试的缓存读取产生竞态
                     // （二者都要进 actor，若各开一个 Task 无法保证 clear 先于重试执行）。
                     if retryOnUnauthorized {
-                        Logger.api.info("Claude OAuth usage 401，清缓存后立即用 refresh_token 换新 access_token 重试一次")
+                        Logger.api.info("Claude OAuth usage 401. Cleared the cache and retrying once with a new access_token from refresh_token")
                         Task {
                             await self?.oauthTokenCache.clear()
                             self?.fetchOAuthUsage(retryOnUnauthorized: false, completion: completion)
@@ -583,7 +583,7 @@ class ClaudeAPIService {
                             do {
                                 let extraResponse = try decoder.decode(ExtraUsageResponse.self, from: extraData)
                                 let extraUsageData = extraResponse.toExtraUsageData()
-                                Logger.api.debug("Claude OAuth usage extra_usage 解析结果: enabled=\(extraUsageData?.enabled ?? false)")
+                                Logger.api.debug("Claude OAuth usage extra_usage parse result: enabled=\(extraUsageData?.enabled ?? false)")
                                 usageData = UsageData(
                                     fiveHour: usageData.fiveHour,
                                     sevenDay: usageData.sevenDay,
@@ -591,19 +591,19 @@ class ClaudeAPIService {
                                     extraUsage: extraUsageData
                                 )
                             } catch {
-                                Logger.api.error("Claude OAuth usage extra_usage 解码失败: \(error.localizedDescription)，keys=\(Array(extraJson.keys))")
+                                Logger.api.error("Claude OAuth usage extra_usage decode failed: \(error.localizedDescription), keys=\(Array(extraJson.keys))")
                             }
                         } else {
-                            Logger.api.error("Claude OAuth usage extra_usage 字段无法重新序列化为 JSON，keys=\(Array(extraJson.keys))")
+                            Logger.api.error("Claude OAuth usage extra_usage field could not be re-serialized to JSON, keys=\(Array(extraJson.keys))")
                         }
                     } else {
-                        Logger.api.info("Claude OAuth usage 无 extra_usage 字段，顶层 keys=\(Array(json.keys))")
+                        Logger.api.info("Claude OAuth usage has no extra_usage field, top level keys=\(Array(json.keys))")
                     }
                 }
 
                 complete(.success(usageData))
             } catch {
-                Logger.api.error("Claude OAuth usage 解析失败: \(error.localizedDescription)")
+                Logger.api.error("Claude OAuth usage parse failed: \(error.localizedDescription)")
                 complete(.failure(UsageError.decodingError))
             }
         }.resume()
@@ -614,7 +614,7 @@ class ClaudeAPIService {
     func cancelAllRequests() {
         currentTask?.cancel()
         currentTask = nil
-        Logger.api.debug("已取消所有网络请求")
+        Logger.api.debug("Cancelled all network requests")
     }
 
     // MARK: - Async 包装

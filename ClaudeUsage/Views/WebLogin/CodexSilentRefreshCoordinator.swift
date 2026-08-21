@@ -42,7 +42,7 @@ final class CodexSilentRefreshCoordinator: NSObject {
     /// 触发静默刷新。成功时 Result.success 携带最新的 session-token 字符串。
     func refresh(completion: @escaping (Result<String, Error>) -> Void) {
         guard !isRefreshing else {
-            Logger.settings.debug("CodexSilentRefresh: 刷新已在进行中，跳过")
+            Logger.settings.debug("CodexSilentRefresh: a refresh is already in progress, skipping")
             completion(.failure(UsageError.networkError))
             return
         }
@@ -74,7 +74,7 @@ final class CodexSilentRefreshCoordinator: NSObject {
             try? await Task.sleep(nanoseconds: UInt64((self?.timeoutInterval ?? 25) * 1_000_000_000))
             guard !Task.isCancelled else { return }
             guard let self, self.isRefreshing else { return }
-            Logger.settings.error("CodexSilentRefresh: 超时（\(self.timeoutInterval)s），放弃")
+            Logger.settings.error("CodexSilentRefresh: timed out (\(self.timeoutInterval)s), giving up")
             self.finish(result: .failure(UsageError.networkError))
         }
 
@@ -93,7 +93,7 @@ final class CodexSilentRefreshCoordinator: NSObject {
                 (c.domain.contains("chatgpt.com") || c.domain.contains("openai.com")) &&
                 c.name.contains("session-token")
             }
-            Logger.settings.debug("CodexSilentRefresh: 清理旧 session-token \(toDelete.count) 个")
+            Logger.settings.debug("CodexSilentRefresh: cleared \(toDelete.count) old session-token entries")
 
             let group = DispatchGroup()
             for cookie in toDelete {
@@ -120,7 +120,7 @@ final class CodexSilentRefreshCoordinator: NSObject {
                     shards = [(baseName, tokenChunks[0])]
                 } else {
                     shards = tokenChunks.enumerated().map { ("\(baseName).\($0.offset)", $0.element) }
-                    Logger.settings.debug("CodexSilentRefresh: token 超限，分 \(shards.count) 片注入")
+                    Logger.settings.debug("CodexSilentRefresh: token exceeds the size limit, injecting it in \(shards.count) shards")
                 }
 
                 let cookies = shards.compactMap { name, value in
@@ -134,7 +134,7 @@ final class CodexSilentRefreshCoordinator: NSObject {
                 }
 
                 guard !cookies.isEmpty else {
-                    Logger.settings.warning("CodexSilentRefresh: session-token cookie 构造失败，直接加载")
+                    Logger.settings.warning("CodexSilentRefresh: could not build the session-token cookie, loading directly")
                     wv.load(URLRequest(url: url))
                     return
                 }
@@ -145,7 +145,7 @@ final class CodexSilentRefreshCoordinator: NSObject {
                     cookieStore.setCookie(cookie) { injectGroup.leave() }
                 }
                 injectGroup.notify(queue: .main) {
-                    Logger.settings.info("CodexSilentRefresh: 注入 \(cookies.count) 个 cookie，加载 chatgpt.com")
+                    Logger.settings.info("CodexSilentRefresh: injected \(cookies.count) cookies, loading chatgpt.com")
                     wv.load(URLRequest(url: url))
                 }
             }
@@ -159,20 +159,20 @@ final class CodexSilentRefreshCoordinator: NSObject {
             guard let self else { return }
 
             let chatgptCookies = cookies.filter { $0.domain.contains("chatgpt.com") }
-            Logger.settings.debug("CodexSilentRefresh: 加载完成，chatgpt.com Cookies 数量：\(chatgptCookies.count)")
+            Logger.settings.debug("CodexSilentRefresh: load finished, chatgpt.com cookie count: \(chatgptCookies.count)")
 
             guard let newToken = CodexWebLoginCoordinator.extractSessionToken(from: chatgptCookies) else {
-                Logger.settings.error("CodexSilentRefresh: Cookie 中未找到 session-token，静默刷新失败")
+                Logger.settings.error("CodexSilentRefresh: no session-token found in the cookies, silent refresh failed")
                 self.finish(result: .failure(UsageError.sessionExpired))
                 return
             }
 
             let currentToken = UserSettings.shared.codexSessionToken
             if newToken != currentToken {
-                Logger.settings.notice("CodexSilentRefresh: 获取到新 session-token，静默写回 Keychain")
+                Logger.settings.notice("CodexSilentRefresh: got a new session-token, written back to the keychain silently")
                 UserSettings.shared.silentlyUpdateCurrentCodexSessionToken(newToken)
             } else {
-                Logger.settings.info("CodexSilentRefresh: session-token 未变化（服务端未续期）")
+                Logger.settings.info("CodexSilentRefresh: session-token unchanged (the server did not renew it)")
             }
 
             self.finish(result: .success(newToken))
@@ -180,12 +180,12 @@ final class CodexSilentRefreshCoordinator: NSObject {
     }
 
     fileprivate func didDetectCloudflareChallenge() {
-        Logger.settings.error("CodexSilentRefresh: 遇到 Cloudflare 挑战，静默刷新无法继续")
+        Logger.settings.error("CodexSilentRefresh: hit a Cloudflare challenge, silent refresh cannot continue")
         finish(result: .failure(UsageError.cloudflareBlocked))
     }
 
     fileprivate func didFailNavigation(error: Error) {
-        Logger.settings.error("CodexSilentRefresh: 导航失败 - \(error.localizedDescription)")
+        Logger.settings.error("CodexSilentRefresh: navigation failed - \(error.localizedDescription)")
         finish(result: .failure(error))
     }
 

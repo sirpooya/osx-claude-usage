@@ -908,7 +908,7 @@ class UserSettings: ObservableObject {
         keychain.deleteCredentials()
         organizationId = ""
         sessionKey = ""
-        Logger.settings.notice("已清除所有认证信息")
+        Logger.settings.notice("Cleared all credentials")
     }
     
     /// 更新智能监控模式
@@ -946,7 +946,7 @@ class UserSettings: ObservableObject {
             .idleMedium: "medium idle (5 min)",
             .idleLong: "long idle (10 min)"
         ]
-        Logger.settings.debug("监控模式切换: \(modeNames[from] ?? "") -> \(modeNames[to] ?? "")")
+        Logger.settings.debug("Monitoring mode change: \(modeNames[from] ?? "") -> \(modeNames[to] ?? "")")
     }
 
     /// 重置智能监控模式状态

@@ -61,7 +61,7 @@ private struct KeychainCredentialStorage: CredentialStorage {
         if status == errSecSuccess {
             return true
         } else {
-            Logger.keychain.error("Keychain 保存失败: \(key), 状态码: \(status)")
+            Logger.keychain.error("Keychain save failed: \(key), status: \(status)")
             return false
         }
     }
@@ -83,7 +83,7 @@ private struct KeychainCredentialStorage: CredentialStorage {
            let value = String(data: data, encoding: .utf8) {
             return value
         } else if status != errSecItemNotFound {
-            Logger.keychain.error("Keychain 读取失败: \(key), 状态码: \(status)")
+            Logger.keychain.error("Keychain read failed: \(key), status: \(status)")
         }
         return nil
     }
@@ -100,7 +100,7 @@ private struct KeychainCredentialStorage: CredentialStorage {
         if status == errSecSuccess || status == errSecItemNotFound {
             return true
         } else {
-            Logger.keychain.error("Keychain 删除失败: \(key), 状态码: \(status)")
+            Logger.keychain.error("Keychain delete failed: \(key), status: \(status)")
             return false
         }
     }
@@ -208,12 +208,12 @@ class KeychainManager {
     private func saveAccountsList(_ accounts: [Account], key: String) -> Bool {
         guard let jsonData = try? JSONEncoder().encode(accounts),
               let jsonString = String(data: jsonData, encoding: .utf8) else {
-            Logger.keychain.error("账户列表编码失败 (\(key))")
+            Logger.keychain.error("Failed to encode the account list (\(key))")
             return false
         }
         let result = storage.save(key: key, value: jsonString)
         if result {
-            Logger.keychain.debug("保存 \(accounts.count) 个账户 (\(key))")
+            Logger.keychain.debug("Saved \(accounts.count) accounts (\(key))")
         }
         return result
     }
@@ -224,10 +224,10 @@ class KeychainManager {
             return nil
         }
         guard let accounts = try? JSONDecoder().decode([Account].self, from: jsonData) else {
-            Logger.keychain.error("账户列表解码失败 (\(key))")
+            Logger.keychain.error("Failed to decode the account list (\(key))")
             return nil
         }
-        Logger.keychain.debug("读取 \(accounts.count) 个账户 (\(key))")
+        Logger.keychain.debug("Loaded \(accounts.count) accounts (\(key))")
         return accounts
     }
 }

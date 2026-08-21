@@ -35,7 +35,7 @@ final class CodexTokenRefreshCoordinator: NSObject {
     /// 刷新 accessToken。成功时 Result.success 携带新鲜的 accessToken 字符串。
     func refresh(completion: @escaping (Result<String, Error>) -> Void) {
         guard !isRefreshing else {
-            Logger.settings.debug("CodexTokenRefresh: 刷新已在进行中，跳过")
+            Logger.settings.debug("CodexTokenRefresh: a refresh is already in progress, skipping")
             completion(.failure(UsageError.networkError))
             return
         }
@@ -72,13 +72,13 @@ final class CodexTokenRefreshCoordinator: NSObject {
         request.setValue("navigate", forHTTPHeaderField: "sec-fetch-mode")
         request.setValue("document", forHTTPHeaderField: "sec-fetch-dest")
 
-        Logger.settings.info("CodexTokenRefresh: URLSession GET chatgpt.com 触发 SSR OAuth refresh")
+        Logger.settings.info("CodexTokenRefresh: URLSession GET chatgpt.com to trigger the SSR OAuth refresh")
 
         let task = urlSession?.dataTask(with: request) { [weak self] data, response, error in
             guard let self else { return }
 
             if let error = error {
-                Logger.settings.error("CodexTokenRefresh: 请求失败 - \(error.localizedDescription)")
+                Logger.settings.error("CodexTokenRefresh: request failed - \(error.localizedDescription)")
                 DispatchQueue.main.async { self.finish(result: .failure(error)) }
                 return
             }
@@ -89,7 +89,7 @@ final class CodexTokenRefreshCoordinator: NSObject {
                 let setCookieHeaders = http.allHeaderFields
                     .filter { ($0.key as? String)?.lowercased() == "set-cookie" }
                     .compactMap { $0.value as? String }
-                Logger.settings.debug("CodexTokenRefresh: Set-Cookie 响应头数量=\(setCookieHeaders.count)")
+                Logger.settings.debug("CodexTokenRefresh: Set-Cookie response header count=\(setCookieHeaders.count)")
                 for cookieStr in setCookieHeaders {
                     let isSessionToken = cookieStr.contains("next-auth.session-token")
                     Logger.settings.info("CodexTokenRefresh: Set-Cookie [\(isSessionToken ? "SESSION-TOKEN" : "other")] \(cookieStr.prefix(80))")
@@ -110,26 +110,26 @@ final class CodexTokenRefreshCoordinator: NSObject {
             if let newToken = CodexWebLoginCoordinator.extractSessionToken(from: storedCookies) {
                 let currentToken = UserSettings.shared.codexSessionToken
                 if newToken != currentToken {
-                    Logger.settings.notice("CodexTokenRefresh: URLSession 检测到新 session-token，静默写回")
+                    Logger.settings.notice("CodexTokenRefresh: URLSession detected a new session-token, written back silently")
                     DispatchQueue.main.async {
                         UserSettings.shared.silentlyUpdateCurrentCodexSessionToken(newToken)
                     }
                 } else {
-                    Logger.settings.debug("CodexTokenRefresh: session-token 未变化")
+                    Logger.settings.debug("CodexTokenRefresh: session-token unchanged")
                 }
             }
 
             guard let data,
                   let html = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1) else {
-                Logger.settings.error("CodexTokenRefresh: 响应无法解码")
+                Logger.settings.error("CodexTokenRefresh: the response could not be decoded")
                 DispatchQueue.main.async { self.finish(result: .failure(UsageError.noData)) }
                 return
             }
 
-            Logger.settings.debug("CodexTokenRefresh: 收到 HTML 响应 \(html.count) 字节")
+            Logger.settings.debug("CodexTokenRefresh: received an HTML response of \(html.count) bytes")
 
             if html.contains("Just a moment") || html.contains("cf-browser-verification") {
-                Logger.settings.error("CodexTokenRefresh: Cloudflare 挑战页")
+                Logger.settings.error("CodexTokenRefresh: Cloudflare challenge page")
                 DispatchQueue.main.async { self.finish(result: .failure(UsageError.cloudflareBlocked)) }
                 return
             }
@@ -145,18 +145,18 @@ final class CodexTokenRefreshCoordinator: NSObject {
 
     private static func extractBootstrapAccessToken(from html: String) -> Result<String, Error> {
         guard let idRange = html.range(of: "id=\"client-bootstrap\"") else {
-            Logger.settings.error("CodexTokenRefresh: HTML 中未找到 client-bootstrap 元素")
+            Logger.settings.error("CodexTokenRefresh: no client-bootstrap element found in the HTML")
             return .failure(UsageError.sessionExpired)
         }
 
         guard let gtRange = html.range(of: ">", range: idRange.upperBound..<html.endIndex),
               let jsonStart = html.range(of: "{", range: gtRange.upperBound..<html.endIndex) else {
-            Logger.settings.error("CodexTokenRefresh: 无法定位 client-bootstrap JSON 起点")
+            Logger.settings.error("CodexTokenRefresh: could not locate the start of the client-bootstrap JSON")
             return .failure(UsageError.sessionExpired)
         }
 
         guard let scriptEnd = html.range(of: "</script>", range: jsonStart.lowerBound..<html.endIndex) else {
-            Logger.settings.error("CodexTokenRefresh: 无法定位 client-bootstrap 结束标签")
+            Logger.settings.error("CodexTokenRefresh: could not locate the client-bootstrap closing tag")
             return .failure(UsageError.sessionExpired)
         }
 
@@ -164,7 +164,7 @@ final class CodexTokenRefreshCoordinator: NSObject {
 
         guard let jsonData = jsonString.data(using: .utf8),
               let bootstrap = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any] else {
-            Logger.settings.error("CodexTokenRefresh: client-bootstrap JSON 解析失败")
+            Logger.settings.error("CodexTokenRefresh: client-bootstrap JSON parse failed")
             return .failure(UsageError.decodingError)
         }
 
@@ -172,16 +172,16 @@ final class CodexTokenRefreshCoordinator: NSObject {
         guard let session = bootstrap["session"] as? [String: Any],
               let accessToken = session["accessToken"] as? String,
               !accessToken.isEmpty else {
-            Logger.settings.error("CodexTokenRefresh: bootstrap 无 accessToken (authStatus=\(authStatus))")
+            Logger.settings.error("CodexTokenRefresh: bootstrap has no accessToken (authStatus=\(authStatus))")
             return .failure(UsageError.sessionExpired)
         }
 
         if let exp = jwtExpiry(from: accessToken), exp < Date() {
-            Logger.settings.error("CodexTokenRefresh: bootstrap accessToken 仍已过期 exp=\(exp)")
+            Logger.settings.error("CodexTokenRefresh: bootstrap accessToken is still expired exp=\(exp)")
             return .failure(UsageError.sessionExpired)
         }
 
-        Logger.settings.info("CodexTokenRefresh: SSR 成功返回新鲜 accessToken (authStatus=\(authStatus))")
+        Logger.settings.info("CodexTokenRefresh: SSR returned a fresh accessToken (authStatus=\(authStatus))")
         return .success(accessToken)
     }
 

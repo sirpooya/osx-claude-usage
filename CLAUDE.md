@@ -171,7 +171,7 @@ Fuse source 1 and source 2. Nobody in the field does this well, and it is the wh
 | [tddworks/ClaudeBar](https://github.com/tddworks/ClaudeBar) | 1.4k | Swift 6.2, Tuist, Sparkle | per-provider CLIs + cookies + SQLite | 12 providers. Most active. No license file |
 | [Iamshankhadeep/ccseva](https://github.com/Iamshankhadeep/ccseva) | 800 | TypeScript | local logs | Electron weight |
 | [Nanako0129/TokenBar](https://github.com/Nanako0129/TokenBar) | 257 | Rust core + SwiftUI, MIT | local logs only | Best local-parsing design. No server truth. Apple Silicon only |
-| [f-is-h/ClaudeUsage](https://github.com/f-is-h/ClaudeUsage) | 364 | Swift, MVVM | cookie only | Clean small codebase, 8 languages, no history |
+| [f-is-h/Usage4Claude](https://github.com/f-is-h/Usage4Claude) | 364 | Swift, MVVM | browser OAuth + cookie | **This is now our base, see "Fork status".** Not cookie-only any more: it does call `/api/oauth/usage`, just without the User-Agent fix |
 | [aqua5230/usage](https://github.com/aqua5230/usage) | 287 | Python, AGPL | local logs | Cross-platform. AGPL, so do not copy code |
 | [lionhylra/cc-usage-bar](https://github.com/lionhylra/cc-usage-bar) | 16 | Swift, MIT | PTY scrape of `/usage` | Novel approach, cited above |
 | [SessionWatcher](https://sessionwatcher.com/) | paid | native | mixed | $6.99 one-time. Only commercial one with traction |
@@ -179,9 +179,51 @@ Fuse source 1 and source 2. Nobody in the field does this well, and it is the wh
 Takeaway: the entire field splits into cookie-scrapers (fragile) and local-log-parsers
 (incomplete). The OAuth endpoint plus the User-Agent fix skips both traps.
 
+## Fork status
+
+Base commit: `f-is-h/Usage4Claude` main, downloaded 2026-08-21 (never cloned, so no upstream git
+history). MIT, so forking and renaming is fine, but `LICENSE` keeps f-is-h's copyright notice.
+
+Layout: app source in `ClaudeUsage/`, Xcode project `ClaudeUsage.xcodeproj`, tests in
+`Tests/ClaudeUsageCoreTests` (128 tests, `swift test`). `Package.swift` is a thin manifest that
+points at a handful of pure-logic files in place so they can be unit tested without Xcode. The
+Xcode project is the authoritative app build.
+
+The target uses a `PBXFileSystemSynchronizedRootGroup` over the `ClaudeUsage/` folder, so new
+files are compiled automatically with no `project.pbxproj` editing.
+
+What has been changed from upstream so far:
+
+- Renamed everything to `ClaudeUsage`, bundle id `com.claudeusage.ClaudeUsage`. This also
+  rewrote upstream's GitHub and Sparkle appcast URLs, which now point nowhere real. Fix those
+  before shipping any update.
+- Replaced both icon assets with our own artwork. See "App icon".
+- Removed the first onboarding page. The flow now opens straight on the setup page. Skip moved
+  onto that page, because it only existed on the deleted page and without it a user with no
+  session key could not dismiss onboarding at all.
+- Translated all hardcoded Chinese in UI strings and the 148 logger messages to English.
+
+Deliberately **not** translated, because doing so breaks non-English locales:
+
+- CJK date format patterns in `TimeFormatHelper.swift` and `UsageData+Formatting.swift`
+  (`"M月d日"`, `"H时"`, `"H時"`, `"M월d일"`). These are format strings, not copy.
+- The zh/ja/ko AM/PM marker list used for parsing in `TimeFormatHelper.swift`.
+- Localized documentation URL anchors in `SetupStepView.swift` (`#首次配置` and friends).
+- `error.contains("认证")` in `UsageDetailView.swift`, which classifies error strings when the
+  app runs in Chinese.
+- `zh-Hans.lproj` / `zh-Hant.lproj`, and the language endonyms (`日本語`, `中文（简体）`) that
+  every locale file carries. Those are correct as they are.
+
+Still upstream's, still Chinese: roughly 2,360 lines of code comments and doc comments across
+89 Swift files. Not user visible. Also `scripts/build.sh` and parts of `README.md`, `CHANGELOG.md`,
+`docs/`, and `website/`.
+
 ## Conventions
 
-- Swift 6 + SwiftUI, AppKit `NSStatusItem` for the menu bar. macOS 14 minimum, target 26.
+- Swift 6 + SwiftUI, AppKit `NSStatusItem` for the menu bar. Deployment target is macOS 13.0
+  (upstream's), project setting 26.0. The CLAUDE.md goal of "macOS 14 minimum" is not what the
+  project file currently says.
+- Upstream code comments are in Chinese. When editing their files, match the surrounding style.
 - `LSUIElement` true. No Dock icon, no main window.
 - MIT license.
 - No telemetry, no analytics, no account, no network calls except `api.anthropic.com`.
