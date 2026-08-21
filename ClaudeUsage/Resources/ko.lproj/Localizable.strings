@@ -9,18 +9,19 @@
 // MARK: - Menu Items
 "menu.general_settings" = "일반 설정";
 "menu.auth_settings" = "인증 정보";
+"menu.settings" = "설정";
 "menu.check_updates" = "업데이트 확인";
 "menu.about" = "정보";
 "menu.claude_status" = "Claude 상태 페이지";
 "menu.codex_status" = "OpenAI 상태 페이지";
 "menu.coffee" = "Buy Me A Coffee";
 "menu.github_sponsor" = "GitHub Sponsor";
-"menu.quit" = "ClaudeUsage 종료";
+"menu.quit" = "종료";
 "menu.account" = "계정";
 "menu.account_prefix" = "계정:";
 
 // MARK: - Usage Detail View
-"usage.title" = "Claude 사용 현황";
+"usage.title" = "Claude";
 "usage.not_started" = "사용 후 표시됩니다";
 "usage.reset_in" = "재설정까지 남은 시간";
 "usage.remaining" = "남은 시간";

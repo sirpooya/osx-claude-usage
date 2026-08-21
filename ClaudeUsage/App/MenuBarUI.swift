@@ -248,6 +248,8 @@ class MenuBarUI {
     /// - Returns: 配置好的 NSMenu 实例
     func createStandardMenu(hasUpdate: Bool, shouldShowBadge: Bool, target: AnyObject?) -> NSMenu {
         let menu = NSMenu()
+        // 自行控制启用状态，否则 AppKit 会覆盖“检查更新”的禁用状态
+        menu.autoenablesItems = false
 
         // 账户选择子菜单（多账户时显示）
         var hasAccountMenuItems = false
@@ -284,26 +286,15 @@ class MenuBarUI {
             menu.addItem(NSMenuItem.separator())
         }
 
-        // 通用设置
-        let generalItem = NSMenuItem(
-            title: L.Menu.generalSettings,
-            action: #selector(MenuBarManager.openGeneralSettings),
+        // 设置（通用与认证合并为一项）
+        let settingsItem = NSMenuItem(
+            title: L.Menu.settings,
+            action: #selector(MenuBarManager.openSettings),
             keyEquivalent: ","
         )
-        generalItem.target = target
-        setMenuItemIcon(generalItem, systemName: "gearshape")
-        menu.addItem(generalItem)
-
-        // 认证信息
-        let authItem = NSMenuItem(
-            title: L.Menu.authSettings,
-            action: #selector(MenuBarManager.openAuthSettings),
-            keyEquivalent: "a"
-        )
-        authItem.target = target
-        authItem.keyEquivalentModifierMask = [.command, .shift] as NSEvent.ModifierFlags
-        setMenuItemIcon(authItem, systemName: "key.horizontal")
-        menu.addItem(authItem)
+        settingsItem.target = target
+        setMenuItemIcon(settingsItem, systemName: "gearshape")
+        menu.addItem(settingsItem)
 
         // 检查更新
         let updateItem = NSMenuItem(
@@ -340,6 +331,9 @@ class MenuBarUI {
             updateItem.title = L.Menu.checkUpdates
             setMenuItemIcon(updateItem, systemName: "arrow.triangle.2.circlepath")
         }
+
+        // Sparkle 的 appcast 地址仍指向上游的死链，所以先禁用这一项
+        updateItem.isEnabled = false
 
         menu.addItem(updateItem)
 
@@ -406,7 +400,6 @@ class MenuBarUI {
             keyEquivalent: "q"
         )
         quitItem.target = target
-        setMenuItemIcon(quitItem, systemName: "power")
         menu.addItem(quitItem)
 
         return menu

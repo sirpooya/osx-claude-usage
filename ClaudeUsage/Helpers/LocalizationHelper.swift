@@ -15,6 +15,7 @@ enum L {
     
     // MARK: - Menu Items
     enum Menu {
+        static var settings: String { localized("menu.settings") }
         static var generalSettings: String { localized("menu.general_settings") }
         static var authSettings: String { localized("menu.auth_settings") }
         static var checkUpdates: String { localized("menu.check_updates") }

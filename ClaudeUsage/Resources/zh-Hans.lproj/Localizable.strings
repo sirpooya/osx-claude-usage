@@ -9,18 +9,19 @@
 // MARK: - Menu Items
 "menu.general_settings" = "通用设置";
 "menu.auth_settings" = "认证信息";
+"menu.settings" = "设置";
 "menu.check_updates" = "检查更新";
 "menu.about" = "关于";
 "menu.claude_status" = "Claude 状态页面";
 "menu.codex_status" = "OpenAI 状态页面";
 "menu.coffee" = "Buy Me A Coffee";
 "menu.github_sponsor" = "GitHub Sponsor";
-"menu.quit" = "退出 ClaudeUsage";
+"menu.quit" = "退出";
 "menu.account" = "账户";
 "menu.account_prefix" = "账户:";
 
 // MARK: - Usage Detail View
-"usage.title" = "Claude 使用情况";
+"usage.title" = "Claude";
 "usage.not_started" = "开始使用后显示";
 "usage.reset_in" = "距离重置还剩";
 "usage.remaining" = "剩余时间";

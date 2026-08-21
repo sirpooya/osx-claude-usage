@@ -9,18 +9,19 @@
 // MARK: - Menu Items
 "menu.general_settings" = "General Settings";
 "menu.auth_settings" = "Authentication Settings";
+"menu.settings" = "Settings";
 "menu.check_updates" = "Check for Updates";
 "menu.about" = "About";
 "menu.claude_status" = "Claude Status";
 "menu.codex_status" = "OpenAI Status";
 "menu.coffee" = "Buy Me A Coffee";
 "menu.github_sponsor" = "GitHub Sponsor";
-"menu.quit" = "Quit ClaudeUsage";
+"menu.quit" = "Quit";
 "menu.account" = "Account";
 "menu.account_prefix" = "Account:";
 
 // MARK: - Usage Detail View
-"usage.title" = "Claude Usage";
+"usage.title" = "Claude";
 "usage.not_started" = "Display after usage starts";
 "usage.reset_in" = "Resets in";
 "usage.remaining" = "Remaining";

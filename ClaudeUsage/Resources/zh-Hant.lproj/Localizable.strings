@@ -9,18 +9,19 @@
 // MARK: - Menu Items
 "menu.general_settings" = "一般設定";
 "menu.auth_settings" = "認證資訊";
+"menu.settings" = "設定";
 "menu.check_updates" = "檢查更新";
 "menu.about" = "關於";
 "menu.claude_status" = "Claude 狀態頁面";
 "menu.codex_status" = "OpenAI 狀態頁面";
 "menu.coffee" = "Buy Me A Coffee";
 "menu.github_sponsor" = "GitHub Sponsor";
-"menu.quit" = "結束 ClaudeUsage";
+"menu.quit" = "結束";
 "menu.account" = "帳戶";
 "menu.account_prefix" = "帳戶:";
 
 // MARK: - Usage Detail View
-"usage.title" = "Claude 使用狀況";
+"usage.title" = "Claude";
 "usage.not_started" = "開始使用後顯示";
 "usage.reset_in" = "距離重設還剩";
 "usage.remaining" = "剩餘時間";

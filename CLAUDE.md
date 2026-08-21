@@ -194,12 +194,31 @@ files are compiled automatically with no `project.pbxproj` editing.
 
 What has been changed from upstream so far:
 
-- Renamed everything to `ClaudeUsage`, bundle id `com.claudeusage.ClaudeUsage`. This also
-  rewrote upstream's GitHub and Sparkle appcast URLs. The GitHub ones are now repointed at
-  `f-is-h/Usage4Claude` (11 references across 7 locale files, `DiagnosticReport.swift`,
-  `AboutView.swift`; verified HTTP 200 including every localized `#initial-setup` anchor).
-  **The Sparkle appcast URL is still dead. Fix it before shipping any update.** Note the doc
-  links now point at upstream's README, which documents Usage4Claude, not this fork.
+- Renamed everything to `ClaudeUsage`, bundle id `com.claudeusage.ClaudeUsage`.
+- Every GitHub URL now points at this fork's own repo, `sirpooya/osx-claude-usage`. The rename
+  pass had left two broken families behind: `f-is-h/ClaudeUsage`, a repo that never existed
+  (203 references, all 404), and `f-is-h/Usage4Claude`, which resolved but documented upstream
+  rather than this fork (15 references). Both are gone. Touched app code, all 7 locale files,
+  `README.md`, the 6 localized `docs/README.*.md`, `CHANGELOG.md`, `CONTRIBUTING.md`,
+  `appcast.xml`, `Config/Info.plist` (`SUFeedURL`), the whole `website/` tree,
+  `.github/RELEASE_TEMPLATE.md`, `.agents/skills/release/SKILL.md`, `scripts/build.sh` and
+  `docs/archive/`. Verified HTTP 200 for the repo root, `/issues`, `/releases`,
+  `/releases/latest`, `/pulls`, `/blob/main/LICENSE`, both issue templates, the raw appcast
+  feed, and all 7 localized `#initial-setup` anchors (the anchor headings are real in our own
+  README copies, checked line by line).
+  - The Sparkle appcast URL now resolves. Its `<enclosure>` entries still name upstream's DMG
+    assets, which do not exist under this repo's releases, so the feed is reachable but not yet
+    servable. Fix that before shipping any update.
+  - `/discussions` returns 404 because Discussions is not enabled on the repo. It is linked from
+    `README.md`, `CONTRIBUTING.md`, `website/`, and the localized READMEs. Enable the tab or
+    drop those links.
+  - Deliberately **not** rewritten, because they are attribution, not navigation: f-is-h's
+    `LICENSE` copyright, the `Copyright (c) 2025-2026 f-is-h` and `Created by f-is-h` headers in
+    the Swift and `.strings` files, `github.com/sponsors/f-is-h` (About window, menu bar menu,
+    `website/`, READMEs), `.github/FUNDING.yml`, the `@f-is-h` profile links in the README
+    Contact sections, and the two upstream-attribution rows near the top of this file.
+  - Still stale and unrelated to links: `DiagnosticLogger.swift` uses `com.f-is-h.ClaudeUsage`
+    as its `Logger` subsystem and dispatch queue label, which no longer matches the bundle id.
 - Replaced both icon assets with our own artwork. See "App icon".
 - Onboarding is now a single window with one path: sign in with a claude.ai account.
   - Removed upstream's first page, then the manual Session Key field, the Display Options
@@ -228,6 +247,47 @@ What has been changed from upstream so far:
     an empty state (`usage.sign_in_prompt`) with one button that opens the login window and
     then refreshes; genuine errors get Refresh plus Go to Settings. Error text uses
     `fixedSize` so it wraps instead of truncating to "...information in...".
+- Replaced the popover's ring with a list of full-width bars, one per limit, in
+  `UsageDetailView` / `UsageRowComponents` / `CodexColumnView`:
+  - A row is title on the left, `NN% · <countdown>` on the right, and a 5pt capsule bar
+    under both. `UsageLimitBarRow` + `UsageLimitBar` are the new components; `UnifiedLimitRow`
+    keeps all the per-type label / percentage / reset-time logic and now just feeds them.
+  - Bar colour still comes from the per-limit palette in `UsageColorScheme` and still escalates
+    with the percentage, so the colour says both which limit it is and how close it is.
+  - `showRemainingMode` now defaults to **true**, so rows read "2d 7h left", not "Aug 24 2 AM".
+    Read the default with `object(forKey:) as? Bool ?? true`; `UserDefaults.bool(forKey:)`
+    returns false for a missing key and would silently flip it back. Tapping the list still
+    toggles to absolute reset times. Percentages always read as used, never as remaining.
+  - Countdowns are two units everywhere (`3h 41m left`, `2d 7h left`). `codexSecondary` used
+    `formattedCompactRemainingWithMinutes` and printed a third unit (`3d 4h 48m left`); it now
+    uses `formattedCompactRemaining` like every other row. No week unit: no limit window is
+    longer than 7 days, so days is the largest useful one.
+  - Both columns use the same rows, so Claude and Codex line up in two-provider mode.
+  - Popover height is computed in `PopoverMetrics` (row 26, spacing 12, chrome 58, empty states
+    210). `claudeRowCount` also counts the third-and-later model rows, which the old ring-era
+    math left out, so a Fable + Opus + Sonnet account no longer gets its last row clipped.
+  - Deleted with the ring: `MiniProgressIcon`, `DetailUsageRingCenterText`,
+    `DetailUsageRingSweep`, `AnimationTypeHintView`, the ring trim helpers, every ring loading
+    animation in `UsageDetailView+Helpers.swift` and `CodexColumnView`, and the long-press
+    `LoadingAnimationType` switcher that only existed to pick between those animations. Bars
+    breathe while refreshing instead. The `loading_animation.*` keys are now unused in all 7
+    locale files.
+  - `usage.title` is just "Claude" in all 7 locales, not "Claude Usage". The header already has
+    the app icon next to it, so the word was redundant. `usage.codex_title` is still
+    "Codex Usage".
+- Trimmed the status item menu, in `MenuBarUI.createStandardMenu` and the matching SwiftUI
+  `Menu` in `UsageDetailView`. Both have to change together or the right-click menu and the
+  popover's three-dot menu disagree.
+  - General Settings and Authentication Settings collapsed into one **Settings** item
+    (new `menu.settings` key, all 7 locales) wired to `openSettings` / `.generalSettings`,
+    which opens tab 0. The Auth tab is one click away inside the window, and the popover's
+    "Go to Settings" buttons still deep-link to tab 1 via `.authSettings`, so both
+    `L.Menu.generalSettings` and `L.Menu.authSettings` are now unused but their keys and the
+    `MenuAction` cases stay.
+  - Check for Updates is disabled (`isEnabled = false`, `.disabled(true)`) until the Sparkle
+    appcast URL is repointed. This also required `menu.autoenablesItems = false`, otherwise
+    AppKit re-enables any item that has a target and an action.
+  - `menu.quit` is now just "Quit", not "Quit ClaudeUsage", and the item carries no icon.
 - Translated all hardcoded Chinese in UI strings and the 148 logger messages to English.
   New keys added by this fork are written in all 7 locales, not English-only.
 - Dead code left behind by the above: `MenuBarIconPreview` and `HorizontalRadioGroup` in

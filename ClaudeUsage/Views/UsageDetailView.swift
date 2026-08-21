@@ -353,21 +353,21 @@ struct UsageDetailView: View {
                 }
 
                 Button(action: { onMenuAction?(.generalSettings) }) {
-                    Label(L.Menu.generalSettings, systemImage: "gearshape")
+                    Label(L.Menu.settings, systemImage: "gearshape")
                 }
-                Button(action: { onMenuAction?(.authSettings) }) {
-                    Label(L.Menu.authSettings, systemImage: "key")
-                }
+                // Sparkle 的 appcast 地址仍指向上游的死链，所以先禁用这一项
                 if hasAvailableUpdate {
                     Button(action: { onMenuAction?(.checkForUpdates) }) {
                         Label { Text(createUpdateMenuText()) } icon: {
                             Image(systemName: "exclamationmark.arrow.trianglehead.2.clockwise.rotate.90")
                         }
                     }
+                    .disabled(true)
                 } else {
                     Button(action: { onMenuAction?(.checkForUpdates) }) {
                         Label(L.Menu.checkUpdates, systemImage: "arrow.triangle.2.circlepath")
                     }
+                    .disabled(true)
                 }
                 Button(action: { onMenuAction?(.about) }) {
                     Label(L.Menu.about, systemImage: "info.circle")
@@ -391,7 +391,7 @@ struct UsageDetailView: View {
                 }
                 Divider()
                 Button(action: { onMenuAction?(.quit) }) {
-                    Label(L.Menu.quit, systemImage: "power")
+                    Text(L.Menu.quit)
                 }
             } label: {
                 Image(systemName: "ellipsis")
