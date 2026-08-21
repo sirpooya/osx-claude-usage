@@ -79,13 +79,13 @@ extension AuthSettingsView {
         VStack(alignment: .leading, spacing: 2) {
             // Grouped by provider, each group headed by that provider's own icon.
             // "Claude" and "Codex" are brand names, so they are deliberately not localized.
-            sectionHeader("Claude", icon: ImageHelper.createAppIcon(size: sectionIconSize), topPadding: 0)
+            sectionHeader("Claude", icon: ImageHelper.createClaudeMark(size: sectionIconSize), topPadding: 0)
 
             ForEach([CredentialSection.claudeAI, .apiConsole, .cliAccount]) { section in
                 sidebarRow(section)
             }
 
-            sectionHeader("Codex", icon: ImageHelper.createCodexIcon(size: sectionIconSize), topPadding: 14)
+            sectionHeader("Codex", icon: ImageHelper.createCodexMark(size: sectionIconSize), topPadding: 14)
 
             sidebarRow(.codex)
 

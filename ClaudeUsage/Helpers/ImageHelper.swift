@@ -50,6 +50,19 @@ enum ImageHelper {
         return iconCopy
     }
 
+    // MARK: - Provider Marks
+
+    /// The brand marks used by the credentials sidebar section headers. Separate assets from
+    /// AppIcon and CodexIcon on purpose: those two are menu bar / popover icons, these are the
+    /// flat provider logos, and they have to stay legible down at 13pt.
+    static func createClaudeMark(size: CGFloat) -> NSImage? {
+        createSquareIcon(named: "ClaudeMark", size: size, isTemplate: false)
+    }
+
+    static func createCodexMark(size: CGFloat) -> NSImage? {
+        createSquareIcon(named: "CodexMark", size: size, isTemplate: false)
+    }
+
     // MARK: - Codex Icon
 
     static func createCodexIcon(size: CGFloat) -> NSImage? {

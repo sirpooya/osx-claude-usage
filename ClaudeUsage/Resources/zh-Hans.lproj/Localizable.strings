@@ -136,6 +136,8 @@
 "display.show_remaining_desc" = "显示剩余额度而不是已用百分比（类似 macOS 电池）";
 "display.pace_aware_colors" = "按使用速度着色";
 "display.pace_aware_colors_desc" = "根据预测速度而不是当前用量为进度条着色，预测在本周期结束前是否会达到上限。";
+"display.show_time_marker" = "显示时间标记";
+"display.show_time_marker_desc" = "在进度条上显示一个刻度，标示当前周期已过去多少";
 
 // MARK: - Refresh Interval
 "refresh.smart_mode" = "智能频率";

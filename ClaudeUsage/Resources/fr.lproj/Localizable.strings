@@ -136,6 +136,8 @@
 "display.show_remaining_desc" = "Afficher la capacité restante au lieu du pourcentage utilisé (comme la batterie macOS)";
 "display.pace_aware_colors" = "Couleurs selon le rythme";
 "display.pace_aware_colors_desc" = "Colorer les barres selon le rythme projeté au lieu de l'utilisation actuelle. Prévoit si les limites seront atteintes avant la fin de la période.";
+"display.show_time_marker" = "Afficher le repère de temps";
+"display.show_time_marker_desc" = "Affiche sur les barres un repère indiquant où vous en êtes dans la période";
 
 // MARK: - Refresh Interval
 "refresh.smart_mode" = "Fréquence intelligente";

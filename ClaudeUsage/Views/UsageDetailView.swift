@@ -393,7 +393,7 @@ struct UsageDetailView: View {
         let headerRowHeight: CGFloat = 20
         HStack {
             if provider == .claude {
-                if let icon = ImageHelper.createAppIcon(size: headerIconSize) {
+                if let icon = ImageHelper.createClaudeMark(size: headerIconSize) {
                     Image(nsImage: icon)
                         .resizable()
                         .frame(width: headerIconSize, height: headerIconSize)
@@ -401,7 +401,7 @@ struct UsageDetailView: View {
                     Image(systemName: "chart.pie.fill")
                         .foregroundColor(.blue)
                 }
-            } else if let icon = ImageHelper.createCodexIcon(size: headerIconSize) {
+            } else if let icon = ImageHelper.createCodexMark(size: headerIconSize) {
                 Image(nsImage: icon)
                     .resizable()
                     .frame(width: headerIconSize, height: headerIconSize)

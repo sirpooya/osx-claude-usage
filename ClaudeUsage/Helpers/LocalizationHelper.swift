@@ -233,6 +233,8 @@ enum L {
         static var showRemainingDesc: String { localized("display.show_remaining_desc") }
         static var paceAwareColors: String { localized("display.pace_aware_colors") }
         static var paceAwareColorsDesc: String { localized("display.pace_aware_colors_desc") }
+        static var showTimeMarker: String { localized("display.show_time_marker") }
+        static var showTimeMarkerDesc: String { localized("display.show_time_marker_desc") }
     }
     
     // MARK: - Icon Style Mode

@@ -156,10 +156,6 @@ struct GeneralSettingsView: View {
                     .buttonStyle(.borderedProminent)
                 }
                 .padding(.top, 8)
-
-                #if DEBUG
-                GeneralSettingsDebugSection()
-                #endif
             }
             .padding()
         }

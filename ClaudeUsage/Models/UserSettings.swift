@@ -439,6 +439,15 @@ class UserSettings: ObservableObject {
             .joined(separator: " ")
     }
 
+    /// Time marker: a tick on the progress bars at the point the current period has reached,
+    /// so usage can be read against how much of the window is gone.
+    @Published var showTimeMarker: Bool {
+        didSet {
+            defaults.set(showTimeMarker, forKey: "showTimeMarker")
+            NotificationCenter.default.post(name: .settingsChanged, object: nil)
+        }
+    }
+
     /// Pace-aware bar colours: escalate on the projected end-of-window figure rather than on
     /// current usage, so the colour answers "will I hit the cap" instead of "where am I now".
     @Published var paceAwareBarColors: Bool {
@@ -845,6 +854,9 @@ class UserSettings: ObservableObject {
         // Load the pace-aware bar colors, off (color on current usage) by default
         self.paceAwareBarColors = defaults.bool(forKey: "paceAwareBarColors")
 
+        // Load the time marker, off by default
+        self.showTimeMarker = defaults.bool(forKey: "showTimeMarker")
+
         // Launch at login loading moved into LaunchAtLoginManager.init()
 
         // MARK: - Initialize the debug mode settings
@@ -946,6 +958,7 @@ class UserSettings: ObservableObject {
         iconStyleMode = .colorTranslucent
         showRemainingPercentage = false
         paceAwareBarColors = false
+        showTimeMarker = false
         refreshMode = .smart
         refreshInterval = 180  // 3 minutes by default in fixed mode
         language = Self.detectSystemLanguage()

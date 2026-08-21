@@ -135,6 +135,8 @@
 "display.show_remaining_desc" = "Verbleibende Kapazität statt genutztem Prozentsatz anzeigen (wie die macOS-Batterie)";
 "display.pace_aware_colors" = "Tempoabhängige Balkenfarben";
 "display.pace_aware_colors_desc" = "Balken nach dem prognostizierten Tempo statt nach dem aktuellen Verbrauch einfärben. Sagt voraus, ob die Limits bis zum Periodenende erreicht werden.";
+"display.show_time_marker" = "Zeitmarkierung anzeigen";
+"display.show_time_marker_desc" = "Zeigt auf den Balken eine Markierung, die angibt, wie weit die Periode fortgeschritten ist";
 
 // MARK: - Refresh Interval
 "refresh.smart_mode" = "Intelligente Frequenz";
