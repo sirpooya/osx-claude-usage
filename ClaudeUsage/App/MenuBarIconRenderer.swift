@@ -299,6 +299,20 @@ class MenuBarIconRenderer {
         ) ?? percentage
     }
 
+    /// The pace ramp colour for this limit's icon, or nil to leave the per-limit palette in charge.
+    ///
+    /// Same three steps and the same source as the popover bars (`UsagePaceStatus`), so a limit
+    /// that is orange in the popover is orange in the menu bar. The glyph and the sweep stay on
+    /// actual usage; only the colour changes meaning.
+    func paceColor(_ percentage: Double, resetsAt: Date?, type: LimitType) -> NSColor? {
+        guard settings.paceAwareBarColors else { return nil }
+        return UsagePaceStatus.color(
+            usedPercentage: percentage,
+            resetsAt: resetsAt,
+            type: type
+        )?.nsColor
+    }
+
     /// Where the period tick belongs for this limit, or nil for no tick: the setting is off, the
     /// limit has no fixed window (the Extra Usage buckets), or there is no reset time to measure.
     /// Mirrored in remaining-percentage mode, because the sweep is mirrored too.
@@ -335,7 +349,7 @@ class MenuBarIconRenderer {
         )
     }
 
-    private func createCircleImage(percentage: Double, size: NSSize, useSevenDayColor: Bool = false, colorOverride: NSColor? = nil, useDashedStyle: Bool = false, button: NSStatusBarButton?, removeBackground: Bool = false, markerFraction: CGFloat? = nil, colorPercentage: Double? = nil) -> NSImage {
+    private func createCircleImage(percentage: Double, size: NSSize, useSevenDayColor: Bool = false, colorOverride: NSColor? = nil, useDashedStyle: Bool = false, button: NSStatusBarButton?, removeBackground: Bool = false, markerFraction: CGFloat? = nil, colorPercentage: Double? = nil, paceColor: NSColor? = nil) -> NSImage {
         // Battery style display: the sweep and the glyph show remaining; the color stays keyed off used
         let displayPercentage = UsagePercentDisplay.displayPercentage(percentage)
         let image = NSImage(size: size)
@@ -370,6 +384,9 @@ class MenuBarIconRenderer {
         let color: NSColor
         if let override = colorOverride {
             color = override
+        } else if let pace = paceColor {
+            // Pace-aware mode replaces the palette outright, the same priority the popover uses
+            color = pace
         } else {
             color = useSevenDayColor
                 ? UsageColorScheme.sevenDayColorAdaptive(escalationPercentage, for: button)
@@ -617,7 +634,7 @@ class MenuBarIconRenderer {
             if isMonochrome {
                 return createCircleTemplateImage(percentage: percentage, size: NSSize(width: 18, height: 18), button: button, removeBackground: true, markerFraction: marker)
             } else {
-                return createCircleImage(percentage: percentage, size: NSSize(width: 18, height: 18), button: button, removeBackground: removeBackground, markerFraction: marker, colorPercentage: paced)
+                return createCircleImage(percentage: percentage, size: NSSize(width: 18, height: 18), button: button, removeBackground: removeBackground, markerFraction: marker, colorPercentage: paced, paceColor: paceColor(percentage, resetsAt: resetsAt, type: type))
             }
 
         case .sevenDay:
@@ -629,18 +646,18 @@ class MenuBarIconRenderer {
             if isMonochrome {
                 return createCircleTemplateImage(percentage: percentage, size: NSSize(width: 18, height: 18), useSevenDayStyle: true, button: button, removeBackground: true, markerFraction: marker)
             } else {
-                return createCircleImage(percentage: percentage, size: NSSize(width: 18, height: 18), useSevenDayColor: true, button: button, removeBackground: removeBackground, markerFraction: marker, colorPercentage: paced)
+                return createCircleImage(percentage: percentage, size: NSSize(width: 18, height: 18), useSevenDayColor: true, button: button, removeBackground: removeBackground, markerFraction: marker, colorPercentage: paced, paceColor: paceColor(percentage, resetsAt: resetsAt, type: type))
             }
 
         case .opusWeekly:
             let percentage = data.opus?.percentage ?? (showPlaceholder ? 0 : nil)
             guard let percentage = percentage else { return nil }
-            return ShapeIconRenderer.createVerticalRectangleIcon(percentage: percentage, isMonochrome: isMonochrome, button: button, removeBackground: removeBackground, markerFraction: timeMarkerFraction(resetsAt: data.opus?.resetsAt, type: type), colorPercentage: colorPercentage(percentage, resetsAt: data.opus?.resetsAt, type: type))
+            return ShapeIconRenderer.createVerticalRectangleIcon(percentage: percentage, isMonochrome: isMonochrome, button: button, removeBackground: removeBackground, markerFraction: timeMarkerFraction(resetsAt: data.opus?.resetsAt, type: type), colorPercentage: colorPercentage(percentage, resetsAt: data.opus?.resetsAt, type: type), paceColor: paceColor(percentage, resetsAt: data.opus?.resetsAt, type: type))
 
         case .sonnetWeekly:
             let percentage = data.sonnet?.percentage ?? (showPlaceholder ? 0 : nil)
             guard let percentage = percentage else { return nil }
-            return ShapeIconRenderer.createHorizontalRectangleIcon(percentage: percentage, isMonochrome: isMonochrome, button: button, removeBackground: removeBackground, markerFraction: timeMarkerFraction(resetsAt: data.sonnet?.resetsAt, type: type), colorPercentage: colorPercentage(percentage, resetsAt: data.sonnet?.resetsAt, type: type))
+            return ShapeIconRenderer.createHorizontalRectangleIcon(percentage: percentage, isMonochrome: isMonochrome, button: button, removeBackground: removeBackground, markerFraction: timeMarkerFraction(resetsAt: data.sonnet?.resetsAt, type: type), colorPercentage: colorPercentage(percentage, resetsAt: data.sonnet?.resetsAt, type: type), paceColor: paceColor(percentage, resetsAt: data.sonnet?.resetsAt, type: type))
 
         case .extraUsage:
             let percentage: Double?

@@ -236,14 +236,16 @@ struct UnifiedLimitRow: View {
     /// nil (no tick) when the setting is off, or the limit has no fixed window to measure
     /// (the Extra Usage buckets), or there is no reset time to measure from.
     private var markerFraction: CGFloat? {
-        guard settings.showTimeMarker,
-              let duration = UsagePaceCalculator.windowDuration(for: type),
-              let elapsed = UsagePaceCalculator.elapsedFraction(
-                  resetsAt: resetsAtValue,
-                  duration: duration
-              )
-        else { return nil }
+        guard settings.showTimeMarker, let elapsed = rawElapsedFraction else { return nil }
         return CGFloat(settings.showRemainingPercentage ? 1 - elapsed : elapsed)
+    }
+
+    /// How much of this limit's window has gone, un-mirrored.
+    /// The pace ramp has to read this rather than `markerFraction`, which is already flipped for
+    /// remaining-percentage mode and would invert the projection with it.
+    private var rawElapsedFraction: Double? {
+        guard let duration = UsagePaceCalculator.windowDuration(for: type) else { return nil }
+        return UsagePaceCalculator.elapsedFraction(resetsAt: resetsAtValue, duration: duration)
     }
 
     // MARK: - Computed Properties
@@ -268,12 +270,22 @@ struct UnifiedLimitRow: View {
         }
     }
 
-    /// Bar color. Each limit type keeps its own palette and escalates to the warning color with the percentage,
-    /// so the color says both which limit this is and how close it is to the cap.
-    /// In Monochrome icon mode the Claude bars drop the palette and all use the brand color instead;
-    /// closeness to the cap stays readable from the percentage text.
+    /// Bar color.
+    ///
+    /// Three sources, in priority order:
+    ///
+    /// 1. **Pace-aware mode.** The bar takes the pace ramp: blue while the rate is sustainable,
+    ///    orange once it pulls ahead of the clock, red when the window is on course to end at the
+    ///    cap. This is the whole point of the setting, so it wins over the palette. Falls through
+    ///    when there is nothing to project from (no window, too early, no usage yet).
+    /// 2. **Monochrome icon mode**, where the Claude bars all take the brand color.
+    /// 3. Otherwise each limit type keeps its own palette, escalating to its warning color with
+    ///    the percentage, so the color says both which limit this is and how close it is.
     private var barColor: Color {
         let percentage = colorPercentage
+        if let pace = paceColor {
+            return pace
+        }
         if settings.iconStyleMode == .monochrome {
             switch type {
             case .fiveHour, .sevenDay, .opusWeekly, .sonnetWeekly, .extraUsage:
@@ -321,6 +333,23 @@ struct UnifiedLimitRow: View {
         case .codexExtraUsage:
             return Color(red: 245/255.0, green: 158/255.0, blue: 11/255.0)    // #F59E0B
         }
+    }
+
+    /// The pace ramp colour for this row's bar, or nil to leave the palette in charge.
+    ///
+    /// nil when pace-aware mode is off, when this limit has no fixed window to project across
+    /// (the Extra Usage buckets), or when it is too early in the window to project at all. In
+    /// every one of those cases the bar falls back to the palette rather than to a flat colour,
+    /// so a row never loses its identity colour for want of a projection.
+    private var paceColor: Color? {
+        guard settings.paceAwareBarColors,
+              let elapsed = rawElapsedFraction,
+              let status = UsagePaceStatus.calculate(
+                  usedPercentage: percentageValue ?? 0,
+                  elapsedFraction: elapsed
+              )
+        else { return nil }
+        return status.color
     }
 
     /// The percentage the bar colour escalates on. Normally the current figure; in pace-aware

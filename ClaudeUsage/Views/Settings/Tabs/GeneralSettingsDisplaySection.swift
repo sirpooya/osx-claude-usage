@@ -64,10 +64,10 @@ struct GeneralSettingsDisplaySection: View {
 
                 // Display content picker, last in the section
                 VStack(alignment: .leading, spacing: 8) {
+                    // Same face as the toggle row titles above, so it reads as a peer
                     Text(L.SettingsGeneral.displayContent)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundColor(.secondary)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.primary)
 
                     HStack(spacing: 16) {
                         Toggle(isOn: Binding(
@@ -108,13 +108,6 @@ struct GeneralSettingsDisplaySection: View {
                         .focusable(false)
                         .disabled(settings.iconDisplayMode == .percentageOnly)
                     }
-
-                    // Inline rather than the section's hint slot, which renders last and would sit
-                    // under nothing in particular now that this block is at the bottom.
-                    Text(L.SettingsGeneral.menubarHint)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
         }

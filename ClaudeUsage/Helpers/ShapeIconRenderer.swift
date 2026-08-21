@@ -214,7 +214,7 @@ class ShapeIconRenderer {
     ///   - isMonochrome: whether monochrome mode is active
     ///   - button: status item button (used to read colors)
     ///   - removeBackground: whether to remove the background fill
-    static func drawRoundedSquareWithPercentage(in rect: NSRect, percentage: Double, isMonochrome: Bool, button: NSStatusBarButton?, removeBackground: Bool = false, markerFraction: CGFloat? = nil, colorPercentage: Double? = nil) {
+    static func drawRoundedSquareWithPercentage(in rect: NSRect, percentage: Double, isMonochrome: Bool, button: NSStatusBarButton?, removeBackground: Bool = false, markerFraction: CGFloat? = nil, colorPercentage: Double? = nil, paceColor: NSColor? = nil) {
         // Pace-aware colours escalate on the projection; the sweep and glyph stay on actual usage
         let escalationPercentage = colorPercentage ?? percentage
         // Battery style display: the progress border and the glyph show remaining; colors stay keyed off used
@@ -275,7 +275,7 @@ class ShapeIconRenderer {
                 let opacity = monochromeOpacity(for: escalationPercentage)
                 NSColor.controlTextColor.withAlphaComponent(opacity).setStroke()
             } else {
-                UsageColorScheme.opusWeeklyColorAdaptive(escalationPercentage, for: button).setStroke()
+                (paceColor ?? UsageColorScheme.opusWeeklyColorAdaptive(escalationPercentage, for: button)).setStroke()
             }
             progressPath.stroke()
         }
@@ -304,7 +304,7 @@ class ShapeIconRenderer {
     ///   - isMonochrome: whether monochrome mode is active
     ///   - button: status item button (used to read colors)
     ///   - removeBackground: whether to remove the background fill
-    static func drawDiamondWithPercentage(in rect: NSRect, percentage: Double, isMonochrome: Bool, button: NSStatusBarButton?, removeBackground: Bool = false, markerFraction: CGFloat? = nil, colorPercentage: Double? = nil) {
+    static func drawDiamondWithPercentage(in rect: NSRect, percentage: Double, isMonochrome: Bool, button: NSStatusBarButton?, removeBackground: Bool = false, markerFraction: CGFloat? = nil, colorPercentage: Double? = nil, paceColor: NSColor? = nil) {
         // Pace-aware colours escalate on the projection; the sweep and glyph stay on actual usage
         let escalationPercentage = colorPercentage ?? percentage
         // Battery style display: the progress border and the glyph show remaining; colors stay keyed off used
@@ -413,7 +413,7 @@ class ShapeIconRenderer {
                 let opacity = monochromeOpacity(for: escalationPercentage)
                 NSColor.controlTextColor.withAlphaComponent(opacity).setStroke()
             } else {
-                UsageColorScheme.sonnetWeeklyColorAdaptive(escalationPercentage, for: button).setStroke()
+                (paceColor ?? UsageColorScheme.sonnetWeeklyColorAdaptive(escalationPercentage, for: button)).setStroke()
             }
             progressPath.stroke()
         }
@@ -575,13 +575,13 @@ class ShapeIconRenderer {
     ///   - button: status item button
     ///   - removeBackground: whether to remove the background fill
     /// - Returns: icon image (18x18)
-    static func createVerticalRectangleIcon(percentage: Double, isMonochrome: Bool, button: NSStatusBarButton?, removeBackground: Bool = false, markerFraction: CGFloat? = nil, colorPercentage: Double? = nil) -> NSImage {
+    static func createVerticalRectangleIcon(percentage: Double, isMonochrome: Bool, button: NSStatusBarButton?, removeBackground: Bool = false, markerFraction: CGFloat? = nil, colorPercentage: Double? = nil, paceColor: NSColor? = nil) -> NSImage {
         let size = NSSize(width: 18, height: 18)
         let image = NSImage(size: size)
         image.lockFocus()
 
         let rect = NSRect(x: 0, y: 0, width: size.width, height: size.height).insetBy(dx: 2, dy: 2)
-        drawRoundedSquareWithPercentage(in: rect, percentage: percentage, isMonochrome: isMonochrome, button: button, removeBackground: removeBackground, markerFraction: markerFraction, colorPercentage: colorPercentage)
+        drawRoundedSquareWithPercentage(in: rect, percentage: percentage, isMonochrome: isMonochrome, button: button, removeBackground: removeBackground, markerFraction: markerFraction, colorPercentage: colorPercentage, paceColor: paceColor)
 
         image.unlockFocus()
         image.isTemplate = isMonochrome
@@ -595,13 +595,13 @@ class ShapeIconRenderer {
     ///   - button: status item button
     ///   - removeBackground: whether to remove the background fill
     /// - Returns: icon image (18x18)
-    static func createHorizontalRectangleIcon(percentage: Double, isMonochrome: Bool, button: NSStatusBarButton?, removeBackground: Bool = false, markerFraction: CGFloat? = nil, colorPercentage: Double? = nil) -> NSImage {
+    static func createHorizontalRectangleIcon(percentage: Double, isMonochrome: Bool, button: NSStatusBarButton?, removeBackground: Bool = false, markerFraction: CGFloat? = nil, colorPercentage: Double? = nil, paceColor: NSColor? = nil) -> NSImage {
         let size = NSSize(width: 18, height: 18)
         let image = NSImage(size: size)
         image.lockFocus()
 
         let rect = NSRect(x: 0, y: 0, width: size.width, height: size.height).insetBy(dx: 2, dy: 2)
-        drawDiamondWithPercentage(in: rect, percentage: percentage, isMonochrome: isMonochrome, button: button, removeBackground: removeBackground, markerFraction: markerFraction, colorPercentage: colorPercentage)
+        drawDiamondWithPercentage(in: rect, percentage: percentage, isMonochrome: isMonochrome, button: button, removeBackground: removeBackground, markerFraction: markerFraction, colorPercentage: colorPercentage, paceColor: paceColor)
 
         image.unlockFocus()
         image.isTemplate = isMonochrome

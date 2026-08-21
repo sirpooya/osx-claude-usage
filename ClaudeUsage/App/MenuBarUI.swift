@@ -340,7 +340,7 @@ class MenuBarUI {
         }
 
         // Settings (General and Authentication merged into one item)
-        let settingsItem = NSMenuItem(
+        let settingsItem = NoAutoIconMenuItem(
             title: L.Menu.settings,
             action: #selector(MenuBarManager.openSettings),
             keyEquivalent: ","
@@ -352,7 +352,7 @@ class MenuBarUI {
         let updateItem = NSMenuItem(
             title: "",
             action: #selector(MenuBarManager.checkForUpdates),
-            keyEquivalent: "u"
+            keyEquivalent: ""
         )
         updateItem.target = target
 
@@ -376,15 +376,6 @@ class MenuBarUI {
         }
 
         menu.addItem(updateItem)
-
-        // About
-        let aboutItem = NSMenuItem(
-            title: L.Menu.about,
-            action: #selector(MenuBarManager.openAbout),
-            keyEquivalent: ""
-        )
-        aboutItem.target = target
-        menu.addItem(aboutItem)
 
         menu.addItem(NSMenuItem.separator())
 
@@ -650,8 +641,11 @@ class MenuBarUI {
         // figure has to be in the key too, for the same reason as the tick.
         func paceToken(_ label: String, _ percentage: Double, _ resetsAt: Date?, _ type: LimitType) -> String {
             guard settings.paceAwareBarColors else { return "" }
-            let paced = iconRenderer.colorPercentage(percentage, resetsAt: resetsAt, type: type)
-            return "_\(label)p\(Int(paced))"
+            // The ramp *step*, not the projected figure. The projection is clamped to 100, so two
+            // very different paces can share a figure while landing on different colours; keying
+            // on the figure would then serve a stale icon in exactly the case the colour changed.
+            let step = UsagePaceStatus.color(usedPercentage: percentage, resetsAt: resetsAt, type: type)
+            return "_\(label)p\(step?.rawValue ?? -1)"
         }
         guard let data = usageData else {
             var key = "no_data_\(settings.iconDisplayMode.rawValue)_\(settings.iconStyleMode.rawValue)_\(settings.displayMode.rawValue)_mp\(isMulti)\(remainingFlag)"
@@ -778,5 +772,26 @@ class MenuBarUI {
             NSWorkspace.shared.notificationCenter.removeObserver(observer)
         }
         dimHeartbeat?.invalidate()
+    }
+}
+
+/// A menu item that refuses the icon macOS puts on it.
+///
+/// macOS 26 decorates the item it recognises as the standard Settings command with a gear: it
+/// assigns a 17x16 template image itself, before `menuWillOpen`, so no amount of not setting an
+/// image in `createStandardMenu` removes it. Confirmed by logging every item's `image` at open
+/// time: only the Settings row came back non-nil, and nothing in this app had touched it.
+///
+/// Suppressing it has to happen in the property, not at a call site. Assigning nil after
+/// `addItem` is too early (AppKit sets it later) and assigning an empty image leaves the gutter
+/// and drops the item's key equivalent. Swallowing the setter and always answering nil is the
+/// one point both AppKit's write and its draw have to pass through.
+///
+/// The item keeps its title, its action and its Cmd-comma, so it is still the standard Settings
+/// command for the keyboard and for VoiceOver. Only the glyph is gone.
+final class NoAutoIconMenuItem: NSMenuItem {
+    override var image: NSImage? {
+        get { nil }
+        set { _ = newValue }
     }
 }

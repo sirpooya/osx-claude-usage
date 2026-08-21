@@ -103,8 +103,12 @@ struct SettingRow<Trailing: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 10) {
+                // Regular weight, not medium. The section header above the card is 13pt medium,
+                // so a medium row title read as a second header: "Notifications" and "Enable
+                // Usage Notifications" looked like two stacked headings. Weight is what
+                // separates the two levels here, since both sit at 13pt.
                 Text(title)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.system(size: 13, weight: .regular))
                 Spacer(minLength: 10)
                 trailing
             }

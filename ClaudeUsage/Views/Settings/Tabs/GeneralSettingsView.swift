@@ -60,28 +60,20 @@ struct GeneralSettingsView: View {
                     }
                 }
 
-                // Notification settings card
+                // Notification settings card. The card hint used to repeat what the row
+                // description already said ("Get notified when usage reaches threshold or
+                // resets" over "Receive a notification when any limit reaches 90%..."), so the
+                // specific line is now the only one and `notification.hint` is unused.
                 SettingSection(
                     icon: "bell.badge",
                     iconColor: .red,
                     title: L.SettingsNotification.section,
-                    hint: L.SettingsNotification.hint
+                    hint: L.SettingsNotification.description
                 ) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Toggle("", isOn: $settings.notificationsEnabled)
-                                .toggleStyle(.switch)
-                                .controlSize(.mini)
-                                .focusable(false)
-                                .labelsHidden()
-                            Text(L.SettingsNotification.enable)
-                            Spacer()
-                        }
-                        Text(L.SettingsNotification.description)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+                    SettingToggleRow(
+                        title: L.SettingsNotification.enable,
+                        isOn: $settings.notificationsEnabled
+                    )
                 }
 
                 // Launch at login settings card
@@ -91,25 +83,27 @@ struct GeneralSettingsView: View {
                     title: L.SettingsGeneral.launchSection,
                     hint: L.SettingsGeneral.launchHint
                 ) {
-                    HStack {
+                    SettingRow(title: L.SettingsGeneral.launchAtLogin) {
+                        // The status badge only earns its place when the user has to do
+                        // something about it. "Not Found" and "Not Enabled" are SMAppService
+                        // registration states the switch itself already conveys, and they read
+                        // as errors next to an off switch.
+                        if settings.launchAtLoginStatus == .requiresApproval {
+                            HStack(spacing: 4) {
+                                Image(systemName: statusIcon)
+                                    .foregroundColor(statusColor)
+                                    .font(.caption)
+                                Text(statusText)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+
                         Toggle("", isOn: $settings.launchAtLogin)
                             .toggleStyle(.switch)
-                            .controlSize(.mini)
+                            .controlSize(.small)
                             .focusable(false)
                             .labelsHidden()
-
-                        Text(L.SettingsGeneral.launchAtLogin)
-
-                        Spacer()
-
-                        HStack(spacing: 4) {
-                            Image(systemName: statusIcon)
-                                .foregroundColor(statusColor)
-                                .font(.caption)
-                            Text(statusText)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
                     }
                 }
 

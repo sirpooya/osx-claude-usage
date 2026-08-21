@@ -614,6 +614,87 @@ What has been changed from upstream so far:
     `icon`/`iconColor` exactly as `SettingCard` does, so the repoint was a rename with no call
     site edits and no copy changes.
   - The in-card `Divider()` under the title is gone, because the title now sits outside the card.
+  - **Controls sit at the row's trailing edge**, via `SettingRow` (title left, `Spacer`, a trailing
+    ViewBuilder, optional description under the title) and `SettingToggleRow` on top of it, both in
+    `SettingSection.swift`. Same shape as `SettingsRow` in osx-autoconnect and osx-launchpad, and
+    what macOS System Settings does. Before this the switch sat immediately after its label, so
+    four switches landed at four x positions depending on label length, leaving a ragged column
+    and dead space to the right. `SettingToggleRow` owns the one switch style (`.switch`, `.small`,
+    `labelsHidden`) so a screenful of toggles cannot drift into several sizes.
+  - Verified on screen at the new 556 width: the four Display Settings switches line up in one
+    right-hand column. This also confirmed the `SettingsView.contentSize` change actually reaches
+    the window, which the earlier autosave note could not.
+- **General tab content, trimmed and reordered.** All UI-only; every underlying setting is kept.
+  - **Time Format card removed**, and `UserSettings` now loads `timeFormatPreference` as `.system`
+    unconditionally, ignoring the stored key. Without that, an install that had 12 or 24 hour
+    selected would be stuck there with no UI to change it; ignoring the key means everyone follows
+    the system rather than only new installs. The enum, the property and `TimeFormatHelper` all
+    stay, as do the CJK format patterns.
+  - **Reset to Defaults button removed.** `UserSettings.resetToDefaults()` is kept.
+  - **Launch at Login moved above Language**, and **Display Content moved to the bottom** of the
+    Display Settings section. `Display Content`'s title now uses the same 13pt medium primary face
+    as the toggle row titles instead of a secondary subheadline, so it reads as their peer.
+  - **Removed copy**: the "Display Mode" label above the Smart/Custom radios, and the
+    "Choose what to display in the menu bar" hint (`settings.general.menubar_hint`, now unused).
+  - **Launch at Login's status badge only shows for `.requiresApproval`.** `.notFound` and
+    `.notRegistered` are `SMAppService` registration states the switch itself already conveys, and
+    a red "Not Found" next to an off switch reads as a failure rather than as "off". The other
+    `statusIcon` / `statusColor` / `statusText` cases stay for that one state.
+  - **The notification card's two lines are merged into one.** The card hint repeated what the row
+    description said, so the specific line (`notification.description`) is now the card's hint and
+    `notification.hint` is unused. That description also printed a literal **"90%%"**: the `.strings
+    value carried an escaped percent for a `String(format:)` that never happens, since the row
+    renders it directly. Fixed to a single `%` in the 6 locales that had it (de was already right).
+  - **`opus_weekly_limit` and `detail_row.opus_weekly_limit` now read "Fable"** rather than "Opus",
+    in all 7 locales, keeping each locale's own word order. ⚠️ That slot is *generic*: it carries
+    whatever weekly scoped model the API returns, and the popover already prefers the live
+    `opusModelName`. These two strings are only the fallback label, so hardcoding a model name will
+    read wrong if the account's scoped model is ever not Fable.
+- **Pace-aware colours now reach the menu bar icons too.** They originally only affected the
+  popover: `paceAwareBarColors` was read in exactly one render site (`UnifiedLimitRow`), so
+  flipping the switch left every status icon unchanged, which looked like the setting doing nothing.
+  - `MenuBarIconRenderer.colorPercentage(_:resetsAt:type:)` is the icon-side counterpart of
+    `UnifiedLimitRow.colorPercentage`. Both circle renderers and both weekly shapes take a
+    `colorPercentage:` parameter used **only** for the palette call (and for
+    `monochromeOpacity(for:)`), so the sweep and the glyph still show actual usage.
+  - `generateCacheKey` gained a `paceToken`, for the same reason as the tick below: the escalation
+    figure moves with the clock rather than with the data, so a key built from percentages alone
+    would serve a stale icon.
+  - Worth knowing when this looks inert: the palette steps are coarse (green < 70, orange 70-90,
+    red >= 90), so a projection only changes anything when it crosses one of those. And in
+    Monochrome the popover bars use a fixed `UsageColorScheme.brand`, so pace cannot show there at
+    all by design.
+- **Time marker on the menu bar icons**, the second half of `showTimeMarker`.
+  - `MenuBarIconRenderer.timeMarkerFraction(resetsAt:type:)` mirrors the popover's rule, including
+    the `1 - elapsed` flip in remaining mode. nil for the Extra Usage buckets.
+  - **One tick implementation for every shape**: `ShapeIconRenderer.drawRadialTimeMarker` draws a
+    radial spoke crossing the border, and the circle path calls the same function.
+    `ShapeIconRenderer.point(on:atFraction:)` finds where that is on a shape by walking the
+    *flattened* path (it takes a fraction, not a distance, because flattening approximates the
+    corner arcs and its total length is slightly under the analytic perimeter, so mixing the two
+    drifts the tick). Use `path.flattened`; `bezierPathByFlatteningPath` no longer compiles.
+    - The first attempt drew the tick *along* the outline with the same dash trick the progress
+      stroke uses, which was tempting because the perimeter maths was already there. It gave the
+      square a dash running **parallel** to its flat edge while the circles got a crossing spoke.
+      Hence one shared radial implementation.
+  - **Knockout, then mark.** Neither half works alone on a template icon, which keeps only alpha:
+    a mark drawn over the solid sweep is invisible, and a bare gap punched in the faint 0.3-alpha
+    track is invisible too. The first version punched only a gap and measured **2 differing pixels**
+    against a marker-off capture, i.e. it rendered and could not be seen. Clearing a 2.6pt window
+    and stroking a 1.0pt tick inside it reads against both.
+  - `generateCacheKey` gained a `markerToken` per limit, quantised to whole percent (one step is
+    about 3 minutes of a 5h window): the tick moves with the clock, so a key built from percentages
+    alone froze it in place.
+  - Verified against the countdown text on the real bar: a tick at ~3 o'clock for a 5h window a
+    quarter gone, and at ~10-11 o'clock for a weekly limit reading "1d 1h left" (85%).
+- **The weekly shape icons used a hardcoded `gray 0.5` track**, so on a dark menu bar their track
+  read dark while the circle icons beside them resolved light. Fixed in all three shapes in
+  `ShapeIconRenderer` to `UsageColorScheme.menuBarTrack(for: button)`, and their
+  `NSColor.white.withAlphaComponent(0.5)` backing fill to
+  `menuBarForeground(for: button).withAlphaComponent(0.10)`, matching `createCircleImage`. This is
+  exactly the trap in "Menu bar icon colour modes" above: the earlier pass fixed the *glyph* in all
+  four renderers but left the shapes' track and disc literal. The monochrome branches still use
+  `controlTextColor` alphas, which is correct for a template.
 - **Pace-aware bar colours: `paceAwareBarColors`.** New `UserSettings` flag (default off, key
   `paceAwareBarColors`, posts `.settingsChanged`), surfaced as a **Pace-Aware Bar Colors** switch
   in the Display Settings section. Ported from the competitor's `appearance.pace_coloring_*`.
@@ -661,6 +742,30 @@ What has been changed from upstream so far:
   - Verified live against the countdown text, which is the useful check because it ties the tick
     to something independently readable: with "4h 8m left" of a 5h window (17.3% elapsed) the
     tick measured at 17.2% of the bar, and with "1d 1h left" of 7d (85.1%) it measured at 84.5%.
+- **`paceAwareBarColors` now colours the bar fill on a three step ramp**, via new
+  `Helpers/UsagePaceStatus.swift`. Blue while the rate is sustainable, orange once it pulls ahead
+  of the clock, red when the window is on course to end at the cap. No new setting and no new
+  locale keys: this is what the existing switch always promised ("Color progress bars based on
+  projected pace"), and it is what the switch now does.
+  - Thresholds on the projected end-of-window figure: under 70% `systemBlue`, 70-90%
+    `systemOrange`, 90% or more `systemRed`. The ramp only escalates, because more usage per unit
+    of elapsed time is always worse.
+  - **Blue, not green, for the healthy step.** The five hour limit's own bar is green, so a green
+    fill there would say nothing.
+  - The 70/90 breakpoints match what the per-limit palette functions already escalate on, so
+    turning the setting on changes *which* colour a limit shows, not when it starts worrying.
+  - Priority in `UnifiedLimitRow.barColor` is pace, then Monochrome brand colour, then the
+    per-limit palette. Pace wins because a setting that loses to another setting looks broken.
+  - Falls back to the palette (not to a flat colour) whenever there is nothing to project from:
+    no fixed window (the Extra Usage buckets), too early in the window, or no usage yet. So a row
+    never loses its identity colour for want of a projection.
+  - Gate is 3% elapsed, `UsagePaceStatus.minimumElapsedFraction`, and the projection is uncapped,
+    unlike `UsagePaceCalculator.projectedPercentage` which clamps to 100.
+  - **The time marker tick was deliberately left alone.** An earlier pass wired this ramp into the
+    tick instead of the fill, which meant the pace switch did nothing at all unless `showTimeMarker`
+    was also on. Wrong feature: the setting says bar colours. The tick stays the neutral
+    `labelColor` line it has always been.
+  - Not yet verified on screen: built, installed and running, but the popover was not photographed.
 - **Battery style display: `showRemainingPercentage`.** New `UserSettings` flag (default off,
   key `showRemainingPercentage`, posts `.settingsChanged`), surfaced as a **Show Remaining**
   switch in the Display Settings card with the description "Display remaining capacity instead
