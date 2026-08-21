@@ -134,6 +134,8 @@
 "display.show_percentage" = "Show Percentage";
 "display.show_remaining" = "Show Remaining";
 "display.show_remaining_desc" = "Display remaining capacity instead of used percentage (like macOS battery)";
+"display.pace_aware_colors" = "Pace-Aware Bar Colors";
+"display.pace_aware_colors_desc" = "Color progress bars based on projected pace instead of current usage level. Projects whether you'll hit limits by the end of the period.";
 
 // MARK: - Refresh Interval
 "refresh.smart_mode" = "Smart Frequency";

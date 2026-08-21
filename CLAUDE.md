@@ -563,6 +563,46 @@ What has been changed from upstream so far:
   per card), so removing it in the one shared component covers all of them. The only other
   `lightbulb.fill` in the app is in `AuthSettingsView+AddAccount.swift`, which is a different
   page and deliberately untouched.
+- **General tab regrouped in the osx-launchpad settings look**, via a new
+  `Views/Settings/Components/SettingSection.swift`: a 13pt medium section header sitting *above*
+  a rounded card (radius 12 continuous, `labelColor` 0.05 fill, no shadow), with the hint below
+  it, all three aligned to one 12pt inset rather than to the card edge. Metrics copied from
+  launchpad's `SettingsComponents` so this, `AboutView` and launchpad read as one system.
+  `SettingSectionDivider` is the matching hairline (a plain `Rectangle` at primary 0.06, not
+  `Divider()`, whose system separator draws under any overlay tint and cannot be lightened).
+  - Deliberately a **new component rather than a restyle of `SettingCard`**. `SettingCard` is
+    shared with the Authentication tab, whose panes follow the competitor-derived contract in
+    `CredentialsChrome.swift` (in-card title plus a secondary subtitle line), so editing it would
+    have dragged that layout along too. Only the four `GeneralSettings*.swift` files were
+    repointed; `SettingCard` is unchanged and still used by the 5 Auth files.
+  - `SettingSection` takes the same `(icon:iconColor:title:hint:content:)` signature and ignores
+    `icon`/`iconColor` exactly as `SettingCard` does, so the repoint was a rename with no call
+    site edits and no copy changes.
+  - The in-card `Divider()` under the title is gone, because the title now sits outside the card.
+- **Pace-aware bar colours: `paceAwareBarColors`.** New `UserSettings` flag (default off, key
+  `paceAwareBarColors`, posts `.settingsChanged`), surfaced as a **Pace-Aware Bar Colors** switch
+  in the Display Settings section. Ported from the competitor's `appearance.pace_coloring_*`.
+  New keys `display.pace_aware_colors` / `_desc` in all 7 locales plus `L.Display.paceAwareColors`
+  / `paceAwareColorsDesc`.
+  - `Helpers/UsagePaceCalculator.swift` holds the maths, taking primitives rather than the app's
+    models so it stays pure. `projectedPercentage = used / elapsedFraction`, clamped to 100.
+    Window lengths: 5h for session and `codexPrimary`, 7d for `sevenDay` / `opusWeekly` /
+    `sonnetWeekly` / `codexSecondary`, and **nil for both Extra Usage buckets**, which have no
+    fixed window to project across and so keep colouring on current usage.
+  - Returns nil (callers fall back to the current percentage) when there is nothing sane to
+    project from: no usage yet, no reset time, the reset already in the past, a reset further out
+    than one whole window, or **under 15% of the window elapsed**. That last gate is the
+    important one: one request divided by a tiny elapsed fraction extrapolates to an absurd
+    figure and would paint a fresh window red seconds in. Threshold matches the competitor's.
+  - Wired through `UnifiedLimitRow.colorPercentage`, which feeds the existing per-limit palette
+    functions the projected figure instead of the current one, so **only the colour changes
+    meaning**: the displayed number and the bar fill still show actual usage. New
+    `resetsAtValue` resolves the row's reset time per limit type (both Claude and Codex
+    `LimitData` spell it `resetsAt`).
+  - Verified by compiling the real helper against a stub `LimitType` and asserting 10 cases:
+    40% used at 50% elapsed projects 80; the same 40% at 20% elapsed clamps to 100; 10% at 50%
+    elapsed projects 20; a 7d limit at 3.5d remaining projects 60 (so the weekly window is not
+    being measured with the 5h one); and the gated/nil cases above all return nil.
 - **Battery style display: `showRemainingPercentage`.** New `UserSettings` flag (default off,
   key `showRemainingPercentage`, posts `.settingsChanged`), surfaced as a **Show Remaining**
   switch in the Display Settings card with the description "Display remaining capacity instead

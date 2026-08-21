@@ -117,6 +117,24 @@ struct GeneralSettingsDisplaySection: View {
                         .foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+
+                Divider()
+
+                // Pace-aware colors: escalate on the projected end-of-window figure
+                VStack(alignment: .leading, spacing: 6) {
+                    Toggle(isOn: $settings.paceAwareBarColors) {
+                        Text(L.Display.paceAwareColors)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                    }
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+
+                    Text(L.Display.paceAwareColorsDesc)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
     }

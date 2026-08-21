@@ -231,6 +231,8 @@ enum L {
         static var showPercentage: String { localized("display.show_percentage") }
         static var showRemaining: String { localized("display.show_remaining") }
         static var showRemainingDesc: String { localized("display.show_remaining_desc") }
+        static var paceAwareColors: String { localized("display.pace_aware_colors") }
+        static var paceAwareColorsDesc: String { localized("display.pace_aware_colors_desc") }
     }
     
     // MARK: - Icon Style Mode

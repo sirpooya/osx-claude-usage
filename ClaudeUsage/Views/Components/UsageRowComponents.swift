@@ -276,6 +276,38 @@ struct UnifiedLimitRow: View {
         }
     }
 
+    /// The percentage the bar colour escalates on. Normally the current figure; in pace-aware
+    /// mode the projected end-of-window figure instead, so the colour says whether this limit is
+    /// on track to be hit rather than where it stands right now. The displayed number and the bar
+    /// fill are deliberately untouched: only the colour changes meaning.
+    /// Falls back to the current figure whenever there is nothing sane to project from.
+    private var colorPercentage: Double {
+        let used = percentageValue ?? 0
+        guard settings.paceAwareBarColors else { return used }
+        return UsagePaceCalculator.projectedPercentage(
+            usedPercentage: used,
+            resetsAt: resetsAtValue,
+            type: type
+        ) ?? used
+    }
+
+    /// Reset time for this row's limit, the anchor the pace projection measures the window from.
+    private var resetsAtValue: Date? {
+        if let override = weeklyModelOverride {
+            return override.limit.resetsAt
+        }
+        switch type {
+        case .fiveHour:        return data?.fiveHour?.resetsAt
+        case .sevenDay:        return data?.sevenDay?.resetsAt
+        case .opusWeekly:      return data?.opus?.resetsAt
+        case .sonnetWeekly:    return data?.sonnet?.resetsAt
+        case .extraUsage:      return nil
+        case .codexPrimary:    return codexData?.primary?.resetsAt
+        case .codexSecondary:  return codexData?.secondary?.resetsAt
+        case .codexExtraUsage: return nil
+        }
+    }
+
     private var percentageValue: Double? {
         if let override = weeklyModelOverride {
             return override.limit.percentage

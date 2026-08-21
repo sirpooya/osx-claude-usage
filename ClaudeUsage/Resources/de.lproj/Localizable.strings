@@ -133,6 +133,8 @@
 "display.show_percentage" = "Prozent anzeigen";
 "display.show_remaining" = "Verbleibend anzeigen";
 "display.show_remaining_desc" = "Verbleibende Kapazität statt genutztem Prozentsatz anzeigen (wie die macOS-Batterie)";
+"display.pace_aware_colors" = "Tempoabhängige Balkenfarben";
+"display.pace_aware_colors_desc" = "Balken nach dem prognostizierten Tempo statt nach dem aktuellen Verbrauch einfärben. Sagt voraus, ob die Limits bis zum Periodenende erreicht werden.";
 
 // MARK: - Refresh Interval
 "refresh.smart_mode" = "Intelligente Frequenz";
