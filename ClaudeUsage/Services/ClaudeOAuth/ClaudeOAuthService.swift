@@ -104,6 +104,11 @@ enum ClaudeOAuthService {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        // The token endpoint needs the User-Agent just as much as the usage endpoint does:
+        // without it a perfectly valid refresh_token comes back 429 rate_limit_error, and since
+        // every usage fetch goes through here once the access_token expires (~60 min), the whole
+        // app looked rate limited. Same trap as anthropics/claude-code#31021.
+        request.setValue(ClaudeOAuthConfig.userAgent, forHTTPHeaderField: "User-Agent")
         request.httpBody = body
 
         session.dataTask(with: request) { data, response, error in

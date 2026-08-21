@@ -154,6 +154,26 @@ class KeychainManager {
         storage.delete(key: "sessionKey")
     }
 
+    // MARK: - API Console credentials
+
+    // The console session key and the chosen organization go through the same storage as
+    // everything else, they just need their own keys. Kept as named accessors rather than
+    // exposing `storage`, so every credential in the app still enters through this class.
+
+    @discardableResult
+    func saveConsoleValue(_ value: String, forKey key: String) -> Bool {
+        storage.save(key: key, value: value)
+    }
+
+    func loadConsoleValue(forKey key: String) -> String? {
+        storage.load(key: key)
+    }
+
+    @discardableResult
+    func deleteConsoleValue(forKey key: String) -> Bool {
+        storage.delete(key: key)
+    }
+
     /// Delete all authentication data
     /// - Returns: whether every deletion succeeded
     @discardableResult

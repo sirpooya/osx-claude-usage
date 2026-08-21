@@ -294,7 +294,7 @@ nonisolated struct ErrorResponse: Codable, Sendable {
 /// etc.) lives in `UsageData+Formatting.swift` as extensions, so this file
 /// can be compiled by a SwiftPM test target without dragging in
 /// `LocalizationHelper` / `UserSettings`.
-struct UsageData: Sendable {
+struct UsageData: Codable, Sendable {
     /// 5 hour limit data (optional)
     let fiveHour: LimitData?
     /// 7 day limit data (optional)
@@ -352,7 +352,7 @@ struct UsageData: Sendable {
     }
 
     /// Data for a single limit (5 hour, 7 day, Opus, Sonnet)
-    struct LimitData: Sendable {
+    struct LimitData: Codable, Sendable {
         /// Current usage percentage (0-100)
         let percentage: Double
         /// Usage reset time, nil means usage has not started yet
@@ -369,7 +369,7 @@ struct UsageData: Sendable {
     /// A weekly per model limit entry (model name plus usage data).
     /// `modelName` comes from the Claude API's `scope.model.display_name` (for example "Fable");
     /// the legacy seven_day_opus / seven_day_sonnet fields have no such field, so it is nil and the UI falls back per slot.
-    struct WeeklyModelLimit: Sendable {
+    struct WeeklyModelLimit: Codable, Sendable {
         let modelName: String?
         let limit: LimitData
     }
@@ -414,7 +414,7 @@ struct UsageData: Sendable {
 
 /// Extra Usage data model
 /// Extra paid usage (an amount rather than a percentage)
-struct ExtraUsageData: Sendable {
+struct ExtraUsageData: Codable, Sendable {
     /// Whether Extra Usage is enabled
     let enabled: Bool
     /// Amount used

@@ -86,9 +86,9 @@ final class ConsoleAPIService: ObservableObject {
 
     private init() {
         credentials = ConsoleCredentials(
-            sessionKey: KeychainManager.shared.load(key: Self.keychainKeySession) ?? "",
-            organizationId: KeychainManager.shared.load(key: Self.keychainKeyOrgId) ?? "",
-            organizationName: KeychainManager.shared.load(key: Self.keychainKeyOrgName) ?? ""
+            sessionKey: KeychainManager.shared.loadConsoleValue(forKey: Self.keychainKeySession) ?? "",
+            organizationId: KeychainManager.shared.loadConsoleValue(forKey: Self.keychainKeyOrgId) ?? "",
+            organizationName: KeychainManager.shared.loadConsoleValue(forKey: Self.keychainKeyOrgName) ?? ""
         )
     }
 
@@ -108,9 +108,9 @@ final class ConsoleAPIService: ObservableObject {
             organizationId: organization.uuid,
             organizationName: organization.name
         )
-        _ = keychain.save(key: Self.keychainKeySession, value: sessionKey)
-        _ = keychain.save(key: Self.keychainKeyOrgId, value: organization.uuid)
-        _ = keychain.save(key: Self.keychainKeyOrgName, value: organization.name)
+        _ = keychain.saveConsoleValue(sessionKey, forKey: Self.keychainKeySession)
+        _ = keychain.saveConsoleValue(organization.uuid, forKey: Self.keychainKeyOrgId)
+        _ = keychain.saveConsoleValue(organization.name, forKey: Self.keychainKeyOrgName)
         Logger.settings.notice("API Console: credentials saved for an organization")
         await refresh()
     }
@@ -121,9 +121,9 @@ final class ConsoleAPIService: ObservableObject {
         currentSpend = nil
         prepaidCredits = nil
         lastError = nil
-        _ = keychain.delete(key: Self.keychainKeySession)
-        _ = keychain.delete(key: Self.keychainKeyOrgId)
-        _ = keychain.delete(key: Self.keychainKeyOrgName)
+        _ = keychain.deleteConsoleValue(forKey: Self.keychainKeySession)
+        _ = keychain.deleteConsoleValue(forKey: Self.keychainKeyOrgId)
+        _ = keychain.deleteConsoleValue(forKey: Self.keychainKeyOrgName)
         Logger.settings.notice("API Console: credentials removed")
     }
 

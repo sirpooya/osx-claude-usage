@@ -527,3 +527,4 @@
 "cli_sync.about_point_1" = "Reuses the login Claude Code already holds, so there is no key to paste.";
 "cli_sync.about_point_2" = "The token stays in your keychain and is re-read on every refresh.";
 "cli_sync.about_point_3" = "Removing the sync here leaves your Claude Code login untouched.";
+"account.switch_to" = "Use";

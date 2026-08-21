@@ -64,6 +64,17 @@ class DataRefreshManager: ObservableObject {
     @Published private(set) var codexNeedsRelogin = false
     /// The Codex expiry notification has been sent, so it is not repeated
     private var codexSessionExpiredNotified = false
+    /// When the last successful Claude fetch landed. Drives the "showing cached data" note.
+    @Published private(set) var lastClaudeSuccessAt: Date?
+    /// While set, automatic polls are skipped: the server told us to back off (429).
+    /// Manual refreshes still go through, because the user explicitly asked.
+    private var claudeBackoffUntil: Date?
+    /// How long to sit out after a 429. The endpoint's own window is not exposed, so this is a
+    /// deliberately unaggressive guess. Never poll faster than this after being told to stop.
+    private let rateLimitBackoff: TimeInterval = 10 * 60
+    /// UserDefaults keys for the last good snapshot, so a cold start has something to show
+    private let cachedUsageKey = "cachedClaudeUsage"
+    private let cachedUsageAtKey = "cachedClaudeUsageAt"
 
     private var shouldFetchClaudeUsage: Bool {
         #if DEBUG
@@ -116,6 +127,7 @@ class DataRefreshManager: ObservableObject {
 
     init() {
         setupWakeObserver()
+        restoreCachedUsage()
     }
 
     // MARK: - Data Fetching
@@ -173,8 +185,8 @@ class DataRefreshManager: ObservableObject {
                     if case UsageError.unauthorized = error {
                         self.attemptTokenRefreshAndRetry()
                     } else {
+                        // Same rule as Claude: an error annotates the last good data, it does not erase it
                         self.codexErrorMessage = error.localizedDescription
-                        self.clearCodexUsageState(clearError: false)
                     }
 
                 case .none:
@@ -191,6 +203,9 @@ class DataRefreshManager: ObservableObject {
                     let previousData = self.usageData
                     self.usageData = data
                     self.errorMessage = nil
+                    self.lastClaudeSuccessAt = Date()
+                    self.claudeBackoffUntil = nil
+                    self.persistCachedUsage(data)
                     monitoringUtilizations[.claude] = data.percentage
 
                     if self.settings.notificationsEnabled {
@@ -207,7 +222,14 @@ class DataRefreshManager: ObservableObject {
                     self.lastResetsAt = newResetsAt
 
                 case .failure(let error):
+                    // Never drop the numbers we already have. `usageData` is deliberately left
+                    // untouched here so the popover and the menu bar icon keep showing the last
+                    // good fetch; `errorMessage` is only a note on top of it.
                     self.errorMessage = error.localizedDescription
+                    if Self.isRateLimit(error) {
+                        self.claudeBackoffUntil = Date().addingTimeInterval(self.rateLimitBackoff)
+                        Logger.menuBar.info("Claude API rate limited. Pausing automatic polls for \(Int(self.rateLimitBackoff / 60)) min")
+                    }
                     Logger.menuBar.error("Claude API request failed: \(error.localizedDescription)")
 
                 case .none:

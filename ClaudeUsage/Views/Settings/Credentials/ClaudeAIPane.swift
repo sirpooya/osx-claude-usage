@@ -90,7 +90,7 @@ struct ClaudeAIPane: View {
                 .controlSize(.small)
             }
         } content: {
-            ForEach(claudeAIAccounts) { account in
+            ForEach(claudeAIAccounts, id: \.id) { account in
                 HStack(spacing: 8) {
                     Circle()
                         .fill(settings.currentAccount?.id == account.id ? Color.green : Color.secondary.opacity(0.3))

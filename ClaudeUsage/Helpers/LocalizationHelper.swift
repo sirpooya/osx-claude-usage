@@ -36,6 +36,7 @@ enum L {
         static var addAccount: String { localized("account.add_account") }
         static var addNewAccount: String { localized("account.add_new_account") }
         static var currentAccount: String { localized("account.current_account") }
+        static var switchTo: String { localized("account.switch_to") }
         static var alias: String { localized("account.alias") }
         static var aliasOptional: String { localized("account.alias_optional") }
         static var aliasPlaceholder: String { localized("account.alias_placeholder") }
