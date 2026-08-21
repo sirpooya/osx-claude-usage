@@ -90,7 +90,26 @@ enum L {
     enum SettingsTab {
         static var general: String { localized("settings.tab.general") }
         static var auth: String { localized("settings.tab.auth") }
+        static var history: String { localized("settings.tab.history") }
         static var about: String { localized("settings.tab.about") }
+    }
+
+    // MARK: - History
+    enum History {
+        static var title: String { localized("history.title") }
+        static var subtitle: String { localized("history.subtitle") }
+        static var usageOverview: String { localized("history.usage_overview") }
+        static var sessionUsage: String { localized("history.session_usage") }
+        static var weeklyUsage: String { localized("history.weekly_usage") }
+        static var apiBilling: String { localized("history.api_billing") }
+        static var noData: String { localized("history.no_data") }
+        static var now: String { localized("history.now") }
+        static var range5h: String { localized("history.range.5h") }
+        static var range24h: String { localized("history.range.24h") }
+        static var range7d: String { localized("history.range.7d") }
+        static var range30d: String { localized("history.range.30d") }
+        /// "%1$@ to %2$@", the visible window's start and end
+        static var rangeFormat: String { localized("history.range_format") }
     }
     
     // MARK: - Settings General
@@ -210,6 +229,8 @@ enum L {
         static var none: String { localized("display.none") }
         static var showIcon: String { localized("display.show_icon") }
         static var showPercentage: String { localized("display.show_percentage") }
+        static var showRemaining: String { localized("display.show_remaining") }
+        static var showRemainingDesc: String { localized("display.show_remaining_desc") }
     }
     
     // MARK: - Icon Style Mode

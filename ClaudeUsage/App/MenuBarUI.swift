@@ -634,8 +634,10 @@ class MenuBarUI {
     /// - Returns: the cache key string
     private func generateCacheKey(usageData: UsageData?, codexUsageData: CodexUsageData? = nil, hasUpdate: Bool) -> String {
         let isMulti = settings.isMultiProviderActive
+        // The remaining/used display flips the rendered glyph and sweep without changing the data, so it has to be part of the key
+        let remainingFlag = settings.showRemainingPercentage ? "_rem" : ""
         guard let data = usageData else {
-            var key = "no_data_\(settings.iconDisplayMode.rawValue)_\(settings.iconStyleMode.rawValue)_\(settings.displayMode.rawValue)_mp\(isMulti)"
+            var key = "no_data_\(settings.iconDisplayMode.rawValue)_\(settings.iconStyleMode.rawValue)_\(settings.displayMode.rawValue)_mp\(isMulti)\(remainingFlag)"
             if let codex = codexUsageData {
                 let activeTypes = settings.getActiveDisplayTypes(usageData: nil, codexUsageData: codex, forMenuBar: true)
                     .map(\.rawValue)
@@ -672,7 +674,7 @@ class MenuBarUI {
             return key
         }
 
-        var key = "\(settings.iconDisplayMode.rawValue)_\(settings.iconStyleMode.rawValue)_mp\(isMulti)"
+        var key = "\(settings.iconDisplayMode.rawValue)_\(settings.iconStyleMode.rawValue)_mp\(isMulti)\(remainingFlag)"
 
         if let fiveHour = data.fiveHour {
             key += "_5h\(Int(fiveHour.percentage))"

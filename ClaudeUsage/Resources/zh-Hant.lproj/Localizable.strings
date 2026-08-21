@@ -132,6 +132,8 @@
 "display.none" = "不顯示";
 "display.show_icon" = "顯示圖示";
 "display.show_percentage" = "顯示百分比";
+"display.show_remaining" = "顯示剩餘";
+"display.show_remaining_desc" = "顯示剩餘額度而不是已用百分比（類似 macOS 電池）";
 
 // MARK: - Refresh Interval
 "refresh.smart_mode" = "智慧頻率";

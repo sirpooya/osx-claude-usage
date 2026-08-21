@@ -355,6 +355,8 @@ class ShapeIconRenderer {
     ///   - button: status item button (used to read colors)
     ///   - removeBackground: whether to remove the background fill
     static func drawHexagonWithPercentage(center: NSPoint, size: CGFloat, percentage: Double, isMonochrome: Bool, button: NSStatusBarButton?, removeBackground: Bool = false, colorOverride: NSColor? = nil) {
+        // Battery style display: the progress border and the glyph show remaining; colors stay keyed off used
+        let displayPercentage = UsagePercentDisplay.displayPercentage(percentage)
         let radius = size / 2
         let borderWidth: CGFloat = 1.5
         let progressWidth: CGFloat = 2.5  // Thicker progress stroke
@@ -390,7 +392,7 @@ class ShapeIconRenderer {
         hexagonPath.stroke()
 
         // 2. Draw the progress border
-        if percentage > 0 {
+        if displayPercentage > 0 {
             // Compute the hexagon perimeter
             let sideLength = radius  // Every side of a regular hexagon is as long as its radius
             let perimeter = sideLength * 6
@@ -400,8 +402,8 @@ class ShapeIconRenderer {
             // Below 50%: smooth ramp, the subtracted amount goes from 0 up to progressWidth
             // At or above 50%: exact, always subtract the full progressWidth
             // At 100% nothing is subtracted because .butt caps are used (no overhang)
-            let baseProgressLength = perimeter * CGFloat(percentage / 100.0)
-            let progressLength = percentage >= 100 ? baseProgressLength : (baseProgressLength - progressWidth * min(1.0, CGFloat(percentage / 50.0)))
+            let baseProgressLength = perimeter * CGFloat(displayPercentage / 100.0)
+            let progressLength = displayPercentage >= 100 ? baseProgressLength : (baseProgressLength - progressWidth * min(1.0, CGFloat(displayPercentage / 50.0)))
 
             // Build the clockwise path from the top by hand, starting at 12 o'clock
             // First compute the 6 vertex positions (keeping the flat top orientation)
@@ -439,12 +441,12 @@ class ShapeIconRenderer {
 
             // Draw with a dash pattern
             // Below 100% a negative phase pre draws half a round cap at the start, so the subtracted lineWidth is split evenly across both ends
-            let phase: CGFloat = percentage >= 100 ? 0 : -progressWidth / 2
+            let phase: CGFloat = displayPercentage >= 100 ? 0 : -progressWidth / 2
             let pattern: [CGFloat] = [progressLength, perimeter - progressLength]
             progressHexagon.setLineDash(pattern, count: 2, phase: phase)
             progressHexagon.lineWidth = progressWidth
             // At 100% butt caps close the shape perfectly, every other value uses round caps
-            progressHexagon.lineCapStyle = percentage >= 100 ? .butt : .round
+            progressHexagon.lineCapStyle = displayPercentage >= 100 ? .butt : .round
             progressHexagon.lineJoinStyle = .round
 
             if isMonochrome {
@@ -459,10 +461,10 @@ class ShapeIconRenderer {
         }
 
         // 3. Draw the percentage text
-        let percentageText = "\(Int(percentage))"
-        let percentageFontSize: CGFloat = percentage >= 100 ? 5.0 : 7.2
+        let percentageText = "\(Int(displayPercentage))"
+        let percentageFontSize: CGFloat = displayPercentage >= 100 ? 5.0 : 7.2
         let attributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: percentageFontSize, weight: percentage >= 100 ? .bold : .semibold),
+            .font: NSFont.systemFont(ofSize: percentageFontSize, weight: displayPercentage >= 100 ? .bold : .semibold),
             .foregroundColor: UsageColorScheme.menuBarForeground(for: button)
         ]
         let textSize = percentageText.size(withAttributes: attributes)

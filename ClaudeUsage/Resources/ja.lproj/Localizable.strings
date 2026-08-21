@@ -132,6 +132,8 @@
 "display.none" = "表示しない";
 "display.show_icon" = "アイコンを表示";
 "display.show_percentage" = "パーセンテージを表示";
+"display.show_remaining" = "残量を表示";
+"display.show_remaining_desc" = "使用済みパーセンテージの代わりに残量を表示します（macOSのバッテリーのように）";
 
 // MARK: - Refresh Interval
 "refresh.smart_mode" = "スマート頻度";

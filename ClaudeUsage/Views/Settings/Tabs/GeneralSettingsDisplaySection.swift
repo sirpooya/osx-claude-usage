@@ -92,6 +92,24 @@ struct GeneralSettingsDisplaySection: View {
                         .disabled(settings.iconDisplayMode == .percentageOnly)
                     }
                 }
+
+                Divider()
+
+                // Battery style display: remaining capacity instead of used percentage
+                VStack(alignment: .leading, spacing: 6) {
+                    Toggle(isOn: $settings.showRemainingPercentage) {
+                        Text(L.Display.showRemaining)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                    }
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+
+                    Text(L.Display.showRemainingDesc)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
     }

@@ -9,7 +9,7 @@
 import SwiftUI
 
 /// Settings view
-/// A toolbar style layout with three tabs: general settings, authentication and about
+/// A toolbar style layout with four tabs: general settings, authentication, history and about
 struct SettingsView: View {
     @ObservedObject private var settings = UserSettings.shared
     @State private var selectedTab: Int
@@ -42,11 +42,19 @@ struct SettingsView: View {
                 }
 
                 ToolbarButton(
-                    icon: "info.circle.fill",
-                    title: L.SettingsTab.about,
+                    icon: "chart.bar.xaxis",
+                    title: L.SettingsTab.history,
                     isSelected: selectedTab == 2
                 ) {
                     selectedTab = 2
+                }
+
+                ToolbarButton(
+                    icon: "info.circle.fill",
+                    title: L.SettingsTab.about,
+                    isSelected: selectedTab == 3
+                ) {
+                    selectedTab = 3
                 }
             }
             .frame(maxWidth: .infinity)
@@ -66,6 +74,8 @@ struct SettingsView: View {
                 case 1:
                     AuthSettingsView()
                 case 2:
+                    HistorySettingsView()
+                case 3:
                     AboutView()
                 default:
                     GeneralSettingsView()

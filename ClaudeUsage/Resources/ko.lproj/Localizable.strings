@@ -132,6 +132,8 @@
 "display.none" = "표시 안 함";
 "display.show_icon" = "아이콘 표시";
 "display.show_percentage" = "백분율 표시";
+"display.show_remaining" = "남은 용량 표시";
+"display.show_remaining_desc" = "사용한 백분율 대신 남은 용량을 표시합니다 (macOS 배터리처럼)";
 
 // MARK: - Refresh Interval
 "refresh.smart_mode" = "스마트 간격";

@@ -626,6 +626,8 @@ different wrong fixes all produced byte-identical coordinates. Measure with
 - MIT license.
 - No telemetry, no analytics, no account, no network calls except `api.anthropic.com`.
 - Never write, log, or display the access token. Read from Keychain at point of use only.
+  Known violation to fix: the app persists the account's session key in plain UserDefaults
+  under `DEBUG_accounts` (seen 2026-08-21 via `defaults read`). It belongs in the Keychain.
   The CLI Account settings card shows a masked token only (`ClaudeCodeCredentials.maskedAccessToken`),
   and there is deliberately no reveal or copy affordance for it.
 - Never bundle an API key or ship credentials.

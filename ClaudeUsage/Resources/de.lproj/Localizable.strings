@@ -131,6 +131,8 @@
 "display.none" = "Keine Anzeige";
 "display.show_icon" = "Symbol anzeigen";
 "display.show_percentage" = "Prozent anzeigen";
+"display.show_remaining" = "Verbleibend anzeigen";
+"display.show_remaining_desc" = "Verbleibende Kapazität statt genutztem Prozentsatz anzeigen (wie die macOS-Batterie)";
 
 // MARK: - Refresh Interval
 "refresh.smart_mode" = "Intelligente Frequenz";
