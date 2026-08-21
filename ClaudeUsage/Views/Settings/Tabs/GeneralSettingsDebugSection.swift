@@ -15,7 +15,7 @@ struct GeneralSettingsDebugSection: View {
     @ObservedObject private var settings = UserSettings.shared
 
     var body: some View {
-        SettingCard(
+        SettingSection(
             icon: "ladybug.fill",
             iconColor: .orange,
             title: "Debug Mode",

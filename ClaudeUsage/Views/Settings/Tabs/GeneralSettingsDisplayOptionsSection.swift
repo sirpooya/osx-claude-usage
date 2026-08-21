@@ -14,7 +14,7 @@ struct GeneralSettingsDisplayOptionsSection: View {
     @ObservedObject private var settings = UserSettings.shared
 
     var body: some View {
-        SettingCard(
+        SettingSection(
             icon: "rectangle.3.group",
             iconColor: .purple,
             title: L.DisplayOptions.title,

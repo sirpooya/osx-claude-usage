@@ -444,6 +444,14 @@ What has been changed from upstream so far:
   `legacyStackedBody` keeps the old layout around for reference only.
   - Width is now **556** (720 minus 164), so re-check this sidebar plus detail pane: the 720 was
     chosen to fit them side by side, and that was the one thing the narrower window put at risk.
+  - **Grouped by provider now, not by "CREDENTIALS".** The sidebar heads each group with that
+    provider's own icon: CLAUDE (`ImageHelper.createAppIcon`) over Claude.ai / API Console /
+    CLI Account, then CODEX (`ImageHelper.createCodexIcon`) over Codex, then the unchanged
+    text-only TOOLS over Diagnostics. One `sectionHeader(_:icon:topPadding:)` helper draws all
+    three, icon 13pt (`sectionIconSize`) next to the same caption2 semibold secondary label,
+    uppercased with `.textCase(.uppercase)`. "Claude" and "Codex" are brand names, so they are
+    hardcoded rather than localized, the same call as the subscription tier label;
+    `credentials_nav.section_credentials` is now unused but kept.
 - **The settings window size lives in `SettingsView.contentSize`**, used by both the view's
   `.frame` and the window, the same single-source-of-truth shape as `WelcomeView.contentSize`.
   `MenuBarManager` re-applies it with `setContentSize` immediately after
@@ -529,8 +537,10 @@ What has been changed from upstream so far:
   with `minWidth: 52`, radius-9 continuous pill. Items sit centred with 2pt spacing instead of
   splitting the bar into thirds; `TabDivider.swift` deleted (no other callers). The divider under
   the bar is softened with `.overlay(Color.primary.opacity(0.03))`. The English
-  `settings.tab.auth` label is "Authentication", not "Authentication Settings" (other locales
-  already had the short form). The settings window now carries no titlebar text at all,
+  `settings.tab.auth` label is now **"Account"** (was "Authentication", itself shortened from
+  upstream's "Authentication Settings"), translated in all 7 locales (Konto / Compte /
+  アカウント / 계정 / 账户 / 帳戶). The tab still opens the credentials sidebar; the key name
+  stays `settings.tab.auth`. The settings window now carries no titlebar text at all,
   download-manager style: `titleVisibility = .hidden`, `titlebarAppearsTransparent`,
   `.fullSizeContentView` (tab bar at the very top, close button floating over its left end),
   miniaturize/zoom hidden, `isMovableByWindowBackground = true` so the window still drags. The

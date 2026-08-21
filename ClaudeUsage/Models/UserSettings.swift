@@ -439,6 +439,15 @@ class UserSettings: ObservableObject {
             .joined(separator: " ")
     }
 
+    /// Pace-aware bar colours: escalate on the projected end-of-window figure rather than on
+    /// current usage, so the colour answers "will I hit the cap" instead of "where am I now".
+    @Published var paceAwareBarColors: Bool {
+        didSet {
+            defaults.set(paceAwareBarColors, forKey: "paceAwareBarColors")
+            NotificationCenter.default.post(name: .settingsChanged, object: nil)
+        }
+    }
+
     /// Battery style display: show remaining capacity instead of used percentage.
     /// Flips the displayed number and the ring/bar fill everywhere; status colors stay keyed off used.
     @Published var showRemainingPercentage: Bool {
@@ -833,6 +842,9 @@ class UserSettings: ObservableObject {
         // Load the remaining percentage display, off (show used) by default
         self.showRemainingPercentage = defaults.bool(forKey: "showRemainingPercentage")
 
+        // Load the pace-aware bar colors, off (color on current usage) by default
+        self.paceAwareBarColors = defaults.bool(forKey: "paceAwareBarColors")
+
         // Launch at login loading moved into LaunchAtLoginManager.init()
 
         // MARK: - Initialize the debug mode settings
@@ -933,6 +945,7 @@ class UserSettings: ObservableObject {
         iconDisplayMode = .percentageOnly
         iconStyleMode = .colorTranslucent
         showRemainingPercentage = false
+        paceAwareBarColors = false
         refreshMode = .smart
         refreshInterval = 180  // 3 minutes by default in fixed mode
         language = Self.detectSystemLanguage()

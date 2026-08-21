@@ -24,7 +24,7 @@ struct GeneralSettingsView: View {
                 GeneralSettingsDisplayOptionsSection()
 
                 // Refresh settings card
-                SettingCard(
+                SettingSection(
                     icon: "clock.arrow.trianglehead.2.counterclockwise.rotate.90",
                     iconColor: .green,
                     title: L.SettingsGeneral.refreshSection,
@@ -61,7 +61,7 @@ struct GeneralSettingsView: View {
                 }
 
                 // Notification settings card
-                SettingCard(
+                SettingSection(
                     icon: "bell.badge",
                     iconColor: .red,
                     title: L.SettingsNotification.section,
@@ -85,7 +85,7 @@ struct GeneralSettingsView: View {
                 }
 
                 // Time format settings card
-                SettingCard(
+                SettingSection(
                     icon: "clock",
                     iconColor: .cyan,
                     title: L.SettingsGeneralTimeFormat.section,
@@ -102,7 +102,7 @@ struct GeneralSettingsView: View {
                 }
 
                 // Language settings card
-                SettingCard(
+                SettingSection(
                     icon: "globe",
                     iconColor: .orange,
                     title: L.SettingsGeneral.languageSection,
@@ -119,7 +119,7 @@ struct GeneralSettingsView: View {
                 }
 
                 // Launch at login settings card
-                SettingCard(
+                SettingSection(
                     icon: "power",
                     iconColor: .orange,
                     title: L.SettingsGeneral.launchSection,

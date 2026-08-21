@@ -14,7 +14,7 @@ struct GeneralSettingsDisplaySection: View {
     @ObservedObject private var settings = UserSettings.shared
 
     var body: some View {
-        SettingCard(
+        SettingSection(
             icon: "gauge.with.dots.needle.0percent",
             iconColor: .blue,
             title: L.SettingsGeneral.displaySection
@@ -91,7 +91,7 @@ struct GeneralSettingsDisplaySection: View {
                         .disabled(settings.iconDisplayMode == .percentageOnly)
                     }
 
-                    // Inline rather than the card's hint slot: SettingCard renders its hint
+                    // Inline rather than the section's hint slot: SettingSection renders its hint
                     // last, which would put this line under Show Remaining and read as if it
                     // described that switch instead of these checkboxes.
                     Text(L.SettingsGeneral.menubarHint)

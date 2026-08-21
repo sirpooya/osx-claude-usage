@@ -226,7 +226,7 @@ struct UnifiedLimitRow: View {
     /// In Monochrome icon mode the Claude bars drop the palette and all use the brand color instead;
     /// closeness to the cap stays readable from the percentage text.
     private var barColor: Color {
-        let percentage = percentageValue ?? 0
+        let percentage = colorPercentage
         if settings.iconStyleMode == .monochrome {
             switch type {
             case .fiveHour, .sevenDay, .opusWeekly, .sonnetWeekly, .extraUsage:
