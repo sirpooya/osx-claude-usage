@@ -346,6 +346,10 @@ enum L {
         static func compactRemainingDays(_ days: Int, _ hours: Int) -> String {
             String(format: localized("usage_data.compact_remaining_days"), days, hours)
         }
+        /// Days only, for a countdown over a day: once days are on the clock the hours are noise
+        static func compactRemainingDaysOnly(_ days: Int) -> String {
+            String(format: localized("usage_data.compact_remaining_days_only"), days)
+        }
         static func compactRemainingDaysWithMinutes(_ days: Int, _ hours: Int, _ minutes: Int) -> String {
             String(format: localized("usage_data.compact_remaining_days_with_minutes"), days, hours, minutes)
         }

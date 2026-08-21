@@ -123,11 +123,16 @@ extension UsageData.LimitData {
             return L.UsageData.compactRemainingHours(totalHours, remainingMinutes)
         }
 
-        // Over a day, show days plus hours
+        // Over a day, show days only. Days are the coarse unit the user is reading at that point,
+        // so the hours beside them add precision nobody acts on ("1d 0h left" reads worse than
+        // "1d left").
+        //
+        // Floored, the same count the days-plus-hours version used, so "1d left" means a full day
+        // is left and the reset can only come later than the label implies. Rounding up instead
+        // would print "2d left" with 25h to go, promising time the user does not have.
         let days = totalHours / 24
-        let hours = totalHours % 24
 
-        return L.UsageData.compactRemainingDays(days, hours)
+        return L.UsageData.compactRemainingDaysOnly(days)
     }
 
     /// Formatted reset time (for the 5 hour limit)
