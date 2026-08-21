@@ -197,7 +197,7 @@ class MenuBarManager: ObservableObject {
             checkForUpdates()
         case .about:
             closePopover()
-            openSettingsWindow(tab: 2)
+            openSettingsWindow(tab: 3)
         case .claudeStatus:
             closePopover()
             openClaudeStatus()
@@ -425,7 +425,7 @@ class MenuBarManager: ObservableObject {
     }
 
     @objc func openAbout() {
-        openSettingsWindow(tab: 2)
+        openSettingsWindow(tab: 3)
     }
 
     @objc func openCoffee() {
@@ -492,7 +492,7 @@ class MenuBarManager: ObservableObject {
     }
 
     /// Open the settings window
-    /// - Parameter tab: index of the tab to show (0: General, 1: Authentication, 2: About)
+    /// - Parameter tab: index of the tab to show (0: General, 1: Authentication, 2: History, 3: About)
     private func openSettingsWindow(tab: Int) {
         if settingsWindow == nil {
             // Switch to regular mode so the app appears in the Dock

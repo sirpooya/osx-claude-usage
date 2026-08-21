@@ -536,3 +536,19 @@
 "cli_sync.advanced_subtitle" = "Pin this app to a specific Claude Code keychain entry (multi account setups).";
 "claude_ai_pane.accounts_subtitle" = "Your claude.ai logins";
 "api_console.current_period_subtitle" = "Spend so far this billing period";
+
+// MARK: - History tab
+"settings.tab.history" = "历史";
+"history.title" = "使用历史";
+"history.subtitle" = "跟踪您的使用趋势";
+"history.usage_overview" = "使用概览";
+"history.session_usage" = "会话用量";
+"history.weekly_usage" = "每周用量";
+"history.api_billing" = "API 账单";
+"history.no_data" = "所选时间范围内没有数据";
+"history.now" = "现在";
+"history.range.5h" = "5 小时";
+"history.range.24h" = "24 小时";
+"history.range.7d" = "7 天";
+"history.range.30d" = "30 天";
+"history.range_format" = "%1$@ 至 %2$@";

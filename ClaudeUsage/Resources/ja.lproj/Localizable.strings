@@ -536,3 +536,19 @@
 "cli_sync.advanced_subtitle" = "Pin this app to a specific Claude Code keychain entry (multi account setups).";
 "claude_ai_pane.accounts_subtitle" = "Your claude.ai logins";
 "api_console.current_period_subtitle" = "Spend so far this billing period";
+
+// MARK: - History tab
+"settings.tab.history" = "履歴";
+"history.title" = "使用履歴";
+"history.subtitle" = "使用状況の推移を確認";
+"history.usage_overview" = "使用状況の概要";
+"history.session_usage" = "セッション使用量";
+"history.weekly_usage" = "週間使用量";
+"history.api_billing" = "API請求";
+"history.no_data" = "選択した期間にデータがありません";
+"history.now" = "現在";
+"history.range.5h" = "5時間";
+"history.range.24h" = "24時間";
+"history.range.7d" = "7日間";
+"history.range.30d" = "30日間";
+"history.range_format" = "%1$@〜%2$@";

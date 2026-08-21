@@ -536,3 +536,19 @@
 "cli_sync.advanced_subtitle" = "Pin this app to a specific Claude Code keychain entry (multi account setups).";
 "claude_ai_pane.accounts_subtitle" = "Your claude.ai logins";
 "api_console.current_period_subtitle" = "Spend so far this billing period";
+
+// MARK: - History tab
+"settings.tab.history" = "기록";
+"history.title" = "사용 기록";
+"history.subtitle" = "시간 경과에 따른 사용량 추적";
+"history.usage_overview" = "사용량 개요";
+"history.session_usage" = "세션 사용량";
+"history.weekly_usage" = "주간 사용량";
+"history.api_billing" = "API 청구";
+"history.no_data" = "선택한 기간에 데이터가 없습니다";
+"history.now" = "현재";
+"history.range.5h" = "5시간";
+"history.range.24h" = "24시간";
+"history.range.7d" = "7일";
+"history.range.30d" = "30일";
+"history.range_format" = "%1$@ ~ %2$@";

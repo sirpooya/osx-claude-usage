@@ -536,3 +536,19 @@
 "cli_sync.advanced_subtitle" = "Pin this app to a specific Claude Code keychain entry (multi account setups).";
 "claude_ai_pane.accounts_subtitle" = "Your claude.ai logins";
 "api_console.current_period_subtitle" = "Spend so far this billing period";
+
+// MARK: - History tab
+"settings.tab.history" = "History";
+"history.title" = "Usage History";
+"history.subtitle" = "Track your usage over time";
+"history.usage_overview" = "Usage Overview";
+"history.session_usage" = "Session Usage";
+"history.weekly_usage" = "Weekly Usage";
+"history.api_billing" = "API Billing";
+"history.no_data" = "No data in selected range";
+"history.now" = "Now";
+"history.range.5h" = "5 Hours";
+"history.range.24h" = "24 Hours";
+"history.range.7d" = "7 Days";
+"history.range.30d" = "30 Days";
+"history.range_format" = "%1$@ to %2$@";
