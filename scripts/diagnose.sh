@@ -16,6 +16,25 @@ HOURS="${1:-24}"
 bold() { printf "\033[1m%s\033[0m\n" "$1"; }
 rule() { printf '%s\n' "----------------------------------------------------------------"; }
 
+# `log show` has no timeout of its own and can run for minutes. Cap it, and say
+# so rather than looking hung. Falls back cleanly when perl is unavailable.
+LOG_QUERY_TIMEOUT="${LOG_QUERY_TIMEOUT:-45}"
+run_log_query() {
+    local predicate="$1"
+    local out
+    if command -v perl >/dev/null 2>&1; then
+        out="$(perl -e 'alarm shift; exec @ARGV' "$LOG_QUERY_TIMEOUT" \
+            log show --last "${HOURS}h" --style compact --predicate "$predicate" 2>/dev/null | tail -20)"
+    else
+        out="$(log show --last "${HOURS}h" --style compact --predicate "$predicate" 2>/dev/null | tail -20)"
+    fi
+    if [[ -z "$out" ]]; then
+        echo "(nothing found, or the query hit the ${LOG_QUERY_TIMEOUT}s limit)"
+    else
+        printf '%s\n' "$out"
+    fi
+}
+
 bold "ClaudeUsage diagnostics"
 printf 'generated %s, looking back %sh\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$HOURS"
 rule
@@ -79,18 +98,16 @@ rule
 
 # 5. Jetsam. The usual culprit for a silently killed background agent.
 bold "5. Memory pressure and jetsam"
-log show --last "${HOURS}h" --style compact \
-    --predicate 'eventMessage CONTAINS "jetsam" OR eventMessage CONTAINS "memorystatus" OR eventMessage CONTAINS "lowswap"' \
-    2>/dev/null | grep -i -E "claude|usage" | tail -20
+# Scoped to the process name so the query stays fast. An unscoped
+# system-wide log show over 24h can take minutes.
+run_log_query 'eventMessage CONTAINS "jetsam" AND eventMessage CONTAINS[c] "ClaudeUsage"' 
 echo "(no output above means no jetsam kill was recorded for this app)"
 rule
 
 # 6. Control Center blocking. The specific macOS 26 failure where the icon
 #    vanishes and the app looks like it quit.
 bold "6. Control Center status item blocking"
-log show --last "${HOURS}h" --style compact \
-    --predicate 'eventMessage CONTAINS "blocked list" OR eventMessage CONTAINS "Moving host"' \
-    2>/dev/null | grep -i -E "claude|usage" | tail -20
+run_log_query '(eventMessage CONTAINS "blocked list" OR eventMessage CONTAINS "Moving host") AND eventMessage CONTAINS[c] "claudeusage"' 
 echo "(no output above means the status item was not blocked)"
 rule
 
@@ -110,8 +127,7 @@ rule
 
 # 8. Unified log for the subsystem, catching anything the file logger missed.
 bold "8. Unified log for $BUNDLE_ID"
-log show --last "${HOURS}h" --style compact \
-    --predicate "subsystem == \"$BUNDLE_ID\"" 2>/dev/null | tail -30
+run_log_query "subsystem == \"$BUNDLE_ID\""
 echo "(empty is normal if the app has not run since the last reboot)"
 rule
 

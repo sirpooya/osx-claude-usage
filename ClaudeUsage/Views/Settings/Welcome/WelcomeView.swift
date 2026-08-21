@@ -9,47 +9,31 @@
 import SwiftUI
 
 /// 首次启动欢迎界面
-/// 单页流程：欢迎 → 所有设置（认证 + 主题 + 预览）
+/// 单页流程：直接进入所有设置（认证 + 主题 + 预览），不再有单独的欢迎页
 /// 具体步骤内容拆到 SetupStepView.swift / WelcomeSupportingViews.swift，保持本文件体量可控
 struct WelcomeView: View {
     @ObservedObject private var settings = UserSettings.shared
     @Environment(\.dismiss) private var dismiss
     @StateObject private var localization = LocalizationManager.shared
-    @State private var currentStep: WelcomeStep = .welcome
     @State private var sessionKey: String = ""
     @State private var isShowingPassword: Bool = false
     @State private var isFetchingOrgId: Bool = false
     @State private var fetchError: String?
 
-    enum WelcomeStep {
-        case welcome
-        case setup
-    }
-
     var body: some View {
         VStack(spacing: 0) {
             // 内容区域
-            Group {
-                switch currentStep {
-                case .welcome:
-                    WelcomeStepView()
-                case .setup:
-                    SetupStepView(
-                        sessionKey: $sessionKey,
-                        isShowingPassword: $isShowingPassword
-                    )
-                }
-            }
+            SetupStepView(
+                sessionKey: $sessionKey,
+                isShowingPassword: $isShowingPassword
+            )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             // 底部导航按钮
             NavigationButtons(
-                currentStep: currentStep,
                 canProceed: canProceed,
                 isFetchingOrgId: isFetchingOrgId,
                 fetchError: fetchError,
-                onBack: goToPreviousStep,
-                onNext: goToNextStep,
                 onSkip: skipSetup,
                 onComplete: completeSetup
             )
@@ -63,37 +47,10 @@ struct WelcomeView: View {
     // MARK: - Computed Properties
 
     private var canProceed: Bool {
-        switch currentStep {
-        case .welcome:
-            return true
-        case .setup:
-            return !sessionKey.isEmpty && settings.isValidSessionKey(sessionKey)
-        }
+        !sessionKey.isEmpty && settings.isValidSessionKey(sessionKey)
     }
 
     // MARK: - Navigation Methods
-
-    private func goToPreviousStep() {
-        withAnimation {
-            switch currentStep {
-            case .setup:
-                currentStep = .welcome
-            case .welcome:
-                break
-            }
-        }
-    }
-
-    private func goToNextStep() {
-        withAnimation {
-            switch currentStep {
-            case .welcome:
-                currentStep = .setup
-            case .setup:
-                completeSetup()
-            }
-        }
-    }
 
     private func skipSetup() {
         settings.isFirstLaunch = false
@@ -169,36 +126,3 @@ struct WelcomeView: View {
 
 }
 
-// MARK: - Welcome Step
-
-struct WelcomeStepView: View {
-    var body: some View {
-        VStack(spacing: 24) {
-            Spacer()
-
-            // App图标
-            if let icon = ImageHelper.createAppIcon(size: 120) {
-                Image(nsImage: icon)
-                    .resizable()
-                    .frame(width: 120, height: 120)
-                    .cornerRadius(24)
-                    .shadow(radius: 10)
-            }
-
-            // 欢迎文字
-            VStack(spacing: 12) {
-                Text(L.Welcome.title)
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-
-                Text(L.Welcome.subtitle)
-                    .font(.body)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
-            }
-
-            Spacer()
-        }
-    }
-}

@@ -119,6 +119,35 @@ class SensitiveDataRedactor {
             )
         }
 
+        // 脱敏裸 token。
+        //
+        // 上面几条都要求 token 前面带 sessionKey= / Cookie: 这类标签，
+        // 但日志里最常见的其实是没有标签的裸串：异常 reason、URL、错误
+        // 描述里直接带出一个 sk-ant-...。少了这一条，"永不记录 token"
+        // 这条规则实际上是漏的。
+        let bareTokenPatterns = [
+            // Anthropic key / OAuth token: sk-ant-*
+            "sk-ant-[A-Za-z0-9_-]{8,}",
+            // Authorization: Bearer <任意长串>
+            "(?i)(bearer)\\s+[A-Za-z0-9._~+/=-]{12,}",
+            // JWT 三段式，Codex 的 session token 是这个形状
+            "eyJ[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{4,}",
+            // OAuth refresh / access token 字段
+            "(?i)(access_token|refresh_token|accessToken|refreshToken)[\"']?\\s*[=:]\\s*[\"']?[A-Za-z0-9._~+/=-]{12,}",
+        ]
+        for pattern in bareTokenPatterns {
+            guard let regex = try? NSRegularExpression(pattern: pattern) else { continue }
+            let range = NSRange(sanitized.startIndex..., in: sanitized)
+            // $1 保留标签（Bearer / access_token），只吃掉后面的值，
+            // 这样日志还能看出是哪种凭据出了问题。
+            sanitized = regex.stringByReplacingMatches(
+                in: sanitized,
+                options: [],
+                range: range,
+                withTemplate: "$1***REDACTED***"
+            )
+        }
+
         return sanitized
     }
 }

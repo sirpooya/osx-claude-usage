@@ -120,12 +120,9 @@ struct MenuBarIconPreview: View {
 // MARK: - Navigation Buttons
 
 struct NavigationButtons: View {
-    let currentStep: WelcomeView.WelcomeStep
     let canProceed: Bool
     let isFetchingOrgId: Bool
     let fetchError: String?
-    let onBack: () -> Void
-    let onNext: () -> Void
     let onSkip: () -> Void
     let onComplete: () -> Void
 
@@ -144,41 +141,26 @@ struct NavigationButtons: View {
 
             // 按钮行
             HStack(spacing: 12) {
-                // 返回按钮
-                if currentStep != .welcome {
-                    Button(action: onBack) {
-                        HStack {
-                            Image(systemName: "chevron.left")
-                            Text(L.Welcome.back)
-                        }
-                    }
-                    .buttonStyle(.bordered)
-                    .disabled(isFetchingOrgId)
-                }
-
                 Spacer()
 
                 // 跳过按钮
-                if currentStep != .setup {
-                    Button(L.Welcome.skip, action: onSkip)
-                        .buttonStyle(.plain)
-                        .foregroundColor(.secondary)
-                        .disabled(isFetchingOrgId)
-                }
+                // 欢迎页被移除后，这里是唯一的跳过入口。若去掉它，
+                // 没有 Session Key 的用户就无从退出，且下次启动会再次弹出。
+                Button(L.Welcome.skip, action: onSkip)
+                    .buttonStyle(.plain)
+                    .foregroundColor(.secondary)
+                    .disabled(isFetchingOrgId)
 
                 // 继续/完成按钮
-                Button(action: currentStep == .setup ? onComplete : onNext) {
+                Button(action: onComplete) {
                     HStack(spacing: 8) {
-                        if isFetchingOrgId && currentStep == .setup {
+                        if isFetchingOrgId {
                             ProgressView()
                                 .scaleEffect(0.8)
                                 .frame(width: 12, height: 12)
                             Text(L.Welcome.configuring)
                         } else {
-                            Text(currentStep == .setup ? L.Welcome.finish : L.Welcome.continue_)
-                            if currentStep != .setup {
-                                Image(systemName: "chevron.right")
-                            }
+                            Text(L.Welcome.finish)
                         }
                     }
                     .frame(maxWidth: 150)
