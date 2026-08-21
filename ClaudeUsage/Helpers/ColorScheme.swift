@@ -42,6 +42,22 @@ enum UsageColorScheme {
         return isDarkMode(for: nil)
     }
 
+    // MARK: - 菜单栏前景色（彩色模式）
+
+    /// 彩色模式下的前景色（数字、字形）。
+    /// 单色模式的图是 template，AppKit 只取 alpha 再按菜单栏染色，所以随便什么颜色都对；
+    /// 彩色模式不是 template，画上去的颜色会被原样使用，必须自己按菜单栏外观解析：
+    /// 深色菜单栏用白色，浅色菜单栏用近黑色。写死 NSColor.black 就是深色栏里看不见的原因。
+    /// - Parameter statusButton: 状态栏按钮，菜单栏的真实外观只能从它拿
+    static func menuBarForeground(for statusButton: NSStatusBarButton? = nil) -> NSColor {
+        isDarkMode(for: statusButton) ? .white : NSColor(white: 0.1, alpha: 1.0)
+    }
+
+    /// 进度环的底色（未使用的那一段），跟随前景色做半透明
+    static func menuBarTrack(for statusButton: NSStatusBarButton? = nil) -> NSColor {
+        menuBarForeground(for: statusButton).withAlphaComponent(0.25)
+    }
+
     // MARK: - 5小时限制配色（绿→橙→红）
 
     /// 根据5小时限制使用百分比返回 NSColor

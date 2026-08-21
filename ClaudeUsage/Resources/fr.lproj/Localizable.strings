@@ -28,6 +28,7 @@
 "usage.loading" = "Chargement…";
 "usage.not_configured" = "Authentification non configurée";
 "usage.go_to_settings" = "Aller aux réglages";
+"usage.sign_in_prompt" = "Connectez-vous pour voir votre usage de Claude";
 "usage.reset_time" = "Heure de réinitialisation";
 "usage.used" = "Utilisé";
 "usage.five_hour_limit" = "Limite 5 heures";

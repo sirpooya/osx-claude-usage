@@ -28,16 +28,18 @@ struct SetupStepView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Spacer(minLength: 24)
+            // 只留中间一个可伸缩的 Spacer，上下用固定间距：
+            // 标题区贴近顶部，操作区贴近底部，富余空间集中在中间。
+            Spacer().frame(height: 26)
 
             appMark
-            
+
             Spacer().frame(height: 14)
 
             Text(appName)
                 .font(.system(size: 22, weight: .semibold))
 
-            Spacer().frame(height: 6)
+            Spacer().frame(height: 5)
 
             Text(L.Welcome.tagline)
                 .font(.subheadline)
@@ -45,7 +47,7 @@ struct SetupStepView: View {
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Spacer(minLength: 24)
+            Spacer(minLength: 20)
 
             browserSignIn
 
@@ -58,7 +60,7 @@ struct SetupStepView: View {
                 .lineSpacing(2)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Spacer(minLength: 24)
+            Spacer().frame(height: 22)
         }
         .padding(.horizontal, 26)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -66,14 +68,22 @@ struct SetupStepView: View {
 
     // MARK: - Sections
 
-    /// App 图标。用运行时已打包的 AppIcon 资源，和 Finder 里看到的是同一套图形。
+    /// App 图标。
+    /// 注意：Assets 里的 AppIcon 是 appiconset，actool 只把它当图标编译，
+    /// 不会生成同名图片资源，所以 NSImage(named: "AppIcon") 取不到（返回 nil）。
+    /// 这里退回去读 Bundle 自身的图标，拿到的就是 Finder 里显示的那一张。
     @ViewBuilder
     private var appMark: some View {
-        if let icon = ImageHelper.createAppIcon(size: 72) {
-            Image(nsImage: icon)
-                .resizable()
-                .frame(width: 72, height: 72)
-        }
+        Image(nsImage: appIconImage)
+            .resizable()
+            .frame(width: 72, height: 72)
+    }
+
+    private var appIconImage: NSImage {
+        if let packed = ImageHelper.createAppIcon(size: 72) { return packed }
+        let icon = NSWorkspace.shared.icon(forFile: Bundle.main.bundlePath)
+        icon.size = NSSize(width: 72, height: 72)
+        return icon
     }
 
     /// 浏览器登录按钮（唯一入口，占满整行）

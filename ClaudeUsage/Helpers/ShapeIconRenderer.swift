@@ -152,7 +152,7 @@ class ShapeIconRenderer {
         let percentageFontSize: CGFloat = percentage >= 100 ? 5.0 : 7.2
         let attributes: [NSAttributedString.Key: Any] = [
             .font: NSFont.systemFont(ofSize: percentageFontSize, weight: percentage >= 100 ? .bold : .semibold),
-            .foregroundColor: NSColor.black
+            .foregroundColor: UsageColorScheme.menuBarForeground(for: button)
         ]
         let textSize = percentageText.size(withAttributes: attributes)
         let textRect = NSRect(x: center.x - textSize.width / 2, y: center.y - textSize.height / 2, width: textSize.width, height: textSize.height)
@@ -335,7 +335,7 @@ class ShapeIconRenderer {
         let percentageFontSize: CGFloat = percentage >= 100 ? 5.0 : 7.2
         let attributes: [NSAttributedString.Key: Any] = [
             .font: NSFont.systemFont(ofSize: percentageFontSize, weight: percentage >= 100 ? .bold : .semibold),
-            .foregroundColor: NSColor.black
+            .foregroundColor: UsageColorScheme.menuBarForeground(for: button)
         ]
         let textSize = percentageText.size(withAttributes: attributes)
         let textRect = NSRect(x: center.x - textSize.width / 2, y: center.y - textSize.height / 2, width: textSize.width, height: textSize.height)
@@ -459,7 +459,7 @@ class ShapeIconRenderer {
         let percentageFontSize: CGFloat = percentage >= 100 ? 5.0 : 7.2
         let attributes: [NSAttributedString.Key: Any] = [
             .font: NSFont.systemFont(ofSize: percentageFontSize, weight: percentage >= 100 ? .bold : .semibold),
-            .foregroundColor: NSColor.black
+            .foregroundColor: UsageColorScheme.menuBarForeground(for: button)
         ]
         let textSize = percentageText.size(withAttributes: attributes)
         let textRect = NSRect(x: center.x - textSize.width / 2, y: center.y - textSize.height / 2, width: textSize.width, height: textSize.height)

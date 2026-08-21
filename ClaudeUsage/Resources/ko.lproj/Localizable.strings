@@ -28,6 +28,7 @@
 "usage.loading" = "로딩 중...";
 "usage.not_configured" = "인증 정보 미설정";
 "usage.go_to_settings" = "인증 정보 설정하기";
+"usage.sign_in_prompt" = "로그인하면 Claude 사용량을 볼 수 있습니다";
 "usage.reset_time" = "재설정 시간";
 "usage.used" = "사용함";
 "usage.five_hour_limit" = "5시간 제한";

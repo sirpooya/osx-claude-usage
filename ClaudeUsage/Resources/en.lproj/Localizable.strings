@@ -28,6 +28,7 @@
 "usage.loading" = "Loading...";
 "usage.not_configured" = "Authentication not configured";
 "usage.go_to_settings" = "Go to Settings";
+"usage.sign_in_prompt" = "Sign in to see your Claude usage";
 "usage.reset_time" = "Reset Time";
 "usage.used" = "Used";
 "usage.five_hour_limit" = "5-Hour Limit";

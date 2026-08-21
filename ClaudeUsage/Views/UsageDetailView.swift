@@ -190,51 +190,68 @@ struct UsageDetailView: View {
         return dynamicHeight
     }
 
+    /// 未登录状态。不是错误，所以不用警告图标，只给一个动作：登录。
+    private var signedOutState: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "key.fill")
+                .font(.system(size: 30))
+                .foregroundColor(UsageColorScheme.brand)
+
+            Text(L.Usage.signInPrompt)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button(action: {
+                WebLoginWindowManager.shared.showLoginWindow { _ in
+                    // 登录完直接拉一次数据，省得用户再点刷新
+                    onMenuAction?(.refresh)
+                }
+            }) {
+                Text(L.WebLogin.browserLoginRecommended)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(UsageColorScheme.brand)
+        }
+        .padding()
+    }
+
+    /// 真正的错误状态。按钮写什么就做什么，不再拿"运行诊断"当设置入口。
+    /// 文案允许换行，之前固定单行会把消息截断成 "...information in..."。
+    private func errorState(_ error: String) -> some View {
+        VStack(spacing: 12) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 30))
+                .foregroundColor(.orange)
+
+            Text(error)
+                .font(.subheadline)
+                .multilineTextAlignment(.center)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack(spacing: 10) {
+                Button(L.Usage.refresh) { onMenuAction?(.refresh) }
+                Button(L.Usage.goToSettings) { onMenuAction?(.authSettings) }
+            }
+            .buttonStyle(.bordered)
+        }
+        .padding()
+    }
+
     @ViewBuilder
     private var claudeMainContent: some View {
         if let error = errorMessage {
-            // 错误信息
-            VStack(spacing: 12) {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 40))
-                    .foregroundColor(.orange)
-                Text(error)
-                    .font(.subheadline)
-                    .multilineTextAlignment(.center)
-                    .foregroundColor(.secondary)
-
-                // 操作按钮组
-                HStack(spacing: 12) {
-                    // 如果是认证信息错误，显示设置按钮
-                    if error.contains("认证") || error.contains("配置") || error.contains("Authentication") || error.contains("configured") {
-                        Button(action: {
-                            onMenuAction?(.authSettings)
-                        }) {
-                            Label(L.Usage.goToSettings, systemImage: "key.fill")
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(Color.blue)
-                                .foregroundColor(.white)
-                                .cornerRadius(8)
-                        }
-                        .buttonStyle(.plain)
-                    }
-
-                    // 诊断连接按钮（所有错误都显示）
-                    Button(action: {
-                        onMenuAction?(.authSettings)
-                    }) {
-                        Label(L.Usage.runDiagnostic, systemImage: "stethoscope")
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(Color.orange)
-                            .foregroundColor(.white)
-                            .cornerRadius(8)
-                    }
-                    .buttonStyle(.plain)
-                }
+            // 没登录不算错误，按空状态处理；只有真出错才摆警告图标。
+            // 原来这里靠 error.contains("Authentication"/"configured") 猜是哪种情况，
+            // 而实际文案是 "Please configure authentication information..."，
+            // 两个判断都不成立，于是只剩下那个名不副实的"运行诊断"按钮。
+            if !UserSettings.shared.hasValidCredentials {
+                signedOutState
+            } else {
+                errorState(error)
             }
-            .padding()
         } else if let data = usageData {
             // 使用数据
             VStack(spacing: 15) {
@@ -563,7 +580,7 @@ struct UsageDetailView: View {
         }
         .frame(height: headerRowHeight, alignment: .center)
         .padding(.horizontal)
-        .padding(.top)
+        .padding(.top, 18)
     }
 
     @ViewBuilder
@@ -627,31 +644,12 @@ struct UsageDetailView: View {
                     }
                     .buttonStyle(.plain)
                 } else {
-                    HStack(spacing: 12) {
-                        Button(action: {
-                            onMenuAction?(.authSettings)
-                        }) {
-                            Label(L.Usage.goToSettings, systemImage: "key.fill")
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(Color.blue)
-                                .foregroundColor(.white)
-                                .cornerRadius(8)
-                        }
-                        .buttonStyle(.plain)
-
-                        Button(action: {
-                            onMenuAction?(.authSettings)
-                        }) {
-                            Label(L.Usage.runDiagnostic, systemImage: "stethoscope")
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(Color.orange)
-                                .foregroundColor(.white)
-                                .cornerRadius(8)
-                        }
-                        .buttonStyle(.plain)
+                    // 同上：两个按钮原本都指向设置，其中一个却写着"运行诊断"
+                    HStack(spacing: 10) {
+                        Button(L.Usage.refresh) { onMenuAction?(.refreshCodex) }
+                        Button(L.Usage.goToSettings) { onMenuAction?(.authSettings) }
                     }
+                    .buttonStyle(.bordered)
                 }
             }
             .padding()

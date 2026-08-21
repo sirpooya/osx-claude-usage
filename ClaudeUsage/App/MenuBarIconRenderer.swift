@@ -297,11 +297,12 @@ class MenuBarIconRenderer {
         if !removeBackground {
             let backgroundCircle = NSBezierPath()
             backgroundCircle.appendArc(withCenter: center, radius: radius, startAngle: 0, endAngle: 360, clockwise: false)
-            NSColor.white.withAlphaComponent(0.5).setFill()
+            // 跟随菜单栏外观的极淡底盘。写死半透明白在浅色菜单栏上会发灰发糊。
+            UsageColorScheme.menuBarForeground(for: button).withAlphaComponent(0.10).setFill()
             backgroundCircle.fill()
         }
 
-        NSColor.gray.withAlphaComponent(0.5).setStroke()
+        UsageColorScheme.menuBarTrack(for: button).setStroke()
         let backgroundPath = NSBezierPath()
         backgroundPath.appendArc(withCenter: center, radius: radius, startAngle: 0, endAngle: 360, clockwise: false)
         backgroundPath.lineWidth = 1.5
@@ -358,7 +359,11 @@ class MenuBarIconRenderer {
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = .center
 
-        let attrs: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: NSColor.black, .paragraphStyle: paragraphStyle]
+        let attrs: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: UsageColorScheme.menuBarForeground(for: button),
+            .paragraphStyle: paragraphStyle
+        ]
         let textSize = text.size(withAttributes: attrs)
         let textOrigin = NSPoint(x: center.x - textSize.width / 2, y: center.y - textSize.height / 2)
         text.draw(at: textOrigin, withAttributes: attrs)

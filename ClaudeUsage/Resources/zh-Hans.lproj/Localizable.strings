@@ -28,6 +28,7 @@
 "usage.loading" = "加载中...";
 "usage.not_configured" = "未配置认证信息";
 "usage.go_to_settings" = "去设置认证信息";
+"usage.sign_in_prompt" = "登录后即可查看 Claude 用量";
 "usage.reset_time" = "重置时间";
 "usage.used" = "已使用";
 "usage.five_hour_limit" = "5小时限制";

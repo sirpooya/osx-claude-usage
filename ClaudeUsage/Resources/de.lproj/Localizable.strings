@@ -27,6 +27,7 @@
 "usage.loading" = "Lade...";
 "usage.not_configured" = "Anmeldung nicht konfiguriert";
 "usage.go_to_settings" = "Gehe zu den Einstellungen";
+"usage.sign_in_prompt" = "Anmelden, um die Claude-Nutzung zu sehen";
 "usage.reset_time" = "Reset-Zeit";
 "usage.used" = "Verwendet";
 "usage.five_hour_limit" = "5-Stunden-Limit";

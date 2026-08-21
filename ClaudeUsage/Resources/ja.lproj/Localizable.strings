@@ -28,6 +28,7 @@
 "usage.loading" = "読み込み中...";
 "usage.not_configured" = "認証情報が未設定";
 "usage.go_to_settings" = "設定へ";
+"usage.sign_in_prompt" = "サインインすると Claude の使用状況が表示されます";
 "usage.reset_time" = "リセット時刻";
 "usage.used" = "使用済";
 "usage.five_hour_limit" = "5時間制限";
