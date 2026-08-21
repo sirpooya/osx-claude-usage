@@ -636,6 +636,15 @@ class MenuBarUI {
         let isMulti = settings.isMultiProviderActive
         // The remaining/used display flips the rendered glyph and sweep without changing the data, so it has to be part of the key
         let remainingFlag = settings.showRemainingPercentage ? "_rem" : ""
+
+        // The period tick moves with the clock, not with the data, so a key built only from
+        // percentages would keep serving the old image and freeze the tick in place. Quantised to
+        // whole percent: one step is about 3 minutes of a 5h window, current enough without
+        // rebuilding the icon on every poll.
+        func markerToken(_ label: String, _ resetsAt: Date?, _ type: LimitType) -> String {
+            guard let fraction = iconRenderer.timeMarkerFraction(resetsAt: resetsAt, type: type) else { return "" }
+            return "_\(label)m\(Int(fraction * 100))"
+        }
         guard let data = usageData else {
             var key = "no_data_\(settings.iconDisplayMode.rawValue)_\(settings.iconStyleMode.rawValue)_\(settings.displayMode.rawValue)_mp\(isMulti)\(remainingFlag)"
             if let codex = codexUsageData {
@@ -678,23 +687,33 @@ class MenuBarUI {
 
         if let fiveHour = data.fiveHour {
             key += "_5h\(Int(fiveHour.percentage))"
+            key += markerToken("5h", fiveHour.resetsAt, .fiveHour)
         }
         if let sevenDay = data.sevenDay {
             key += "_7d\(Int(sevenDay.percentage))"
+            key += markerToken("7d", sevenDay.resetsAt, .sevenDay)
         }
         if let opus = data.opus {
             key += "_opus\(Int(opus.percentage))"
+            key += markerToken("opus", opus.resetsAt, .opusWeekly)
         }
         if let sonnet = data.sonnet {
             key += "_sonnet\(Int(sonnet.percentage))"
+            key += markerToken("sonnet", sonnet.resetsAt, .sonnetWeekly)
         }
         if let extraUsage = data.extraUsage, extraUsage.enabled, let percentage = extraUsage.percentage {
             key += "_extra\(Int(percentage))"
         }
 
         if let codex = codexUsageData {
-            if let p = codex.primary { key += "_cxp\(Int(p.percentage))" }
-            if let s = codex.secondary { key += "_cxs\(Int(s.percentage))" }
+            if let p = codex.primary {
+                key += "_cxp\(Int(p.percentage))"
+                key += markerToken("cxp", p.resetsAt, .codexPrimary)
+            }
+            if let s = codex.secondary {
+                key += "_cxs\(Int(s.percentage))"
+                key += markerToken("cxs", s.resetsAt, .codexSecondary)
+            }
             if let e = codex.extraUsage?.percentage { key += "_cxe\(Int(e))" }
         }
 

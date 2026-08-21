@@ -370,8 +370,13 @@ What has been changed from upstream so far:
   is still on the status item's right click menu, `MenuBarUI.createStandardMenu`. The update dot
   moved onto the gear so the signal is not lost.
 - **The popover header shows the subscription tier next to the title**, so it reads "Claude Team",
-  the tier dimmed and regular weight (12pt secondary) because it names the plan rather than being
-  a second title. Not localized: it is the plan's own name. Claude only, Codex has no tier to show.
+  the tier dimmed and regular weight because it names the plan rather than being a second title.
+  Not localized: it is the plan's own name. Claude only, Codex has no tier to show.
+  - Both take `.font(.headline)`, the tier overriding only the weight with `.fontWeight(.regular)`,
+    so the two cannot drift apart in size. The tier was 12pt against the title's 13pt headline.
+  - Title and tier sit in their own `HStack(spacing: 4)` inside the header row. Tightening the gap
+    between them directly would otherwise have pulled the app icon in too, since the icon shares
+    the header row's default spacing.
   - Cached in `UserSettings.claudeSubscriptionTier` (UserDefaults `claude.subscriptionTier`)
     rather than fetched on demand. Both free sources are read on a background queue, and the
     header cannot touch the Keychain while rendering. Empty means unknown, and the header then
@@ -452,6 +457,25 @@ What has been changed from upstream so far:
     uppercased with `.textCase(.uppercase)`. "Claude" and "Codex" are brand names, so they are
     hardcoded rather than localized, the same call as the subscription tier label;
     `credentials_nav.section_credentials` is now unused but kept.
+  - **Two new brand mark assets**, `ClaudeMark.imageset` and `CodexMark.imageset`, rendered at
+    256px @2x from the SVGs kept in `Assets/marks/` (`codex-mark.png` and `download-unused.svg`
+    are stashed there too, unused). `ImageHelper.createClaudeMark` / `createCodexMark` load them.
+    They are the flat provider logos, deliberately separate from `AppIcon` (our pixel-glyph
+    squircle) and `CodexIcon`: the sidebar group headers and the popover header both use the
+    marks now, the menu bar renderers still use `AppIcon` / `CodexIcon` and their template
+    siblings.
+  - **The status card's text hierarchy was two headings stacked.** `CredentialStatusCard`'s
+    title was 13pt semibold directly under the 17pt semibold `CredentialPageHeader`, and on the
+    CLI pane it read "CLI Account Synced" over a bare "3m", so the pane name appeared twice and
+    the second line named nothing. Now the card title is 13pt **medium** (a status, not a
+    heading), its detail line wraps instead of truncating (`fixedSize(horizontal: false)`), and
+    `CLIAccountPane` splits state from explanation: `statusTitle` is the state alone
+    ("Synced" / "Syncing" / "Not Synced" / "Not Found" / "Sync Failed") and the new
+    `statusDetail` carries the rest ("Last synced 3m ago", "Claude Code found on this Mac",
+    "Sign in with the claude command, then try again", or the failure message).
+    `cli_sync.status_synced` / `status_available` / `status_unavailable` were shortened and
+    `status_available_detail`, `status_unavailable_detail`, `status_failed` and
+    `last_synced` ("Last synced %@ ago") added, all translated in the 7 locales.
 - **The settings window size lives in `SettingsView.contentSize`**, used by both the view's
   `.frame` and the window, the same single-source-of-truth shape as `WelcomeView.contentSize`.
   `MenuBarManager` re-applies it with `setContentSize` immediately after
@@ -477,7 +501,18 @@ What has been changed from upstream so far:
   - UI only, and this was checked before deleting: `CodexTokenRefreshCoordinator` is still called
     by `DataRefreshManager` (the real Codex refresh chain) and `DiagnosticRunner`, and
     `CodexSilentRefreshCoordinator` by `DataRefreshManager`. Neither coordinator became dead code.
-  - The four toggles above them stay. The card is `#if DEBUG`, so none of it ships anyway.
+  - Superseded: the whole card is now gone, see below.
+- **The Debug Mode card is gone entirely**, and `GeneralSettingsDebugSection.swift` is deleted
+  (it had exactly one call site, the `#if DEBUG` block at the bottom of `GeneralSettingsView`).
+  That takes the four toggles (enable debug mode, simulate an update, show the shape icon on its
+  own, keep the detail window open), the per-limit percentage sliders and the scenario picker.
+  - The `debugModeEnabled` / `debugScenario` / `debug*Percentage` settings themselves are **kept**
+    in `UserSettings`, because `DataRefreshManager`, `ClaudeAPIService`, `CodexAPIService` and
+    `MenuBarManager` all still branch on them to serve mock data. With no UI they simply stay at
+    their defaults, so that path is now unreachable at runtime: `debugModeEnabled` defaults false
+    and nothing can flip it. Re-add a toggle (or set the key with `defaults write`) to use the
+    mock-data path again.
+  - It was `#if DEBUG`, so nothing about the shipped app changes.
 - **Leading glyphs removed from the General tab's inline descriptions too**, matching the
   SettingCard lightbulb removal above so every description on the page is plain secondary text:
   the blue `info.circle.fill` on the notification description (`GeneralSettingsView`) and the
@@ -603,6 +638,29 @@ What has been changed from upstream so far:
     40% used at 50% elapsed projects 80; the same 40% at 20% elapsed clamps to 100; 10% at 50%
     elapsed projects 20; a 7d limit at 3.5d remaining projects 60 (so the weekly window is not
     being measured with the 5h one); and the gated/nil cases above all return nil.
+- **Time marker: `showTimeMarker`.** New `UserSettings` flag (default off, key `showTimeMarker`,
+  posts `.settingsChanged`), surfaced as a **Show Time Marker** switch in the Display Settings
+  section. Ported from the competitor's `appearance.show_time_marker_*`. New keys
+  `display.show_time_marker` / `_desc` in all 7 locales plus `L.Display.showTimeMarker` /
+  `showTimeMarkerDesc`. Popover only so far; the menu bar icons are the next step.
+  - A tick drawn across the bar at the point the *period* has reached, so usage can be read
+    against how much of the window is gone: 7% used at 17% elapsed is a very different story from
+    7% used at 90%, and the bare percentage cannot tell them apart.
+  - `UsageLimitBar` gained `markerFraction: CGFloat?` (nil hides it) and draws a 1.5pt
+    `labelColor` 0.55 capsule the full height of the bar, over both the fill and the track:
+    `labelColor` resolves near-black on a light backdrop and white on a dark one, so it stays
+    legible against either and on top of the saturated fill. The x is inset by half the tick so
+    it sits fully inside the capsule at 0% and 100% instead of half-hanging off the rounded ends.
+  - `UnifiedLimitRow.markerFraction` computes it, reusing `UsagePaceCalculator.windowDuration`
+    and `elapsedFraction` (which is why that helper's elapsed maths is separate from the
+    projection). nil for the Extra Usage buckets, which have no window to measure.
+  - **Mirrored to `1 - elapsed` when `showRemainingPercentage` is on**, because the fill is
+    mirrored too. Leaving it un-mirrored would put the tick on the opposite side of the fill from
+    where the comparison it exists to support actually lies. This is the one detail worth
+    preserving if this code is ever reworked.
+  - Verified live against the countdown text, which is the useful check because it ties the tick
+    to something independently readable: with "4h 8m left" of a 5h window (17.3% elapsed) the
+    tick measured at 17.2% of the bar, and with "1d 1h left" of 7d (85.1%) it measured at 84.5%.
 - **Battery style display: `showRemainingPercentage`.** New `UserSettings` flag (default off,
   key `showRemainingPercentage`, posts `.settingsChanged`), surfaced as a **Show Remaining**
   switch in the Display Settings card with the description "Display remaining capacity instead

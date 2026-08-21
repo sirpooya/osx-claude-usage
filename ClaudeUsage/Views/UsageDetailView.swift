@@ -407,19 +407,25 @@ struct UsageDetailView: View {
                     .frame(width: headerIconSize, height: headerIconSize)
             }
 
-            Text(provider == .claude ? L.Usage.title : L.Usage.codexTitle)
-                .font(.headline)
+            // Title and tier in their own tighter stack, so closing the gap between them
+            // does not also pull the app icon in
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(provider == .claude ? L.Usage.title : L.Usage.codexTitle)
+                    .font(.headline)
 
-            // Subscription tier next to the title, so the header reads "Claude Team".
-            // Dimmed and regular weight: it names the plan, it is not a second title.
-            // Not localized, it is the plan's own name.
-            if provider == .claude {
-                let tier = settings.claudeSubscriptionTierLabel
-                if !tier.isEmpty {
-                    Text(tier)
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
+                // Subscription tier next to the title, so the header reads "Claude Team".
+                // Same size as the title (`.headline` again, so the two cannot drift apart),
+                // dimmed and regular weight: it names the plan, it is not a second title.
+                // Not localized, it is the plan's own name.
+                if provider == .claude {
+                    let tier = settings.claudeSubscriptionTierLabel
+                    if !tier.isEmpty {
+                        Text(tier)
+                            .font(.headline)
+                            .fontWeight(.regular)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
                 }
             }
 

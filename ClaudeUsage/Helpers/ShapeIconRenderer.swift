@@ -28,6 +28,127 @@ class ShapeIconRenderer {
         }
     }
 
+    // MARK: - Outline Geometry
+
+    /// Perimeter of the rounded square: 4 straight runs plus 4 quarter arcs, which together make
+    /// one full circle's worth of corner.
+    static func roundedSquarePerimeter(in rect: NSRect, cornerRadius: CGFloat) -> CGFloat {
+        let straightLength = 4 * (rect.width - 2 * cornerRadius)
+        let arcLength = 2 * CGFloat.pi * cornerRadius
+        return straightLength + arcLength
+    }
+
+    /// The rounded square outline, walked clockwise from 12 o'clock (the middle of the top edge).
+    /// Shared by the progress stroke and the period tick so both measure distance along exactly
+    /// the same path, which is what keeps the tick on the shape through its corners.
+    static func roundedSquareOutlinePath(in rect: NSRect, cornerRadius: CGFloat) -> NSBezierPath {
+        let path = NSBezierPath()
+        let startPoint = NSPoint(x: rect.midX, y: rect.maxY)
+        path.move(to: startPoint)
+
+        // 12 o'clock to 3
+        path.line(to: NSPoint(x: rect.maxX - cornerRadius, y: rect.maxY))
+        path.appendArc(withCenter: NSPoint(x: rect.maxX - cornerRadius, y: rect.maxY - cornerRadius),
+                       radius: cornerRadius, startAngle: 90, endAngle: 0, clockwise: true)
+        // 3 to 6
+        path.line(to: NSPoint(x: rect.maxX, y: rect.minY + cornerRadius))
+        path.appendArc(withCenter: NSPoint(x: rect.maxX - cornerRadius, y: rect.minY + cornerRadius),
+                       radius: cornerRadius, startAngle: 0, endAngle: 270, clockwise: true)
+        // 6 to 9
+        path.line(to: NSPoint(x: rect.minX + cornerRadius, y: rect.minY))
+        path.appendArc(withCenter: NSPoint(x: rect.minX + cornerRadius, y: rect.minY + cornerRadius),
+                       radius: cornerRadius, startAngle: 270, endAngle: 180, clockwise: true)
+        // 9 back to 12
+        path.line(to: NSPoint(x: rect.minX, y: rect.maxY - cornerRadius))
+        path.appendArc(withCenter: NSPoint(x: rect.minX + cornerRadius, y: rect.maxY - cornerRadius),
+                       radius: cornerRadius, startAngle: 180, endAngle: 90, clockwise: true)
+        path.line(to: startPoint)
+        return path
+    }
+
+    /// Perimeter of the chamfered square (the Sonnet shape): the rounded square, adjusted for the
+    /// cut top right corner, which drops one quarter arc, lengthens the top and right edges and
+    /// adds the diagonal.
+    static func chamferedPerimeter(in rect: NSRect, cornerRadius: CGFloat, cutSize: CGFloat) -> CGFloat {
+        let base = roundedSquarePerimeter(in: rect, cornerRadius: cornerRadius)
+        let cornerArcReduction = -cornerRadius * .pi / 2
+        let edgeAdjustment = 2.0 * cornerRadius
+        let cutAdjustment = cutSize * (sqrt(2.0) - 2.0)
+        return base + cornerArcReduction + edgeAdjustment + cutAdjustment
+    }
+
+    /// The chamfered square outline, walked clockwise from 12 o'clock. Same contract as
+    /// `roundedSquareOutlinePath`: shared by the progress stroke and the period tick.
+    static func chamferedOutlinePath(in rect: NSRect, cornerRadius: CGFloat, cutSize: CGFloat) -> NSBezierPath {
+        let path = NSBezierPath()
+        let startPoint = NSPoint(x: rect.midX, y: rect.maxY)
+        path.move(to: startPoint)
+
+        // Top edge into the chamfer, then the chamfer itself
+        path.line(to: NSPoint(x: rect.maxX - cutSize, y: rect.maxY))
+        path.line(to: NSPoint(x: rect.maxX, y: rect.maxY - cutSize))
+        // Right edge down to 6
+        path.line(to: NSPoint(x: rect.maxX, y: rect.minY + cornerRadius))
+        path.appendArc(withCenter: NSPoint(x: rect.maxX - cornerRadius, y: rect.minY + cornerRadius),
+                       radius: cornerRadius, startAngle: 0, endAngle: 270, clockwise: true)
+        // Bottom edge to 9
+        path.line(to: NSPoint(x: rect.minX + cornerRadius, y: rect.minY))
+        path.appendArc(withCenter: NSPoint(x: rect.minX + cornerRadius, y: rect.minY + cornerRadius),
+                       radius: cornerRadius, startAngle: 270, endAngle: 180, clockwise: true)
+        // Left edge back to 12
+        path.line(to: NSPoint(x: rect.minX, y: rect.maxY - cornerRadius))
+        path.appendArc(withCenter: NSPoint(x: rect.minX + cornerRadius, y: rect.maxY - cornerRadius),
+                       radius: cornerRadius, startAngle: 180, endAngle: 90, clockwise: true)
+        path.line(to: startPoint)
+        return path
+    }
+
+    /// The period tick on a shape icon: a short segment of the outline at the point the window has
+    /// reached. Reuses the dash trick the progress stroke already uses, so the tick follows the
+    /// shape's corners without any per shape trigonometry.
+    static func drawOutlineTimeMarker(
+        outline: NSBezierPath,
+        perimeter: CGFloat,
+        fraction: CGFloat,
+        strokeWidth: CGFloat,
+        isMonochrome: Bool,
+        button: NSStatusBarButton?
+    ) {
+        guard perimeter > 0 else { return }
+        let clamped = min(max(fraction, 0), 1)
+        let distance = perimeter * clamped
+
+        /// One short "on" dash of `length`, centred on the marker distance.
+        func dashedCopy(length: CGFloat, width: CGFloat) -> NSBezierPath? {
+            guard let path = outline.copy() as? NSBezierPath else { return nil }
+            path.setLineDash([length, perimeter - length], count: 2, phase: -(distance - length / 2))
+            path.lineWidth = width
+            path.lineCapStyle = .butt
+            return path
+        }
+
+        // Knock out a window through the ring first, then draw the tick inside it. Neither half
+        // works alone on a template icon: it keeps only alpha, so a mark drawn over the solid
+        // sweep is invisible, and a bare gap in the faint 0.3-alpha track is invisible too.
+        // Clearing a window and marking inside it reads against both.
+        if let window = dashedCopy(length: 3.0, width: strokeWidth + 2.0) {
+            NSGraphicsContext.current?.compositingOperation = .destinationOut
+            NSColor.black.setStroke()
+            window.stroke()
+            NSGraphicsContext.current?.compositingOperation = .sourceOver
+        }
+
+        if let tick = dashedCopy(length: 1.2, width: strokeWidth + 2.0) {
+            if isMonochrome {
+                // Template: only alpha survives, so any opaque colour gives a solid tick
+                NSColor.controlTextColor.setStroke()
+            } else {
+                UsageColorScheme.menuBarForeground(for: button).setStroke()
+            }
+            tick.stroke()
+        }
+    }
+
     // MARK: - Shape Drawing Methods
 
     /// Draw the rounded square progress ring and percentage (used by Opus)
@@ -37,7 +158,7 @@ class ShapeIconRenderer {
     ///   - isMonochrome: whether monochrome mode is active
     ///   - button: status item button (used to read colors)
     ///   - removeBackground: whether to remove the background fill
-    static func drawRoundedSquareWithPercentage(in rect: NSRect, percentage: Double, isMonochrome: Bool, button: NSStatusBarButton?, removeBackground: Bool = false) {
+    static func drawRoundedSquareWithPercentage(in rect: NSRect, percentage: Double, isMonochrome: Bool, button: NSStatusBarButton?, removeBackground: Bool = false, markerFraction: CGFloat? = nil) {
         // Battery style display: the progress border and the glyph show remaining; colors stay keyed off used
         let displayPercentage = UsagePercentDisplay.displayPercentage(percentage)
         let cornerRadius: CGFloat = 3.0
@@ -62,16 +183,12 @@ class ShapeIconRenderer {
         backgroundPath.lineWidth = borderWidth
         backgroundPath.stroke()
 
+        // The outline both the progress stroke and the period tick measure along
+        let perimeter = roundedSquarePerimeter(in: rect, cornerRadius: cornerRadius)
+        let outline = roundedSquareOutlinePath(in: rect, cornerRadius: cornerRadius)
+
         // 2. Draw the progress border (clockwise, starting at 12 o'clock)
         if displayPercentage > 0 {
-            // Compute the real perimeter of the rounded square
-            // Perimeter = 4 straight segments + 4 corner arcs
-            // Total straight length = 4 * (side - 2*cornerRadius)
-            // Total arc length = 4 * (pi*cornerRadius/2) = 2*pi*cornerRadius
-            let straightLength = 4 * (rect.width - 2 * cornerRadius)
-            let arcLength = 2 * CGFloat.pi * cornerRadius
-            let perimeter = straightLength + arcLength
-
             // Compute the progress length
             // Progressive subtraction: the amount subtracted grows linearly with the percentage and is fully applied at 50%
             // Below 50%: smooth ramp, the subtracted amount goes from 0 up to progressWidth
@@ -80,56 +197,7 @@ class ShapeIconRenderer {
             let baseProgressLength = perimeter * CGFloat(displayPercentage / 100.0)
             let progressLength = displayPercentage >= 100 ? baseProgressLength : (baseProgressLength - progressWidth * min(1.0, CGFloat(displayPercentage / 50.0)))
 
-            // Build the clockwise path from 12 o'clock by hand
-            let progressPath = NSBezierPath()
-
-            // Start at 12 o'clock (middle of the top edge)
-            let startPoint = NSPoint(x: rect.midX, y: rect.maxY)
-            progressPath.move(to: startPoint)
-
-            // Clockwise: 12 o'clock to 3 to 6 to 9 and back to 12
-            // Top right corner (the corner radius has to be accounted for)
-            progressPath.line(to: NSPoint(x: rect.maxX - cornerRadius, y: rect.maxY))
-            progressPath.appendArc(
-                withCenter: NSPoint(x: rect.maxX - cornerRadius, y: rect.maxY - cornerRadius),
-                radius: cornerRadius,
-                startAngle: 90,
-                endAngle: 0,
-                clockwise: true
-            )
-
-            // Right edge down to the bottom right corner
-            progressPath.line(to: NSPoint(x: rect.maxX, y: rect.minY + cornerRadius))
-            progressPath.appendArc(
-                withCenter: NSPoint(x: rect.maxX - cornerRadius, y: rect.minY + cornerRadius),
-                radius: cornerRadius,
-                startAngle: 0,
-                endAngle: 270,
-                clockwise: true
-            )
-
-            // Bottom edge to the bottom left corner
-            progressPath.line(to: NSPoint(x: rect.minX + cornerRadius, y: rect.minY))
-            progressPath.appendArc(
-                withCenter: NSPoint(x: rect.minX + cornerRadius, y: rect.minY + cornerRadius),
-                radius: cornerRadius,
-                startAngle: 270,
-                endAngle: 180,
-                clockwise: true
-            )
-
-            // Left edge to the top left corner
-            progressPath.line(to: NSPoint(x: rect.minX, y: rect.maxY - cornerRadius))
-            progressPath.appendArc(
-                withCenter: NSPoint(x: rect.minX + cornerRadius, y: rect.maxY - cornerRadius),
-                radius: cornerRadius,
-                startAngle: 180,
-                endAngle: 90,
-                clockwise: true
-            )
-
-            // Top edge back to the start
-            progressPath.line(to: startPoint)
+            let progressPath = outline.copy() as? NSBezierPath ?? outline
 
             // Draw with a dash pattern
             // Below 100% a negative phase pre draws half a round cap at the start, so the subtracted lineWidth is split evenly across both ends
@@ -147,6 +215,11 @@ class ShapeIconRenderer {
                 UsageColorScheme.opusWeeklyColorAdaptive(percentage, for: button).setStroke()
             }
             progressPath.stroke()
+        }
+
+        if let markerFraction {
+            drawOutlineTimeMarker(outline: outline, perimeter: perimeter, fraction: markerFraction,
+                                  strokeWidth: progressWidth, isMonochrome: isMonochrome, button: button)
         }
 
         // 3. Draw the percentage text
@@ -168,7 +241,7 @@ class ShapeIconRenderer {
     ///   - isMonochrome: whether monochrome mode is active
     ///   - button: status item button (used to read colors)
     ///   - removeBackground: whether to remove the background fill
-    static func drawDiamondWithPercentage(in rect: NSRect, percentage: Double, isMonochrome: Bool, button: NSStatusBarButton?, removeBackground: Bool = false) {
+    static func drawDiamondWithPercentage(in rect: NSRect, percentage: Double, isMonochrome: Bool, button: NSStatusBarButton?, removeBackground: Bool = false, markerFraction: CGFloat? = nil) {
         // Battery style display: the progress border and the glyph show remaining; colors stay keyed off used
         let displayPercentage = UsagePercentDisplay.displayPercentage(percentage)
         // Exactly the same parameters as Opus
@@ -241,72 +314,13 @@ class ShapeIconRenderer {
         backgroundPath.lineWidth = borderWidth
         backgroundPath.stroke()
 
+        // The outline both the progress stroke and the period tick measure along
+        let perimeter = chamferedPerimeter(in: rect, cornerRadius: cornerRadius, cutSize: cutSize)
+        let outline = chamferedOutlinePath(in: rect, cornerRadius: cornerRadius, cutSize: cutSize)
+
         // 2. Draw the progress border (clockwise, starting at 12 o'clock)
         if displayPercentage > 0 {
-            // Build the clockwise path from 12 o'clock by hand (with the top right chamfer)
-            let progressPath = NSBezierPath()
-
-            // Start at 12 o'clock (middle of the top edge)
-            let startPoint = NSPoint(x: rect.midX, y: rect.maxY)
-            progressPath.move(to: startPoint)
-
-            // Clockwise: 12 o'clock to the top right chamfer to 3 to 6 to 9 and back to 12
-            // Top edge to the start of the top right chamfer
-            progressPath.line(to: NSPoint(x: rect.maxX - cutSize, y: rect.maxY))
-
-            // The top right chamfer line
-            progressPath.line(to: NSPoint(x: rect.maxX, y: rect.maxY - cutSize))
-
-            // Right edge down to the bottom right corner
-            progressPath.line(to: NSPoint(x: rect.maxX, y: rect.minY + cornerRadius))
-            progressPath.appendArc(
-                withCenter: NSPoint(x: rect.maxX - cornerRadius, y: rect.minY + cornerRadius),
-                radius: cornerRadius,
-                startAngle: 0,
-                endAngle: 270,
-                clockwise: true
-            )
-
-            // Bottom edge to the bottom left corner
-            progressPath.line(to: NSPoint(x: rect.minX + cornerRadius, y: rect.minY))
-            progressPath.appendArc(
-                withCenter: NSPoint(x: rect.minX + cornerRadius, y: rect.minY + cornerRadius),
-                radius: cornerRadius,
-                startAngle: 270,
-                endAngle: 180,
-                clockwise: true
-            )
-
-            // Left edge to the top left corner
-            progressPath.line(to: NSPoint(x: rect.minX, y: rect.maxY - cornerRadius))
-            progressPath.appendArc(
-                withCenter: NSPoint(x: rect.minX + cornerRadius, y: rect.maxY - cornerRadius),
-                radius: cornerRadius,
-                startAngle: 180,
-                endAngle: 90,
-                clockwise: true
-            )
-
-            // Top edge back to the start
-            progressPath.line(to: startPoint)
-
-            // Compute the real perimeter of the chamfered square
-            // Start from the Opus rounded square perimeter, then adjust for the chamfer:
-            // 1. Opus perimeter = 4 straight segments + 4 corner arcs
-            let opusStraightLength = 4 * (rect.width - 2 * cornerRadius)
-            let opusArcLength = 2 * CGFloat.pi * cornerRadius
-            let opusPerimeter = opusStraightLength + opusArcLength
-
-            // 2. Sonnet's top right chamfer means:
-            //    - one 90 degree corner arc is gone: -cornerRadius * pi/2
-            //    - the top edge goes from (width-2*corner) to (width-corner-cut): +cornerRadius-cutSize
-            //    - the right edge goes from (width-2*corner) to (width-corner-cut): +cornerRadius-cutSize
-            //    - the chamfer line is added: +cutSize * sqrt(2)
-            //    Total: 2*cornerRadius - 2*cutSize + cutSize*sqrt(2) - cornerRadius*pi/2
-            let cornerArcReduction = -cornerRadius * .pi / 2
-            let edgeAdjustment = 2.0 * cornerRadius
-            let cutAdjustment = cutSize * (sqrt(2.0) - 2.0)
-            let perimeter = opusPerimeter + cornerArcReduction + edgeAdjustment + cutAdjustment
+            let progressPath = outline.copy() as? NSBezierPath ?? outline
 
             // Compute the progress length
             // Progressive subtraction: the amount subtracted grows linearly with the percentage and is fully applied at 50%
@@ -332,6 +346,11 @@ class ShapeIconRenderer {
                 UsageColorScheme.sonnetWeeklyColorAdaptive(percentage, for: button).setStroke()
             }
             progressPath.stroke()
+        }
+
+        if let markerFraction {
+            drawOutlineTimeMarker(outline: outline, perimeter: perimeter, fraction: markerFraction,
+                                  strokeWidth: progressWidth, isMonochrome: isMonochrome, button: button)
         }
 
         // 3. Draw the percentage text (exactly as Opus does)
@@ -481,13 +500,13 @@ class ShapeIconRenderer {
     ///   - button: status item button
     ///   - removeBackground: whether to remove the background fill
     /// - Returns: icon image (18x18)
-    static func createVerticalRectangleIcon(percentage: Double, isMonochrome: Bool, button: NSStatusBarButton?, removeBackground: Bool = false) -> NSImage {
+    static func createVerticalRectangleIcon(percentage: Double, isMonochrome: Bool, button: NSStatusBarButton?, removeBackground: Bool = false, markerFraction: CGFloat? = nil) -> NSImage {
         let size = NSSize(width: 18, height: 18)
         let image = NSImage(size: size)
         image.lockFocus()
 
         let rect = NSRect(x: 0, y: 0, width: size.width, height: size.height).insetBy(dx: 2, dy: 2)
-        drawRoundedSquareWithPercentage(in: rect, percentage: percentage, isMonochrome: isMonochrome, button: button, removeBackground: removeBackground)
+        drawRoundedSquareWithPercentage(in: rect, percentage: percentage, isMonochrome: isMonochrome, button: button, removeBackground: removeBackground, markerFraction: markerFraction)
 
         image.unlockFocus()
         image.isTemplate = isMonochrome
@@ -501,13 +520,13 @@ class ShapeIconRenderer {
     ///   - button: status item button
     ///   - removeBackground: whether to remove the background fill
     /// - Returns: icon image (18x18)
-    static func createHorizontalRectangleIcon(percentage: Double, isMonochrome: Bool, button: NSStatusBarButton?, removeBackground: Bool = false) -> NSImage {
+    static func createHorizontalRectangleIcon(percentage: Double, isMonochrome: Bool, button: NSStatusBarButton?, removeBackground: Bool = false, markerFraction: CGFloat? = nil) -> NSImage {
         let size = NSSize(width: 18, height: 18)
         let image = NSImage(size: size)
         image.lockFocus()
 
         let rect = NSRect(x: 0, y: 0, width: size.width, height: size.height).insetBy(dx: 2, dy: 2)
-        drawDiamondWithPercentage(in: rect, percentage: percentage, isMonochrome: isMonochrome, button: button, removeBackground: removeBackground)
+        drawDiamondWithPercentage(in: rect, percentage: percentage, isMonochrome: isMonochrome, button: button, removeBackground: removeBackground, markerFraction: markerFraction)
 
         image.unlockFocus()
         image.isTemplate = isMonochrome
