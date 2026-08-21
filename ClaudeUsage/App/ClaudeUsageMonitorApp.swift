@@ -60,6 +60,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     override init() {
         super.init()
+
+        // 尽可能早地装上崩溃捕获：在这一行之前发生的任何致命错误都是不可见的，
+        // 而启动阶段恰恰是容易死的地方。install() 是幂等的。
+        CrashReporter.install()
+
         AppDelegate.shared = self
         updaterController = SPUStandardUpdaterController(
             startingUpdater: true,
@@ -77,6 +82,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// 初始化菜单栏管理器，根据是否首次启动显示欢迎窗口或开始刷新数据
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+
+        // 先判定上一次运行是怎么结束的，再做其它任何事。
+        // 这行日志就是“为什么突然退出”的答案所在。
+        reportPreviousSessionOutcome()
+
+        // 内存压力是 .accessory 应用被 jetsam 静默杀掉的主要原因，
+        // 而那种情况下系统不会写崩溃报告。这里留下压力事件记录，
+        // 好和 SessionSentinel 判定的 killed 对上时间。
+        observeMemoryPressure()
 
         // 请求通知权限
         NotificationManager.shared.requestPermission()

@@ -144,9 +144,14 @@ class DiagnosticLogger {
     private func log(_ message: String, level: LogLevel, file: String, line: Int, function: String) {
         guard isEnabled else { return }
 
-        // Release版本只记录warning和error，减少日志占用和隐私泄露
+        // Release 版本丢弃 debug，但保留 info。
+        //
+        // 原先这里把 info 也一起丢掉，结果是 Release 版本在崩溃或被杀之前
+        // 没有任何面包屑可看，而“突然退出”恰恰只发生在 Release 版本上。
+        // info 已经经过脱敏，量也有限（每次轮询几行），保留它才能看出退出
+        // 前应用正在做什么。
         #if !DEBUG
-        guard level == .warning || level == .error else { return }
+        guard level != .debug else { return }
         #endif
 
         // 脱敏处理
@@ -167,31 +172,42 @@ class DiagnosticLogger {
         // 输出到系统日志
         osLogger.log(level: osLogLevel(for: level), "\(sanitizedMessage)")
 
-        // 异步写入文件
-        writeToFile(logMessage)
+        // warning 和 error 同步落盘，其余异步。
+        //
+        // 异步写入配合 .utility 队列意味着进程被杀时队列里的内容全部丢失，
+        // 而丢掉的恰好是崩溃前最后几行。所以严重级别走同步路径并 fsync：
+        // 代价是每条几毫秒，换来的是这几行一定在磁盘上。
+        let needsDurability = (level == .warning || level == .error)
+        writeToFile(logMessage, synchronous: needsDurability)
+    }
+
+    /// 立即把待写日志刷到磁盘。
+    /// 在已知即将退出的时刻调用（applicationWillTerminate），确保尾部不丢。
+    func flush() {
+        logQueue.sync { }
     }
 
     /// 写入日志到文件
-    private func writeToFile(_ message: String) {
+    /// - Parameter synchronous: true 时阻塞到内容 fsync 落盘，用于崩溃前必须
+    ///   保留的严重日志
+    private func writeToFile(_ message: String, synchronous: Bool = false) {
         guard let logFileURL = logFileURL else { return }
 
-        logQueue.async {
+        let work = {
             do {
                 if FileManager.default.fileExists(atPath: logFileURL.path) {
                     // 文件存在，追加内容
                     let fileHandle = try FileHandle(forWritingTo: logFileURL)
-                    defer { fileHandle.closeFile() }
+                    defer { try? fileHandle.close() }
 
-                    if #available(macOS 10.15.4, *) {
-                        try fileHandle.seekToEnd()
-                        if let data = message.data(using: .utf8) {
-                            try fileHandle.write(contentsOf: data)
-                        }
-                    } else {
-                        fileHandle.seekToEndOfFile()
-                        if let data = message.data(using: .utf8) {
-                            fileHandle.write(data)
-                        }
+                    try fileHandle.seekToEnd()
+                    if let data = message.data(using: .utf8) {
+                        try fileHandle.write(contentsOf: data)
+                    }
+                    if synchronous {
+                        // 越过文件系统缓存。没有这一步，进程被 SIGKILL 时
+                        // 内容仍在内核缓冲区里，磁盘上什么都没有。
+                        try fileHandle.synchronize()
                     }
                 } else {
                     // 文件不存在，创建新文件
@@ -205,6 +221,12 @@ class DiagnosticLogger {
             } catch {
                 self.osLogger.error("Failed to write log: \(error.localizedDescription)")
             }
+        }
+
+        if synchronous {
+            logQueue.sync(execute: work)
+        } else {
+            logQueue.async(execute: work)
         }
     }
 
