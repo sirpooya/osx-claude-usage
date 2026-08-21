@@ -38,6 +38,8 @@ class ShapeIconRenderer {
     ///   - button: status item button (used to read colors)
     ///   - removeBackground: whether to remove the background fill
     static func drawRoundedSquareWithPercentage(in rect: NSRect, percentage: Double, isMonochrome: Bool, button: NSStatusBarButton?, removeBackground: Bool = false) {
+        // Battery style display: the progress border and the glyph show remaining; colors stay keyed off used
+        let displayPercentage = UsagePercentDisplay.displayPercentage(percentage)
         let cornerRadius: CGFloat = 3.0
         let borderWidth: CGFloat = 1.5
         let progressWidth: CGFloat = 2.5  // Thicker progress stroke
@@ -61,7 +63,7 @@ class ShapeIconRenderer {
         backgroundPath.stroke()
 
         // 2. Draw the progress border (clockwise, starting at 12 o'clock)
-        if percentage > 0 {
+        if displayPercentage > 0 {
             // Compute the real perimeter of the rounded square
             // Perimeter = 4 straight segments + 4 corner arcs
             // Total straight length = 4 * (side - 2*cornerRadius)
@@ -75,8 +77,8 @@ class ShapeIconRenderer {
             // Below 50%: smooth ramp, the subtracted amount goes from 0 up to progressWidth
             // At or above 50%: exact, always subtract the full progressWidth
             // At 100% nothing is subtracted because .butt caps are used (no overhang)
-            let baseProgressLength = perimeter * CGFloat(percentage / 100.0)
-            let progressLength = percentage >= 100 ? baseProgressLength : (baseProgressLength - progressWidth * min(1.0, CGFloat(percentage / 50.0)))
+            let baseProgressLength = perimeter * CGFloat(displayPercentage / 100.0)
+            let progressLength = displayPercentage >= 100 ? baseProgressLength : (baseProgressLength - progressWidth * min(1.0, CGFloat(displayPercentage / 50.0)))
 
             // Build the clockwise path from 12 o'clock by hand
             let progressPath = NSBezierPath()
@@ -131,12 +133,12 @@ class ShapeIconRenderer {
 
             // Draw with a dash pattern
             // Below 100% a negative phase pre draws half a round cap at the start, so the subtracted lineWidth is split evenly across both ends
-            let phase: CGFloat = percentage >= 100 ? 0 : -progressWidth / 2
+            let phase: CGFloat = displayPercentage >= 100 ? 0 : -progressWidth / 2
             let pattern: [CGFloat] = [progressLength, perimeter - progressLength]
             progressPath.setLineDash(pattern, count: 2, phase: phase)
             progressPath.lineWidth = progressWidth
             // At 100% butt caps close the shape perfectly, every other value uses round caps
-            progressPath.lineCapStyle = percentage >= 100 ? .butt : .round
+            progressPath.lineCapStyle = displayPercentage >= 100 ? .butt : .round
 
             if isMonochrome {
                 let opacity = monochromeOpacity(for: percentage)
@@ -148,10 +150,10 @@ class ShapeIconRenderer {
         }
 
         // 3. Draw the percentage text
-        let percentageText = "\(Int(percentage))"
-        let percentageFontSize: CGFloat = percentage >= 100 ? 5.0 : 7.2
+        let percentageText = "\(Int(displayPercentage))"
+        let percentageFontSize: CGFloat = displayPercentage >= 100 ? 5.0 : 7.2
         let attributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: percentageFontSize, weight: percentage >= 100 ? .bold : .semibold),
+            .font: NSFont.systemFont(ofSize: percentageFontSize, weight: displayPercentage >= 100 ? .bold : .semibold),
             .foregroundColor: UsageColorScheme.menuBarForeground(for: button)
         ]
         let textSize = percentageText.size(withAttributes: attributes)
@@ -167,6 +169,8 @@ class ShapeIconRenderer {
     ///   - button: status item button (used to read colors)
     ///   - removeBackground: whether to remove the background fill
     static func drawDiamondWithPercentage(in rect: NSRect, percentage: Double, isMonochrome: Bool, button: NSStatusBarButton?, removeBackground: Bool = false) {
+        // Battery style display: the progress border and the glyph show remaining; colors stay keyed off used
+        let displayPercentage = UsagePercentDisplay.displayPercentage(percentage)
         // Exactly the same parameters as Opus
         let cornerRadius: CGFloat = 3.0
         let borderWidth: CGFloat = 1.5
@@ -238,7 +242,7 @@ class ShapeIconRenderer {
         backgroundPath.stroke()
 
         // 2. Draw the progress border (clockwise, starting at 12 o'clock)
-        if percentage > 0 {
+        if displayPercentage > 0 {
             // Build the clockwise path from 12 o'clock by hand (with the top right chamfer)
             let progressPath = NSBezierPath()
 
@@ -309,17 +313,17 @@ class ShapeIconRenderer {
             // Below 50%: smooth ramp, the subtracted amount goes from 0 up to progressWidth
             // At or above 50%: exact, always subtract the full progressWidth
             // At 100% nothing is subtracted because .butt caps are used (no overhang)
-            let baseProgressLength = perimeter * CGFloat(percentage / 100.0)
-            let progressLength = percentage >= 100 ? baseProgressLength : (baseProgressLength - progressWidth * min(1.0, CGFloat(percentage / 50.0)))
+            let baseProgressLength = perimeter * CGFloat(displayPercentage / 100.0)
+            let progressLength = displayPercentage >= 100 ? baseProgressLength : (baseProgressLength - progressWidth * min(1.0, CGFloat(displayPercentage / 50.0)))
 
             // Draw with a dash pattern
             // Below 100% a negative phase pre draws half a round cap at the start, so the subtracted lineWidth is split evenly across both ends
-            let phase: CGFloat = percentage >= 100 ? 0 : -progressWidth / 2
+            let phase: CGFloat = displayPercentage >= 100 ? 0 : -progressWidth / 2
             let pattern: [CGFloat] = [progressLength, perimeter - progressLength]
             progressPath.setLineDash(pattern, count: 2, phase: phase)
             progressPath.lineWidth = progressWidth
             // At 100% butt caps close the shape perfectly, every other value uses round caps
-            progressPath.lineCapStyle = percentage >= 100 ? .butt : .round
+            progressPath.lineCapStyle = displayPercentage >= 100 ? .butt : .round
 
             if isMonochrome {
                 let opacity = monochromeOpacity(for: percentage)
@@ -331,10 +335,10 @@ class ShapeIconRenderer {
         }
 
         // 3. Draw the percentage text (exactly as Opus does)
-        let percentageText = "\(Int(percentage))"
-        let percentageFontSize: CGFloat = percentage >= 100 ? 5.0 : 7.2
+        let percentageText = "\(Int(displayPercentage))"
+        let percentageFontSize: CGFloat = displayPercentage >= 100 ? 5.0 : 7.2
         let attributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: percentageFontSize, weight: percentage >= 100 ? .bold : .semibold),
+            .font: NSFont.systemFont(ofSize: percentageFontSize, weight: displayPercentage >= 100 ? .bold : .semibold),
             .foregroundColor: UsageColorScheme.menuBarForeground(for: button)
         ]
         let textSize = percentageText.size(withAttributes: attributes)

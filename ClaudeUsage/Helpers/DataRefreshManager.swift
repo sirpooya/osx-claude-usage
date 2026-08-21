@@ -223,6 +223,7 @@ class DataRefreshManager: ObservableObject {
                     self.refreshState.claudeErrorIsTransient = false
                     self.claudeBackoffUntil = nil
                     self.persistCachedUsage(data)
+                    UsageHistoryStore.shared.record(data)
                     monitoringUtilizations[.claude] = data.percentage
 
                     if self.settings.notificationsEnabled {
@@ -511,6 +512,9 @@ class DataRefreshManager: ObservableObject {
                 let previousData = self.usageData
                 self.usageData = data
                 self.errorMessage = nil
+                Task { @MainActor in
+                    UsageHistoryStore.shared.record(data)
+                }
                 if self.settings.notificationsEnabled {
                     NotificationManager.shared.checkAndNotify(usageData: data, previousData: previousData)
                 }

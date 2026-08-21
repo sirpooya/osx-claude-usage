@@ -403,21 +403,21 @@ class MenuBarIconRenderer {
         let lineWidth: CGFloat = 2.5
 
         // Compute the progress angle
-        let baseAngle = CGFloat(percentage) / 100.0 * 360
+        let baseAngle = CGFloat(displayPercentage) / 100.0 * 360
         let circumference = 2 * CGFloat.pi * radius  // Circumference
         let capAngle = (lineWidth / circumference) * 360  // Angle covered by the round cap overhang
 
         let progressAngle: CGFloat
         let startAngle: CGFloat
 
-        if percentage >= 100 {
+        if displayPercentage >= 100 {
             // 100%: use the full angle and a fixed start point, because .butt caps do not overhang
             progressAngle = baseAngle
             startAngle = 90
         } else {
             // Monochrome mode: progressive subtraction with a fixed start point, for smooth growth
             // The subtracted angle grows linearly with the percentage, fully applied at 50%, so 50% to 100% is exact
-            progressAngle = baseAngle - capAngle * min(1.0, CGFloat(percentage / 50.0))
+            progressAngle = baseAngle - capAngle * min(1.0, CGFloat(displayPercentage / 50.0))
             startAngle = 90 - capAngle / 2 + 0.5
         }
 
@@ -426,12 +426,12 @@ class MenuBarIconRenderer {
         progressPath.appendArc(withCenter: center, radius: radius, startAngle: startAngle, endAngle: endAngle, clockwise: true)
         progressPath.lineWidth = lineWidth
         // At 100% butt caps close the ring perfectly, every other value uses round caps
-        progressPath.lineCapStyle = percentage >= 100 ? .butt : .round
+        progressPath.lineCapStyle = displayPercentage >= 100 ? .butt : .round
         progressPath.stroke()
 
-        let fontSize: CGFloat = percentage >= 100 ? size.width * 0.275 : size.width * 0.4
-        let font = NSFont.systemFont(ofSize: fontSize, weight: percentage >= 100 ? .bold : .semibold)
-        let text = "\(Int(percentage))"
+        let fontSize: CGFloat = displayPercentage >= 100 ? size.width * 0.275 : size.width * 0.4
+        let font = NSFont.systemFont(ofSize: fontSize, weight: displayPercentage >= 100 ? .bold : .semibold)
+        let text = "\(Int(displayPercentage))"
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = .center
         let attrs: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: NSColor.black, .paragraphStyle: paragraphStyle]

@@ -145,6 +145,12 @@ final class ConsoleAPIService: ObservableObject {
                 sessionKey: key
             )
             lastError = nil
+            if let spend = currentSpend {
+                UsageHistoryStore.shared.recordBilling(
+                    spendCents: spend.amount,
+                    currency: prepaidCredits?.currency ?? "USD"
+                )
+            }
         } catch {
             Logger.api.error("API Console: current_spend failed \(error.localizedDescription)")
             lastError = error.localizedDescription
