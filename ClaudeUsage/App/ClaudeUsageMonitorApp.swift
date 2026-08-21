@@ -180,12 +180,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         welcomeWindow?.title = L.Window.welcomeTitle
         welcomeWindow?.styleMask = [.titled, .closable]
 
-        if let screen = NSScreen.main {
-            let screenFrame = screen.visibleFrame
-            let windowFrame = welcomeWindow?.frame ?? NSRect.zero
-            let x = screenFrame.origin.x + (screenFrame.width - windowFrame.width) / 2
-            let y = screenFrame.origin.y + (screenFrame.height - windowFrame.height) / 2
-            welcomeWindow?.setFrameOrigin(NSPoint(x: x, y: y))
+        // 不用 center()：它按调用时的窗口尺寸计算，而 SwiftUI 的固定 frame 要等
+        // Auto Layout 之后才生效，窗口随后从左上角缩小、原点不变，于是偏左偏上。
+        // 这里直接用已知的内容尺寸算出最终 frame，一次性把大小和位置都定下来。
+        if let window = welcomeWindow, let screen = NSScreen.main {
+            let contentRect = NSRect(origin: .zero, size: WelcomeView.contentSize)
+            let frameSize = window.frameRect(forContentRect: contentRect).size
+            // 水平方向按整个屏幕居中（视觉正中，不受 Dock 停靠边影响），
+            // 垂直方向按可用区域居中（避开菜单栏，否则整体偏上）。
+            let origin = NSPoint(
+                x: screen.frame.midX - frameSize.width / 2,
+                y: screen.visibleFrame.midY - frameSize.height / 2
+            )
+            window.setFrame(NSRect(origin: origin, size: frameSize), display: false)
         }
 
         // 使用 Combine 订阅窗口关闭通知

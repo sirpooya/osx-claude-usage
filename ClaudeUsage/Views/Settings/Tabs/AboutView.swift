@@ -59,7 +59,7 @@ struct AboutView: View {
             // 链接按钮
             VStack(spacing: 8) {
                 Button(action: {
-                    if let url = URL(string: "https://github.com/f-is-h/ClaudeUsage") {
+                    if let url = URL(string: "https://github.com/f-is-h/Usage4Claude") {
                         NSWorkspace.shared.open(url)
                     }
                 }) {

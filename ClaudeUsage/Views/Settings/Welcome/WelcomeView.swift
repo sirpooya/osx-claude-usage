@@ -12,6 +12,10 @@ import SwiftUI
 /// 单页流程：直接进入所有设置（认证 + 主题 + 预览），不再有单独的欢迎页
 /// 具体步骤内容拆到 SetupStepView.swift / WelcomeSupportingViews.swift，保持本文件体量可控
 struct WelcomeView: View {
+    /// 欢迎窗口的固定尺寸。
+    /// 窗口创建处也用这个值设置 contentSize，两边必须一致，否则居中会算错。
+    static let contentSize = NSSize(width: 460, height: 372)
+
     @ObservedObject private var settings = UserSettings.shared
     @Environment(\.dismiss) private var dismiss
     @StateObject private var localization = LocalizationManager.shared
@@ -29,6 +33,8 @@ struct WelcomeView: View {
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
+            Divider()
+
             // 底部导航按钮
             NavigationButtons(
                 canProceed: canProceed,
@@ -36,10 +42,10 @@ struct WelcomeView: View {
                 fetchError: fetchError,
                 onComplete: completeSetup
             )
-            .padding(.horizontal, 40)
-            .padding(.bottom, 30)
+            .padding(.horizontal, 32)
+            .padding(.vertical, 16)
         }
-        .frame(width: 550, height: 380)
+        .frame(width: Self.contentSize.width, height: Self.contentSize.height)
         .id(localization.updateTrigger)
     }
 
