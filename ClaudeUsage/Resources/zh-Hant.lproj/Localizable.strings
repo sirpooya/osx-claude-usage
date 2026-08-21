@@ -403,7 +403,7 @@
 // MARK: - Web Login (v2.2.0)
 "weblogin.window_title" = "登入 Claude";
 "weblogin.browser_login" = "瀏覽器登入";
-"weblogin.browser_login_recommended" = "透過瀏覽器登入（推薦）";
+"weblogin.browser_login_recommended" = "透過瀏覽器登入";
 "weblogin.manual_input" = "手動輸入";
 "weblogin.or_manual_input" = "或手動輸入 Session Key";
 "weblogin.loading" = "正在載入登入頁面...";

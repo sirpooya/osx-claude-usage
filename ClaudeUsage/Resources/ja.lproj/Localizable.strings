@@ -403,7 +403,7 @@
 // MARK: - Web Login (v2.2.0)
 "weblogin.window_title" = "Claude にサインイン";
 "weblogin.browser_login" = "ブラウザログイン";
-"weblogin.browser_login_recommended" = "ブラウザでログイン（推奨）";
+"weblogin.browser_login_recommended" = "ブラウザでログイン";
 "weblogin.manual_input" = "手動入力";
 "weblogin.or_manual_input" = "または Session Key を手動入力";
 "weblogin.loading" = "ログインページを読み込み中...";

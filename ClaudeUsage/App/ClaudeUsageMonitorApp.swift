@@ -179,7 +179,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
         welcomeWindow?.title = L.Window.welcomeTitle
         welcomeWindow?.styleMask = [.titled, .closable]
-        welcomeWindow?.level = .floating
 
         if let screen = NSScreen.main {
             let screenFrame = screen.visibleFrame

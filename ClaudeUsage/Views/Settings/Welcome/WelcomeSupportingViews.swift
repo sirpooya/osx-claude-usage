@@ -123,7 +123,6 @@ struct NavigationButtons: View {
     let canProceed: Bool
     let isFetchingOrgId: Bool
     let fetchError: String?
-    let onSkip: () -> Void
     let onComplete: () -> Void
 
     var body: some View {
@@ -142,14 +141,6 @@ struct NavigationButtons: View {
             // 按钮行
             HStack(spacing: 12) {
                 Spacer()
-
-                // 跳过按钮
-                // 欢迎页被移除后，这里是唯一的跳过入口。若去掉它，
-                // 没有 Session Key 的用户就无从退出，且下次启动会再次弹出。
-                Button(L.Welcome.skip, action: onSkip)
-                    .buttonStyle(.plain)
-                    .foregroundColor(.secondary)
-                    .disabled(isFetchingOrgId)
 
                 // 继续/完成按钮
                 Button(action: onComplete) {

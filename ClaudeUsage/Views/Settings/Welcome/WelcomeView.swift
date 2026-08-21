@@ -34,13 +34,12 @@ struct WelcomeView: View {
                 canProceed: canProceed,
                 isFetchingOrgId: isFetchingOrgId,
                 fetchError: fetchError,
-                onSkip: skipSetup,
                 onComplete: completeSetup
             )
             .padding(.horizontal, 40)
             .padding(.bottom, 30)
         }
-        .frame(width: 550, height: 600)
+        .frame(width: 550, height: 380)
         .id(localization.updateTrigger)
     }
 
@@ -51,11 +50,6 @@ struct WelcomeView: View {
     }
 
     // MARK: - Navigation Methods
-
-    private func skipSetup() {
-        settings.isFirstLaunch = false
-        dismiss()
-    }
 
     private func completeSetup() {
         let trimmedKey = sessionKey.trimmingCharacters(in: .whitespacesAndNewlines)

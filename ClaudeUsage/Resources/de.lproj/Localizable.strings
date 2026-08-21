@@ -402,7 +402,7 @@
 // MARK: - Web Login (v2.2.0)
 "weblogin.window_title" = "Bei Claude anmelden";
 "weblogin.browser_login" = "Browser-Anmeldung";
-"weblogin.browser_login_recommended" = "Über Browser anmelden (empfohlen)";
+"weblogin.browser_login_recommended" = "Über Browser anmelden";
 "weblogin.manual_input" = "Manuelle Eingabe";
 "weblogin.or_manual_input" = "oder Session Key manuell eingeben";
 "weblogin.loading" = "Anmeldeseite wird geladen...";

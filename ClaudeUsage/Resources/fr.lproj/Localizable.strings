@@ -403,7 +403,7 @@
 // MARK: - Web Login (v2.2.0)
 "weblogin.window_title" = "Se connecter à Claude";
 "weblogin.browser_login" = "Connexion via le navigateur";
-"weblogin.browser_login_recommended" = "Se connecter via le navigateur (recommandé)";
+"weblogin.browser_login_recommended" = "Se connecter via le navigateur";
 "weblogin.manual_input" = "Saisie manuelle";
 "weblogin.or_manual_input" = "ou saisir la clé de session manuellement";
 "weblogin.loading" = "Chargement de la page de connexion…";

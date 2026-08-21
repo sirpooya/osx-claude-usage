@@ -403,7 +403,7 @@
 // MARK: - Web Login (v2.2.0)
 "weblogin.window_title" = "Claude 로그인";
 "weblogin.browser_login" = "브라우저 로그인";
-"weblogin.browser_login_recommended" = "브라우저로 로그인 (권장)";
+"weblogin.browser_login_recommended" = "브라우저로 로그인";
 "weblogin.manual_input" = "수동 입력";
 "weblogin.or_manual_input" = "또는 Session Key 수동 입력";
 "weblogin.loading" = "로그인 페이지 로딩 중...";

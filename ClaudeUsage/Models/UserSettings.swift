@@ -727,7 +727,7 @@ class UserSettings: ObservableObject {
            let style = IconStyleMode(rawValue: styleString) {
             self.iconStyleMode = style
         } else {
-            self.iconStyleMode = .colorTranslucent  // 默认彩色通透
+            self.iconStyleMode = .monochrome  // 默认单色
         }
         
         // 加载刷新模式，默认为智能模式
@@ -886,7 +886,7 @@ class UserSettings: ObservableObject {
     func resetToDefaults() {
         appearance = .system
         iconDisplayMode = .percentageOnly
-        iconStyleMode = .colorTranslucent
+        iconStyleMode = .monochrome
         refreshMode = .smart
         refreshInterval = 180  // 固定模式默认3分钟
         language = Self.detectSystemLanguage()
