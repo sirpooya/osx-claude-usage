@@ -314,7 +314,7 @@ class MenuBarIconRenderer {
             usedPercentage: percentage,
             resetsAt: resetsAt,
             type: type
-        )?.nsColor
+        ).nsColor
     }
 
     /// Where the period tick belongs for this limit, or nil for no tick: the setting is off, the
@@ -673,7 +673,10 @@ class MenuBarIconRenderer {
                 percentage = nil
             }
             guard let percentage = percentage else { return nil }
-            return ShapeIconRenderer.createHexagonIcon(percentage: percentage, isMonochrome: isMonochrome, button: button, removeBackground: removeBackground)
+            // No window to project across, so `paceColor` ramps on the current percentage. It
+            // still has to win over the pink palette: in Usage mode every icon is on the ramp, or
+            // the one that is not reads as a bug.
+            return ShapeIconRenderer.createHexagonIcon(percentage: percentage, isMonochrome: isMonochrome, button: button, removeBackground: removeBackground, colorOverride: paceColor(percentage, resetsAt: nil, type: type))
 
         case .codexPrimary, .codexSecondary, .codexExtraUsage:
             // Codex data is rendered separately by createCodexIcon in Phase 4
@@ -711,8 +714,10 @@ class MenuBarIconRenderer {
             return createCircleImage(percentage: percentage, size: NSSize(width: 18, height: 18), colorOverride: color, useDashedStyle: true, button: button, removeBackground: removeBackground, markerFraction: marker)
 
         case .codexExtraUsage:
-            // The Extra Usage buckets have no window to project across, so this is always flat
-            let color = UsageColorScheme.codexExtraUsageColorAdaptive(UsageColorScheme.flatPercentage, for: button)
+            // No window to project across, so the palette is flat and the pace ramp (which reads
+            // the current percentage here) takes over whenever Usage mode is on.
+            let color = paceColor(percentage, resetsAt: nil, type: type)
+                ?? UsageColorScheme.codexExtraUsageColorAdaptive(UsageColorScheme.flatPercentage, for: button)
             return ShapeIconRenderer.createHexagonIcon(percentage: percentage, isMonochrome: isMonochrome, button: button, removeBackground: removeBackground, colorOverride: color)
 
         default:

@@ -1102,17 +1102,21 @@ different wrong fixes all produced byte-identical coordinates. Measure with
 
 ## App icon
 
-An Icon Composer bundle (Xcode 26 native format), authored from a single 1024pt SVG of the
-Claude-orange pixel glyph. Source of truth for the artwork is `Assets/appicon.svg`, fill
-`#D97757` (display-p3 0.8510 0.4667 0.3412).
+An Icon Composer bundle (Xcode 26 native format). **Artwork replaced 2026-08-22**: the glyph is
+now a black pixel invader (was the Claude-orange pixel glyph). Source of truth for the artwork is
+`Assets/appicon.svg`, fill black; the `.icon` bundle carries it as a 1024px PNG (`appicon 3.png`)
+with `fill-specializations` flipping it to white for the dark and tinted appearances. Note
+`UsageColorScheme.brand` (#D97757) is unrelated code and still the login CTA / monochrome bar
+colour.
 
 Two distinct assets, and both have to be updated or the logo changes in half the app:
 
 1. **`ClaudeUsage/Resources/appicon.icon`** is the real app icon: Finder, Get Info, Spotlight,
    notification banners, the DMG. `LSUIElement` is true so there is no Dock icon.
-   - `icon.json` config: fill `system-light`, `glass: false`, neutral shadow at 0.5,
-     translucency 0.5. Glyph scaled 0.9 with a +26.48pt y translation so it sits optically
-     centred inside the squircle. Squares shared across platforms, circles for watchOS.
+   - `icon.json` config: fill `system-light`, neutral shadow at 0.5, translucency 0.5. Glyph
+     scaled 0.9 with a +30pt y translation so it sits optically centred inside the squircle.
+     Squares shared across platforms, circles for watchOS. White solid `fill-specializations`
+     for dark and tinted.
    - Wired via `ASSETCATALOG_COMPILER_APPICON_NAME = appicon` in both build configs. The name
      is lowercase `appicon`, **not** `AppIcon`, because the inherited asset catalog already has
      an `AppIcon` image set (see below) and two assets cannot share a name.

@@ -58,24 +58,43 @@ enum UsagePaceStatus: Int, Comparable, CaseIterable {
 
     var color: Color { Color(nsColor: nsColor) }
 
-    /// The ramp colour for one limit, straight from its percentage and reset time, or nil when
-    /// there is nothing to project from and the caller should keep its own palette.
+    /// The ramp step from a percentage alone, with no pace in it: the same 70/90 breakpoints read
+    /// against current usage.
+    ///
+    /// This is what a limit with no window to project across gets. In Usage mode **every** bar and
+    /// icon has to be on the ramp: leaving one on its own palette (the pink Extra Usage hexagon)
+    /// made the odd one out look like a bug, and it also read as a *limit* colour in a mode where
+    /// colour is supposed to mean rate.
+    static func level(usedPercentage: Double) -> UsagePaceStatus {
+        switch usedPercentage {
+        case ..<70:  return .onPace
+        case 70..<90: return .ahead
+        default:      return .overrun
+        }
+    }
+
+    /// The ramp colour for one limit, from its percentage and reset time.
     ///
     /// The single entry point for both the popover bars and the menu bar icons, so the two cannot
-    /// disagree about what colour a given pace is.
+    /// disagree about what colour a given pace is. Never nil: where a projection is available it
+    /// wins, and otherwise the current percentage carries the ramp. The cases with no projection
+    /// are the Extra Usage buckets (no fixed window), the first 3% of a window, and a window whose
+    /// reset has already passed.
     static func color(
         usedPercentage: Double,
         resetsAt: Date?,
         type: LimitType,
         now: Date = Date()
-    ) -> UsagePaceStatus? {
-        guard let duration = UsagePaceCalculator.windowDuration(for: type),
-              let elapsed = UsagePaceCalculator.elapsedFraction(
-                  resetsAt: resetsAt,
-                  duration: duration,
-                  now: now
-              )
-        else { return nil }
-        return calculate(usedPercentage: usedPercentage, elapsedFraction: elapsed)
+    ) -> UsagePaceStatus {
+        if let duration = UsagePaceCalculator.windowDuration(for: type),
+           let elapsed = UsagePaceCalculator.elapsedFraction(
+               resetsAt: resetsAt,
+               duration: duration,
+               now: now
+           ),
+           let paced = calculate(usedPercentage: usedPercentage, elapsedFraction: elapsed) {
+            return paced
+        }
+        return level(usedPercentage: usedPercentage)
     }
 }

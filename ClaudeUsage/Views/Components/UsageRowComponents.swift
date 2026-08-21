@@ -338,21 +338,19 @@ struct UnifiedLimitRow: View {
         }
     }
 
-    /// The pace ramp colour for this row's bar, or nil to leave the palette in charge.
+    /// The pace ramp colour for this row's bar, or nil only when pace-aware mode is off.
     ///
-    /// nil when pace-aware mode is off, when this limit has no fixed window to project across
-    /// (the Extra Usage buckets), or when it is too early in the window to project at all. In
-    /// every one of those cases the bar falls back to the palette rather than to a flat colour,
-    /// so a row never loses its identity colour for want of a projection.
+    /// Every limit gets a ramp colour in this mode, including the Extra Usage buckets, which have
+    /// no window to project across and so colour on their current percentage instead. Leaving
+    /// those on their palette put one pink bar in a row of blue and red, which read as a bug and
+    /// also meant colour said *which limit* in a mode where colour is supposed to mean rate.
     private var paceColor: Color? {
-        guard settings.paceAwareBarColors,
-              let elapsed = rawElapsedFraction,
-              let status = UsagePaceStatus.calculate(
-                  usedPercentage: percentageValue ?? 0,
-                  elapsedFraction: elapsed
-              )
-        else { return nil }
-        return status.color
+        guard settings.paceAwareBarColors else { return nil }
+        return UsagePaceStatus.color(
+            usedPercentage: percentageValue ?? 0,
+            resetsAt: resetsAtValue,
+            type: type
+        ).color
     }
 
     /// Reset time for this row's limit, the anchor the pace projection measures the window from.
