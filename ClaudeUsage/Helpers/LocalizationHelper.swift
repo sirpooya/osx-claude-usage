@@ -167,6 +167,7 @@ enum L {
         static var finish: String { localized("welcome.finish") }
         static var authenticationSetup: String { localized("welcome.authentication_setup") }
         static var sessionKey: String { localized("welcome.session_key") }
+        static var manualSessionKey: String { localized("welcome.manual_session_key") }
         static var sessionKeyPlaceholder: String { localized("welcome.session_key_placeholder") }
         static var sessionKeyHint: String { localized("welcome.session_key_hint") }
         static var validFormat: String { localized("welcome.valid_format") }

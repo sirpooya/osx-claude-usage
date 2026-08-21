@@ -296,6 +296,7 @@
 "welcome.finish" = "Fertigstellen";
 "welcome.authentication_setup" = "Anmeldung einrichten";
 "welcome.session_key" = "Session Key";
+"welcome.manual_session_key" = "Erweitert: Session Key manuell";
 "welcome.session_key_placeholder" = "Den Session Key hier einfügen";
 "welcome.session_key_hint" = "Den vollständigen sessionKey-Cookie-Wert einfügen";
 "welcome.valid_format" = "Gültiges Format";

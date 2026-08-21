@@ -297,6 +297,7 @@
 "welcome.finish" = "完成";
 "welcome.authentication_setup" = "認證設定";
 "welcome.session_key" = "Session Key";
+"welcome.manual_session_key" = "進階：手動輸入 Session Key";
 "welcome.session_key_placeholder" = "在此貼上您的 Session Key";
 "welcome.session_key_hint" = "貼上完整的 sessionKey Cookie 值";
 "welcome.valid_format" = "格式正確";

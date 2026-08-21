@@ -297,6 +297,7 @@
 "welcome.finish" = "완료";
 "welcome.authentication_setup" = "인증 설정";
 "welcome.session_key" = "Session Key";
+"welcome.manual_session_key" = "고급: Session Key 직접 입력";
 "welcome.session_key_placeholder" = "여기에 Session Key를 붙여넣으세요";
 "welcome.session_key_hint" = "전체 sessionKey Cookie 값을 붙여넣으세요";
 "welcome.valid_format" = "형식이 올바릅니다";

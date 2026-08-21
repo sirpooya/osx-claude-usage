@@ -297,6 +297,7 @@
 "welcome.finish" = "Terminer";
 "welcome.authentication_setup" = "Configuration de l'authentification";
 "welcome.session_key" = "Clé de session";
+"welcome.manual_session_key" = "Avancé : clé de session manuelle";
 "welcome.session_key_placeholder" = "Collez votre clé de session ici";
 "welcome.session_key_hint" = "Collez la valeur complète du cookie sessionKey";
 "welcome.valid_format" = "Format valide";

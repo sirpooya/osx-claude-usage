@@ -297,6 +297,7 @@
 "welcome.finish" = "完了";
 "welcome.authentication_setup" = "認証設定";
 "welcome.session_key" = "セッションキー";
+"welcome.manual_session_key" = "詳細設定: Session Key を手動入力";
 "welcome.session_key_placeholder" = "セッションキーをここに貼り付けてください";
 "welcome.session_key_hint" = "完全な sessionKey Cookie 値を貼り付けてください";
 "welcome.valid_format" = "形式が正しい";
