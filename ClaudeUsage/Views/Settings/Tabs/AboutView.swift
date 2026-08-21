@@ -50,7 +50,7 @@ struct AboutView: View {
             
             // Info list
             VStack(alignment: .leading, spacing: 12) {
-                AboutInfoRow(icon: "person.fill", title: L.SettingsAbout.developer, value: "f-is-h")
+                AboutInfoRow(icon: "person.fill", title: L.SettingsAbout.developer, value: "Pooya Kamel")
                 AboutInfoRow(icon: "doc.text", title: L.SettingsAbout.license, value: L.SettingsAbout.licenseValue)
             }
             
@@ -72,26 +72,13 @@ struct AboutView: View {
                 .focusable(false)
 
                 Button(action: {
-                    if let url = URL(string: "https://ko-fi.com/1atte") {
+                    if let url = URL(string: "https://ko-fi.com/pooya") {
                         NSWorkspace.shared.open(url)
                     }
                 }) {
                     HStack {
                         Image(systemName: "cup.and.saucer.fill")
                         Text(L.SettingsAbout.coffee)
-                    }
-                    .frame(minWidth: 200)
-                }
-                .focusable(false)
-
-                Button(action: {
-                    if let url = URL(string: "https://github.com/sponsors/f-is-h?frequency=one-time") {
-                        NSWorkspace.shared.open(url)
-                    }
-                }) {
-                    HStack {
-                        Image(systemName: "heart")
-                        Text(L.SettingsAbout.githubSponsor)
                     }
                     .frame(minWidth: 200)
                 }

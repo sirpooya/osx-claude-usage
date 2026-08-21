@@ -206,7 +206,7 @@ class MenuBarManager: ObservableObject {
             openCodexStatus()
         case .coffee:
             closePopover()
-            if let url = URL(string: "https://ko-fi.com/1atte") {
+            if let url = URL(string: "https://ko-fi.com/pooya") {
                 NSWorkspace.shared.open(url)
             }
         case .githubSponsor:
@@ -429,7 +429,7 @@ class MenuBarManager: ObservableObject {
     }
 
     @objc func openCoffee() {
-        if let url = URL(string: "https://ko-fi.com/1atte") {
+        if let url = URL(string: "https://ko-fi.com/pooya") {
             NSWorkspace.shared.open(url)
         }
     }

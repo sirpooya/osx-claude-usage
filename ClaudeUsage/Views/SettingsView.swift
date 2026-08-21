@@ -22,47 +22,41 @@ struct SettingsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Toolbar style tab navigation
-            HStack(spacing: 0) {
-                // General settings button
+            // Preferences-style icon toolbar: items hug their intrinsic width and the group
+            // sits centred, matching osx-download-manager / osx-launchpad.
+            HStack(spacing: 2) {
                 ToolbarButton(
-                    icon: "gearshape",
+                    icon: "gearshape.fill",
                     title: L.SettingsTab.general,
                     isSelected: selectedTab == 0
                 ) {
                     selectedTab = 0
                 }
 
-                // Separator
-                TabDivider()
-
-                // Authentication settings button
                 ToolbarButton(
-                    icon: "key.horizontal",
+                    icon: "key.horizontal.fill",
                     title: L.SettingsTab.auth,
                     isSelected: selectedTab == 1
                 ) {
                     selectedTab = 1
                 }
 
-                // Separator
-                TabDivider()
-
-                // About button
                 ToolbarButton(
-                    icon: "info.circle",
+                    icon: "info.circle.fill",
                     title: L.SettingsTab.about,
                     isSelected: selectedTab == 2
                 ) {
                     selectedTab = 2
                 }
             }
-            .padding(.horizontal)
-            .padding(.top, 7)
-            .padding(.bottom, 7)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 10)
+            .padding(.top, 3)
+            .padding(.bottom, 4)
             .background(Color(NSColor.windowBackgroundColor))
 
-            Divider()
+            // Softened: a full-strength separator reads as a hard rule cutting the window in two.
+            Divider().overlay(Color.primary.opacity(0.03))
 
             // Content area
             Group {

@@ -411,6 +411,9 @@ What has been changed from upstream so far:
   New keys added by this fork are written in all 7 locales, not English-only.
 - Dead code left behind by the above: `MenuBarIconPreview` and `HorizontalRadioGroup` in
   `WelcomeSupportingViews.swift` now have no callers.
+- About page: GitHub Sponsor button removed, and Buy Me A Coffee now opens `ko-fi.com/pooya`
+  (was upstream's `ko-fi.com/1atte`) in both `AboutView.swift` and the two `MenuBarManager.swift`
+  menu actions. The `website/` pages still carry the old ko-fi link.
 
 Deliberately **not** translated, because doing so breaks non-English locales:
 
