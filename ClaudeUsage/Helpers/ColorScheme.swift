@@ -14,6 +14,11 @@ import OSLog
 /// 提供5小时和7天限制的颜色配置，支持 AppKit 和 SwiftUI
 enum UsageColorScheme {
 
+    // MARK: - 品牌色
+
+    /// 应用品牌色 #D97757，与 App 图标取同一个 display-p3 值
+    static let brand = Color(.displayP3, red: 0.8510, green: 0.4667, blue: 0.3412)
+
     // MARK: - 外观检测
 
     /// 检测当前是否为深色模式

@@ -106,6 +106,8 @@
 // MARK: - Welcome View
 "welcome.title" = "Willkommen bei ClaudeUsage";
 "welcome.subtitle" = "Bitte vor dem Start die Anmeldedaten konfigurieren";
+"welcome.tagline" = "Die Claude-Nutzung direkt in der Menüleiste";
+"welcome.sign_in_note" = "Mit dem claude.ai-Konto anmelden, um Sitzungs- und Wochenlimits zu sehen. Die Anmeldedaten bleiben im macOS-Schlüsselbund.";
 "welcome.setup_button" = "Anmeldung konfigurieren";
 "welcome.later_button" = "Später einrichten";
 
@@ -145,6 +147,7 @@
 // MARK: - Window Titles
 "window.settings_title" = "ClaudeUsage Einstellungen";
 "window.welcome_title" = "Willkommen";
+"window.login_title" = "Anmelden";
 
 // MARK: - Usage Data Formatting
 "usage_data.not_started_reset" = "Reset-Zeit wird nach Nutzungsbeginn angezeigt";

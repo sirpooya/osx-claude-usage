@@ -149,6 +149,8 @@ enum L {
     enum Welcome {
         static var title: String { localized("welcome.title") }
         static var subtitle: String { localized("welcome.subtitle") }
+        static var tagline: String { localized("welcome.tagline") }
+        static var signInNote: String { localized("welcome.sign_in_note") }
         static var setupButton: String { localized("welcome.setup_button") }
         static var laterButton: String { localized("welcome.later_button") }
 
@@ -235,6 +237,7 @@ enum L {
     enum Window {
         static var settingsTitle: String { localized("window.settings_title") }
         static var welcomeTitle: String { localized("window.welcome_title") }
+        static var loginTitle: String { localized("window.login_title") }
     }
 
     // MARK: - Limit Types

@@ -177,7 +177,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         welcomeWindow = NSWindow(
             contentViewController: hostingController
         )
-        welcomeWindow?.title = L.Window.welcomeTitle
+        welcomeWindow?.title = L.Window.loginTitle
         welcomeWindow?.styleMask = [.titled, .closable]
 
         // 不用 center()：它按调用时的窗口尺寸计算，而 SwiftUI 的固定 frame 要等
@@ -198,6 +198,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // 使用 Combine 订阅窗口关闭通知
         NotificationCenter.default.publisher(for: NSWindow.willCloseNotification, object: welcomeWindow)
             .sink { _ in
+                // 窗口里已经没有“完成/跳过”按钮，关掉窗口就等于结束首次配置，
+                // 否则下次启动还会再弹一次。
+                UserSettings.shared.isFirstLaunch = false
                 NSApp.setActivationPolicy(.accessory)
             }
             .store(in: &cancellables)

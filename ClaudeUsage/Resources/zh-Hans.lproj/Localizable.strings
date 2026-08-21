@@ -107,6 +107,8 @@
 // MARK: - Welcome View
 "welcome.title" = "欢迎使用 ClaudeUsage";
 "welcome.subtitle" = "开始之前，请先配置您的认证信息";
+"welcome.tagline" = "在菜单栏随时查看 Claude 用量";
+"welcome.sign_in_note" = "使用 claude.ai 账户登录即可查看会话和每周限额。凭据保存在 macOS 钥匙串中。";
 "welcome.setup_button" = "去设置认证信息";
 "welcome.later_button" = "稍后设置";
 
@@ -146,6 +148,7 @@
 // MARK: - Window Titles
 "window.settings_title" = "ClaudeUsage 设置";
 "window.welcome_title" = "欢迎";
+"window.login_title" = "登录";
 
 // MARK: - Usage Data Formatting
 "usage_data.not_started_reset" = "使用后显示重置时间";

@@ -119,46 +119,16 @@ struct MenuBarIconPreview: View {
 
 // MARK: - Navigation Buttons
 
+/// 底部完成按钮。
+/// 登录成功会自动收尾，这个按钮同时充当“稍后再说”的出口，所以始终可点。
 struct NavigationButtons: View {
-    let canProceed: Bool
-    let isFetchingOrgId: Bool
-    let fetchError: String?
     let onComplete: () -> Void
 
     var body: some View {
-        VStack(spacing: 8) {
-            // 错误提示
-            if let error = fetchError {
-                HStack(spacing: 6) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundColor(.orange)
-                    Text(error)
-                        .font(.caption)
-                        .foregroundColor(.orange)
-                }
-            }
-
-            // 按钮行
-            HStack(spacing: 12) {
-                Spacer()
-
-                // 继续/完成按钮
-                Button(action: onComplete) {
-                    HStack(spacing: 8) {
-                        if isFetchingOrgId {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                                .frame(width: 12, height: 12)
-                            Text(L.Welcome.configuring)
-                        } else {
-                            Text(L.Welcome.finish)
-                        }
-                    }
-                    .frame(maxWidth: 150)
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(!canProceed || isFetchingOrgId)
-            }
+        HStack {
+            Spacer()
+            Button(L.Welcome.finish, action: onComplete)
+                .buttonStyle(.bordered)
         }
     }
 }

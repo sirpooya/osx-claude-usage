@@ -107,6 +107,8 @@
 // MARK: - Welcome View
 "welcome.title" = "ClaudeUsageへようこそ";
 "welcome.subtitle" = "使い始める前に認証情報を設定してください";
+"welcome.tagline" = "Claude の使用状況をメニューバーで確認";
+"welcome.sign_in_note" = "claude.ai アカウントでサインインすると、セッションと週間の上限を表示できます。認証情報は macOS キーチェーンに保存されます。";
 "welcome.setup_button" = "認証情報を設定";
 "welcome.later_button" = "後で設定";
 
@@ -146,6 +148,7 @@
 // MARK: - Window Titles
 "window.settings_title" = "ClaudeUsage 設定";
 "window.welcome_title" = "ようこそ";
+"window.login_title" = "ログイン";
 
 // MARK: - Usage Data Formatting
 "usage_data.not_started_reset" = "使用開始後にリセット時刻を表示";
