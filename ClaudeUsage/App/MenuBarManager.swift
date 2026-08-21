@@ -504,8 +504,21 @@ class MenuBarManager: ObservableObject {
             settingsWindow = NSWindow(
                 contentViewController: hostingController
             )
-            settingsWindow?.title = L.Window.settingsTitle
-            settingsWindow?.styleMask = [.titled, .closable, .miniaturizable]
+            // No title text and a transparent, full-size-content titlebar, matching the other
+            // osx-* apps' settings windows: the selected tab already names what you're looking
+            // at, and the tab bar sits at the very top instead of below an empty 28pt band.
+            // The close button floats over the bar's left end, which is clear because the tab
+            // group is centred.
+            settingsWindow?.title = ""
+            settingsWindow?.titleVisibility = .hidden
+            settingsWindow?.titlebarAppearsTransparent = true
+            settingsWindow?.styleMask = [.titled, .closable, .fullSizeContentView]
+            settingsWindow?.standardWindowButton(.miniaturizeButton)?.isHidden = true
+            settingsWindow?.standardWindowButton(.zoomButton)?.isHidden = true
+            // The titlebar band is covered by the SwiftUI tab bar, so background dragging is
+            // what keeps the window movable. The panes use stock AppKit controls, which win
+            // their mouse-down race against a background drag.
+            settingsWindow?.isMovableByWindowBackground = true
             settingsWindow?.setFrameAutosaveName("ClaudeUsage.SettingsWindow")
 
             // Remove the old observer (if there is one)
@@ -548,19 +561,7 @@ class MenuBarManager: ObservableObject {
                 }
             }
 
-            // Remove the old language change observer (if there is one)
-            if let observer = languageChangeObserver {
-                NotificationCenter.default.removeObserver(observer)
-            }
-
-            // Add the language change observer, updating the window title when the language switches
-            languageChangeObserver = NotificationCenter.default.addObserver(
-                forName: .languageChanged,
-                object: nil,
-                queue: .main
-            ) { [weak self] _ in
-                self?.settingsWindow?.title = L.Window.settingsTitle
-            }
+            // No language change observer any more: the window carries no title text.
         }
 
         // Activate the app first, then center and show the window

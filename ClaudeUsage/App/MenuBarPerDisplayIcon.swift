@@ -9,39 +9,116 @@
 //  whose wallpaper gives the bar the opposite appearance. Template images do not have the
 //  problem because AppKit re-tints them per bar; color images are drawn literally.
 //
-//  What makes a fix possible at all: the app itself hosts one NSStatusBarWindow per
-//  display. The primary one carries the real NSStatusItem, the secondary ones carry the
-//  private NSStatusItemReplicant, and all of them are reachable through NSApp.windows.
-//  Each window draws the icon separately with its own effectiveAppearance.
+//  The fix: dynamicImage(size:render:) wraps the renderer in
+//  NSImage(size:flipped:drawingHandler:). The handler runs once per bar appearance (NSImage
+//  caches rendered variants per appearance since 10.14), reads
+//  NSAppearance.currentDrawing(), pins UsageColorScheme.drawingIsDarkOverride and
+//  re-renders, so tonal parts resolve per display while accent colors stay literal.
 //
-//  Two fixes, applied together:
-//  A. dynamicImage(size:render:) wraps the renderer in NSImage(size:flipped:drawingHandler:).
-//     The handler runs per destination draw (NSImage caches per appearance since 10.14),
-//     reads NSAppearance.currentDrawingAppearance, pins
-//     UsageColorScheme.drawingIsDarkOverride and re-renders, so tonal parts resolve per
-//     display while accent colors stay literal.
-//  B. applyToReplicants(mainButton:render:) walks the NSStatusBarWindow instances, finds
-//     each window's NSStatusBarButton, skips the main one, and assigns an image
-//     force-rendered for that window's own effectiveAppearance. Belt and braces for the
-//     case where a replicant draw does not re-resolve the dynamic image. AppKit may sync
-//     the main image back over it later; harmless, because that image is fix A's.
+//  The handler also applies the inactive-bar dim at draw time. macOS dims menu bar items on
+//  the display whose menu bar is inactive, but only through the template tint (measured:
+//  appearsDisabled stays NO, window alpha stays 1), so color icons must dim themselves.
+//
+//  Approaches that FAILED on macOS 26, kept here so they are not retried:
+//  - Assigning images directly to the replicant windows' buttons (the private
+//    NSStatusItemReplicant machinery, reachable via NSApp.windows). AppKit recreates those
+//    windows and re-syncs their content behind us, and repeated writes make Control Center
+//    pull the item from every bar. `killall ControlCenter` brings it back.
+//  - SLSSetWindowAlpha on the status bar windows. They report a bogus windowNumber
+//    (Control Center owns the real surface) and the item vanishes the same way.
 //
 
 import AppKit
 
 enum MenuBarPerDisplayIcon {
 
-    // MARK: - Inactive-bar dimming
+    /// Alpha for the icon on an inactive menu bar, eyeballed against the system's dimming
+    /// of template icons.
+    static let inactiveDimAlpha: CGFloat = 0.01
 
-    /// macOS dims menu bar items on the display whose menu bar is inactive, but only through
-    /// the template tint. Color images are drawn literally and never dim, so a color status
-    /// icon stays full-brightness next to everyone else's dimmed icons. The fix: read which
-    /// display's menu bar is active (private SkyLight call, runtime-guarded) and dim our own
-    /// renders on the other bars to match.
+    // MARK: - Dynamic icon
 
-    /// Alpha applied to the icon on an inactive menu bar, eyeballed against the system's
-    /// dimming of template icons.
-    static let inactiveDimAlpha: CGFloat = 0.45
+    /// Appearance-resolving wrapper. The render closure re-runs per bar appearance with
+    /// UsageColorScheme.drawingIsDarkOverride pinned, and the result is drawn dimmed when
+    /// the draw is for an inactive bar. Only useful for color icons; template icons already
+    /// adapt natively.
+    ///
+    /// The dim decision is baked into the per-appearance cached variant, so when the active
+    /// display changes the wrapper must be REBUILT (a new NSImage instance) for the dim to
+    /// update. MenuBarUI does that from its heartbeat by watching activeMenuBarDisplayUUID.
+    static func dynamicImage(size: NSSize, render: @escaping (Bool) -> NSImage) -> NSImage {
+        return NSImage(size: size, flipped: false) { rect in
+            let isDark = NSAppearance.currentDrawing().bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            UsageColorScheme.drawingIsDarkOverride = isDark
+            defer { UsageColorScheme.drawingIsDarkOverride = nil }
+            let fraction: CGFloat = shouldDimDraw(forDark: isDark) ? inactiveDimAlpha : 1.0
+            render(isDark).draw(in: rect, from: .zero, operation: .sourceOver, fraction: fraction)
+
+            // Invisible state beacon. The replicant bars only re-snapshot the item after
+            // the MAIN bar's rendered pixels change, and on a focus flip the main (active,
+            // undimmed) variant renders pixel-identical, so the other bar would keep its
+            // stale dim state forever (verified: 28s and a dozen reassignments with no
+            // repaint). One corner pixel whose alpha depends on the active display makes
+            // every variant differ across flips, which forces the re-snapshot. Invisible
+            // at alpha <= 0.008.
+            // Alpha must survive 8-bit quantization or the pixels do not actually change;
+            // 0.004 vs 0.008 both rounded away and the re-snapshot never fired.
+            let beaconBit = (activeMenuBarDisplayUUID()?.hashValue ?? 0) & 1
+            if beaconBit == 1 {
+                NSColor.black.withAlphaComponent(0.05).setFill()
+                NSRect(x: rect.maxX - 1, y: rect.minY, width: 1, height: 1).fill()
+            }
+            return true
+        }
+    }
+
+    /// Dim decision at draw time. The handler only knows which appearance it is drawing
+    /// for, so the appearance is mapped back to the displays whose bars have it: dim when
+    /// at least one bar draws this appearance and none of them is the active one. When both
+    /// bars share one appearance the mapping is ambiguous and nothing is dimmed; full
+    /// brightness is the safe wrong answer, a wrongly dimmed active bar is not.
+    ///
+    /// Stale per-Space bar windows report screen == nil, so placement falls back to the
+    /// screen containing the window's frame; treating those as active (the old safe
+    /// default) silently vetoed the dim for the whole appearance.
+    private static func shouldDimDraw(forDark isDark: Bool) -> Bool {
+        guard let active = activeMenuBarDisplayUUID() else { return false }
+        var matchedAny = false
+        for window in statusBarWindows() where barIsDark(window) == isDark {
+            guard let uuid = displayUUID(for: window) else { continue }
+            matchedAny = true
+            if uuid.caseInsensitiveCompare(active) == .orderedSame { return false }
+        }
+        return matchedAny
+    }
+
+    /// Display UUID hosting this window: its screen when set, otherwise the screen whose
+    /// frame contains the window (ordered-out bar windows report screen == nil)
+    private static func displayUUID(for window: NSWindow) -> String? {
+        let frame = window.frame
+        let center = NSPoint(x: frame.midX, y: frame.midY)
+        let screen = window.screen ?? NSScreen.screens.first { NSPointInRect(center, $0.frame) }
+        guard let screen,
+              let number = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber,
+              let uuidFn = uuidFromDisplayIDFn,
+              let uuid = uuidFn(number.uint32Value)?.takeRetainedValue()
+        else { return nil }
+        return CFUUIDCreateString(nil, uuid) as String
+    }
+
+    /// Whether the menu bar hosting this window currently renders dark
+    static func barIsDark(_ window: NSWindow) -> Bool {
+        window.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+    }
+
+    /// This app's status bar windows: the main one plus the per-display/per-Space
+    /// replicants AppKit maintains. Read-only use only; writing to them is what got the
+    /// item hidden (see header).
+    static func statusBarWindows() -> [NSWindow] {
+        NSApp.windows.filter { String(describing: type(of: $0)).contains("NSStatusBarWindow") }
+    }
+
+    // MARK: - Active menu bar display (private SkyLight, runtime-guarded)
 
     private typealias MainConnFn = @convention(c) () -> Int32
     private typealias ActiveMenuBarFn = @convention(c) (Int32) -> Unmanaged<CFString>?
@@ -67,75 +144,18 @@ enum MenuBarPerDisplayIcon {
     }()
 
     /// UUID string of the display whose menu bar is currently active, nil when the private
-    /// call is unavailable
-    private static func activeMenuBarDisplayUUID() -> String? {
+    /// call is unavailable. MenuBarUI watches this to rebuild the icon when it changes.
+    static func activeMenuBarDisplayUUID() -> String? {
         guard let mainConnection = mainConnectionFn, let active = activeMenuBarFn,
               let uuid = active(mainConnection())?.takeRetainedValue() else { return nil }
         return uuid as String
     }
 
-    /// Whether the menu bar hosting this window is the active one. true when any part of the
-    /// signal is unavailable, which keeps the icon at full brightness (the old behavior).
+    /// Whether the menu bar hosting this window is the active one. true when any part of
+    /// the signal is unavailable, which keeps the icon at full brightness (the old behavior).
     static func isBarActive(on window: NSWindow) -> Bool {
         guard let active = activeMenuBarDisplayUUID(),
-              let screen = window.screen,
-              let number = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber,
-              let uuidFn = uuidFromDisplayIDFn,
-              let uuid = uuidFn(number.uint32Value)?.takeRetainedValue()
-        else { return true }
-        let uuidString = CFUUIDCreateString(nil, uuid) as String
-        return uuidString.caseInsensitiveCompare(active) == .orderedSame
-    }
-
-    /// Flattened copy of the image at reduced alpha, for inactive menu bars
-    static func dimmed(_ image: NSImage, alpha: CGFloat = inactiveDimAlpha) -> NSImage {
-        let out = NSImage(size: image.size)
-        out.lockFocus()
-        image.draw(in: NSRect(origin: .zero, size: image.size), from: .zero, operation: .sourceOver, fraction: alpha)
-        out.unlockFocus()
-        return out
-    }
-
-    /// Fix A: appearance-resolving wrapper. The render closure re-runs per menu bar draw
-    /// with UsageColorScheme.drawingIsDarkOverride pinned to that bar's appearance.
-    /// Only useful for color icons; template icons already adapt natively.
-    static func dynamicImage(size: NSSize, render: @escaping (Bool) -> NSImage) -> NSImage {
-        return NSImage(size: size, flipped: false) { rect in
-            let isDark = NSAppearance.currentDrawing().bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            UsageColorScheme.drawingIsDarkOverride = isDark
-            defer { UsageColorScheme.drawingIsDarkOverride = nil }
-            render(isDark).draw(in: rect)
-            return true
-        }
-    }
-
-    /// Fix B: force-render one image per replicant window. No-op with a single display.
-    static func applyToReplicants(mainButton: NSStatusBarButton?, render: (Bool) -> NSImage) {
-        for window in statusBarWindows() {
-            guard let button = statusBarButton(in: window), button !== mainButton else { continue }
-            let isDark = window.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            UsageColorScheme.drawingIsDarkOverride = isDark
-            let image = render(isDark)
-            UsageColorScheme.drawingIsDarkOverride = nil
-            button.image = isBarActive(on: window) ? image : dimmed(image)
-        }
-    }
-
-    /// This app's status bar windows: the main one plus one replicant per extra display.
-    static func statusBarWindows() -> [NSWindow] {
-        NSApp.windows.filter { String(describing: type(of: $0)).contains("NSStatusBarWindow") }
-    }
-
-    private static func statusBarButton(in window: NSWindow) -> NSStatusBarButton? {
-        guard let root = window.contentView else { return nil }
-        return firstStatusBarButton(in: root)
-    }
-
-    private static func firstStatusBarButton(in view: NSView) -> NSStatusBarButton? {
-        if let button = view as? NSStatusBarButton { return button }
-        for sub in view.subviews {
-            if let found = firstStatusBarButton(in: sub) { return found }
-        }
-        return nil
+              let uuid = displayUUID(for: window) else { return true }
+        return uuid.caseInsensitiveCompare(active) == .orderedSame
     }
 }

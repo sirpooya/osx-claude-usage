@@ -12,8 +12,8 @@ import SwiftUI
 ///
 /// Matches the toolbar style shared by osx-download-manager / osx-launchpad / osx-auth-qr:
 /// the selected item is accent-tinted (icon and label together) over a barely-there neutral
-/// pill. Items hug their intrinsic width (plus a minWidth floor) rather than splitting the
-/// bar evenly, so the gap between items is the one the spacing actually says.
+/// pill. All items share one fixed width so the pills line up evenly; 96pt fits the longest
+/// localized label ("Authentification", fr) at 11pt.
 struct ToolbarButton: View {
     let icon: String
     let title: String
@@ -34,8 +34,7 @@ struct ToolbarButton: View {
                     .lineLimit(1)
             }
             .foregroundStyle(isSelected ? Color.accentColor : .secondary)
-            .padding(.horizontal, 9)
-            .frame(minWidth: 52)
+            .frame(width: 96)
             .padding(.vertical, 5)
             .background(
                 RoundedRectangle(cornerRadius: 9, style: .continuous)

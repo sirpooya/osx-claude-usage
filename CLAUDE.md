@@ -434,7 +434,23 @@ What has been changed from upstream so far:
   splitting the bar into thirds; `TabDivider.swift` deleted (no other callers). The divider under
   the bar is softened with `.overlay(Color.primary.opacity(0.03))`. The English
   `settings.tab.auth` label is "Authentication", not "Authentication Settings" (other locales
-  already had the short form).
+  already had the short form). The settings window now carries no titlebar text at all,
+  download-manager style: `titleVisibility = .hidden`, `titlebarAppearsTransparent`,
+  `.fullSizeContentView` (tab bar at the very top, close button floating over its left end),
+  miniaturize/zoom hidden, `isMovableByWindowBackground = true` so the window still drags. The
+  `.languageChanged` observer that re-set the title is gone. `window.settings_title` says just
+  "Settings" in all 7 locales but is currently unused. Tab items share one fixed 96pt width
+  (fits fr "Authentification" at 11pt) so the pills line up evenly.
+- **About tab rebuilt in the osx-launchpad layout** (icon 104pt, 22pt semibold name, version
+  pill, grouped rounded cards of 36pt rows, tertiary copyright): an info card (Developer,
+  License) and a links card (GitHub, Buy Me A Coffee) with fully tappable rows, accent arrow,
+  hover underline and pointing-hand cursor. Content column capped at 420pt inside the 720pt
+  window. The card/row/divider/pill pieces are private to `AboutView.swift` and copy launchpad's
+  `SettingsComponents` metrics (radius 12 continuous, labelColor 0.05 fill, hairline 0.06,
+  row padding 12). `AboutInfoRow.swift` in Components is now dead code.
+- **SettingCard header glyphs removed** on the General tab: the card renders title only; the
+  `icon`/`iconColor` parameters are still accepted but ignored so no call site changed, and the
+  32pt content indent that existed to align under the glyph is gone.
 - **Sparkle updates are live again.** `SUPublicEDKey` in `Config/Info.plist` is now this
   machine's own Sparkle keypair (public `XPeIzL4GHFXBMLCP+A/vxqQE4Bn8tGi7jkw9sRBHXSc=`, private
   key in the login Keychain, shared with the other osx-* apps; `generate_keys -p` prints it).
@@ -510,66 +526,55 @@ subtitled "Use adaptive color instead of status colors (green/orange/red)". Full
 
 Each display's menu bar picks its own appearance from the wallpaper behind it, so a colour icon
 whose greys were resolved against one bar renders wrong on the other monitor. Template icons
-never had the problem (AppKit re-tints them per bar); `button.effectiveAppearance` is a single
-value, so probe-then-recolour can only ever match one display. Fixed 2026-08-21, verified live
-with one light and one dark bar showing dark and white digits simultaneously.
+never had the problem (AppKit re-tints and also dims them per bar); `button.effectiveAppearance`
+is a single value, so probe-then-recolour can only ever match one display. Fixed 2026-08-21 and
+verified live in both directions (light bar active with dark bar dimmed, and the reverse).
 
-What makes it fixable: the app itself hosts one `NSStatusBarWindow` per display (verified with
-lldb: 3 instances on this 2-display machine). The secondary ones carry the private
-`NSStatusItemReplicant`, and every one draws the icon separately with its own
-`effectiveAppearance`. Two fixes in `MenuBarPerDisplayIcon.swift`, applied together:
+Everything lives in `MenuBarPerDisplayIcon.swift` plus the colour path of
+`MenuBarUI.updateMenuBarIcon`:
 
-- **Fix A (the real fix, public API).** `dynamicImage(size:render:)` wraps the renderer in
-  `NSImage(size:flipped:drawingHandler:)`. The handler runs once per bar draw (NSImage caches
-  per appearance since 10.14), reads `NSAppearance.currentDrawing()`, pins
-  `UsageColorScheme.drawingIsDarkOverride` and re-renders, so tonal parts resolve per display
-  while accent colours stay literal. In Swift the class property is `currentDrawing()`, not
-  `currentDrawingAppearance` (that spelling is an error twice over).
-- **Fix B (belt and braces).** `applyToReplicants(mainButton:render:)` walks the
-  `NSStatusBarWindow` instances in `NSApp.windows`, deep-searches each for its
-  `NSStatusBarButton`, skips the main one and assigns an image force-rendered for that window's
-  own appearance. Re-applied from KVO on each window's `effectiveAppearance` (deferred out of
-  the callback with `DispatchQueue.main.async`, because the pass rebuilds the very observation
-  that is firing), from `didChangeScreenParametersNotification` + 1s, and 1s after every icon
-  update, since replicant windows are created lazily. My first screenshot after launch caught
-  exactly that: an empty replicant that the delayed pass then populated.
+- The icon is a dynamic image, `NSImage(size:flipped:drawingHandler:)`. The handler runs once
+  per bar appearance (NSImage caches variants per appearance since 10.14), reads
+  `NSAppearance.currentDrawing()` (the Swift spelling; `currentDrawingAppearance` does not
+  compile), pins `UsageColorScheme.drawingIsDarkOverride` (Method 0 in `isDarkMode(for:)`, wins
+  over the button probe) and re-renders, so tonal parts resolve per display while accent
+  colours stay literal. The render closure passes `button: nil` and captures `iconRenderer`,
+  not `self`. A probe render fixes the wrapper's size up front (geometry is
+  appearance-independent).
+- Inactive-bar dimming happens inside the same handler. macOS dims menu bar items on the
+  inactive display's bar, but only through the template tint (measured live with lldb:
+  `appearsDisabled` is NO on every button, every window's alpha is 1), so colour icons must
+  dim themselves. The active display comes from private SkyLight,
+  `SLSCopyActiveMenuBarDisplayIdentifier(SLSMainConnectionID())`, dlsym'd and runtime-guarded
+  (unavailable = full brightness everywhere). The handler maps the appearance it is drawing
+  for back to the bars that have it: when every such bar is inactive, the draw is dimmed to
+  `inactiveDimAlpha` (0.01). When both bars share one appearance the mapping is ambiguous and
+  nothing dims; full brightness is the safe wrong answer.
+- The dim state is baked into the per-appearance cached variant, so `refreshDimIfNeeded()`
+  rebuilds the wrapper (a new NSImage instance, one write to the main button) whenever the
+  active-display UUID changes. Watchers: a 2s heartbeat (no event fires when focus moves
+  between displays within one app; the check is one string compare), the undocumented
+  `NSWorkspaceActiveDisplayDidChangeNotification`, `didActivateApplicationNotification`,
+  `activeSpaceDidChangeNotification`, and `didChangeScreenParametersNotification`.
+- Colour icons bypass the icon cache (wrapper creation is free, rendering is lazy per draw);
+  only template icons are cached. Template mode needs none of this, AppKit tints and dims
+  templates per bar natively.
 
-Wiring, in `MenuBarUI.updateMenuBarIcon`:
-- `UsageColorScheme.isDarkMode(for:)` gained Method 0: `drawingIsDarkOverride` wins over the
-  button probe. The shared render closure passes `button: nil` so the override is the only
-  appearance source, and captures `iconRenderer` rather than `self` (the closure is stored in
-  `lastReplicantRender`, capturing self would cycle).
-- A probe render decides template vs colour and fixes the wrapper's size up front (dynamic
-  images need their size at creation; geometry is appearance-independent, so one probe is safe).
-- The icon cache stores the dynamic wrapper, which re-resolves per appearance, so cached icons
-  stay correct across per-display appearance changes.
-- Template icons skip both fixes: wrapping a template would break AppKit's own tinting.
+Hard-won negative knowledge. Do not retry these:
 
-**Inactive-bar dimming.** macOS dims menu bar items on the display whose menu bar is inactive,
-but only through the template tint. Measured live with lldb: `appearsDisabled` is NO on every
-button and every window's alpha is 1, so a colour image never dims and sits at full brightness
-next to everyone else's dimmed icons. Emulated in `MenuBarPerDisplayIcon`:
-
-- The signal is `SLSCopyActiveMenuBarDisplayIdentifier(SLSMainConnectionID())`, private
-  SkyLight, dlsym'd and runtime-guarded (unavailable = everything stays full brightness).
-  Windows map to displays via `NSScreenNumber` -> `CGDisplayCreateUUIDFromDisplayID` (public
-  but deprecated, also dlsym'd). Note `nm -gU` on the framework stub finds nothing because the
-  binary lives in the dyld shared cache; probe with `dlopen`/`dlsym`, which is how these two
-  were verified present on macOS 26.
-- `isBarActive(on:)` compares a window's display UUID against the active one;
-  `dimmed(_:alpha:)` flattens the render at `inactiveDimAlpha` 0.45 (eyeballed against the
-  system's own dimming).
-- The replicant pass dims inactive bars, and the main button gets the same treatment: a dimmed
-  static render while its bar is inactive, the dynamic wrapper restored when active again.
-  Template mode is untouched, the system already dims those.
-- Re-run triggers: the undocumented `NSWorkspaceActiveDisplayDidChangeNotification` plus public
-  `didActivateApplicationNotification` and `activeSpaceDidChangeNotification`, all on
-  `NSWorkspace.shared.notificationCenter`.
-
-Debugging notes from getting there: three `NSStatusBarWindow` instances can exist with two
-displays (an extra per-Space window), and killing the app mid-draw can leave the status item
-invisible on every bar with a valid image assigned; a clean relaunch fixes it. Check the
-Control Center blocklist (`menubar-fix` skill) before suspecting it, it was clean here.
+- **Writing images into the replicant status bar windows** (the private
+  `NSStatusItemReplicant` machinery; the app hosts one `NSStatusBarWindow` per display and
+  per Space, all in `NSApp.windows`) works briefly, then AppKit recreates and re-syncs those
+  windows behind us, and repeated writes make Control Center pull the item from EVERY bar
+  while `menubar-fix.sh list` still says allowed. `killall ControlCenter` brings it back
+  instantly. The bar windows also report a bogus `windowNumber` (0x100000000), they are not
+  really ours to drive.
+- **`SLSSetWindowAlpha` on those windows**: same vanish, same heal.
+- `nm -gU` on SkyLight finds nothing because the binary lives in the dyld shared cache; probe
+  with `dlopen`/`dlsym` (that is how `SLSCopyActiveMenuBarDisplayIdentifier` was verified).
+- Item exists with a valid image but invisible on every bar = Control Center suppression, not
+  a rendering bug. Heal with `killall ControlCenter`; rule out the blocklist with the
+  `menubar-fix` skill.
 
 ## Centring an NSWindow around SwiftUI
 

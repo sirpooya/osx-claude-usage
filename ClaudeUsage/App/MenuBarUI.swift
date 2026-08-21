@@ -37,20 +37,24 @@ class MenuBarUI {
     /// Maximum number of cache entries
     private let maxCacheSize = 50
 
-    // MARK: - Per-Display Icon (Fix B state)
+    // MARK: - Per-Display Icon state
 
-    /// Last color-mode render closure; re-applied when replicant windows on secondary
-    /// displays appear or change appearance. nil while a template icon is shown
-    /// (templates are tinted per display by AppKit, nothing to do).
-    private var lastReplicantRender: ((Bool) -> NSImage)?
-    /// KVO on every status bar window's effectiveAppearance (per-display wallpaper tint)
-    private var replicantAppearanceObservations: [NSKeyValueObservation] = []
-    /// Display connect/disconnect re-applies the replicant pass
+    /// Render closure and size of the current color icon; nil while a template icon is
+    /// shown (templates are tinted and dimmed per display by AppKit, nothing to do)
+    private var lastRender: ((Bool) -> NSImage)?
+    private var lastIconSize: NSSize?
+    /// Active-menu-bar display at the time the current wrapper was built. The dim state is
+    /// baked into the wrapper's per-appearance cache, so a change here means rebuild.
+    private var lastActiveBarUUID: String?
+    /// Display connect/disconnect re-checks the dim state
     private var screenParamsObserver: NSObjectProtocol?
-    /// The undimmed icon last assigned to the main button, restored when its bar is active again
-    private var lastMainIcon: NSImage?
-    /// Active-menu-bar-display changes (focus moved to the other monitor) re-run the pass
+    /// Active-menu-bar-display changes (focus moved to the other monitor) re-check the dim
     private var activeDisplayObservers: [NSObjectProtocol] = []
+    /// No event fires when focus moves between displays within one app, so the active
+    /// display is polled on a cheap heartbeat (one string compare; rebuild only on change)
+    private var dimHeartbeat: Timer?
+    /// Rate limit for the visibility blip in refreshDimIfNeeded
+    private var lastVisibilityBlip = Date.distantPast
 
     // MARK: - Settings Reference
 
@@ -75,7 +79,7 @@ class MenuBarUI {
             queue: .main
         ) { [weak self] _ in
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                self?.applyReplicantPass()
+                self?.refreshDimIfNeeded()
             }
         }
 
@@ -90,9 +94,14 @@ class MenuBarUI {
         ]
         activeDisplayObservers = activeDisplayNames.map { name in
             workspaceCenter.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
-                self?.applyReplicantPass()
+                self?.refreshDimIfNeeded()
             }
         }
+
+        dimHeartbeat = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+            self?.refreshDimIfNeeded()
+        }
+        dimHeartbeat?.tolerance = 0.5
     }
 
     // MARK: - Status Item Setup
@@ -539,77 +548,70 @@ class MenuBarUI {
             )
         }
 
-        let icon: NSImage
-        if let cachedImage = iconCache[cacheKey] {
-            icon = cachedImage
-        } else {
-            // Probe render decides template vs color and fixes the size for the dynamic wrapper
-            let probe = iconRenderer.createIcon(
-                usageData: usageData,
-                codexUsageData: codexUsageData,
-                hasUpdate: showBadge,
-                button: button
-            )
-            // Template icons are tinted per display by AppKit already; only color icons
-            // need the appearance-resolving wrapper (fix A in MenuBarPerDisplayIcon)
-            icon = probe.isTemplate ? probe : MenuBarPerDisplayIcon.dynamicImage(size: probe.size, render: render)
+        // Template path: cache as before, AppKit tints and dims templates per display itself
+        if let cachedImage = iconCache[cacheKey], cachedImage.isTemplate {
+            button.image = cachedImage
+            lastRender = nil
+            return
+        }
 
+        // Probe render decides template vs color and fixes the size for the dynamic wrapper
+        let probe = iconRenderer.createIcon(
+            usageData: usageData,
+            codexUsageData: codexUsageData,
+            hasUpdate: showBadge,
+            button: button
+        )
+
+        if probe.isTemplate {
             // Store it in the cache (FIFO eviction, rather than the random eviction an unordered Dictionary walk gives)
             if iconCache.count >= maxCacheSize, !iconCacheOrder.isEmpty {
                 let oldestKey = iconCacheOrder.removeFirst()
                 iconCache.removeValue(forKey: oldestKey)
             }
-            iconCache[cacheKey] = icon
+            iconCache[cacheKey] = probe
             iconCacheOrder.append(cacheKey)
+            button.image = probe
+            lastRender = nil
+            return
         }
 
-        button.image = icon
-
-        // Fix B: force-render the replicant windows on secondary displays
-        if icon.isTemplate {
-            // Template icons dim on inactive bars through the system tint; nothing to do
-            lastMainIcon = nil
-            lastReplicantRender = nil
-            replicantAppearanceObservations = []
-        } else {
-            lastMainIcon = icon
-            lastReplicantRender = render
-            applyReplicantPass()
-            // Replicant windows are created lazily; catch the ones that appear late
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-                self?.applyReplicantPass()
-            }
-        }
+        // Color path: a fresh dynamic wrapper every update. Wrapper creation is free (the
+        // rendering happens lazily per bar draw), and a fresh instance keeps the baked-in
+        // dim state current. Only the main button is ever written; AppKit mirrors it to
+        // the other bars and the wrapper resolves appearance and dim per draw. Writing to
+        // the replicant windows directly makes Control Center hide the item, see
+        // MenuBarPerDisplayIcon's header.
+        lastRender = render
+        lastIconSize = probe.size
+        lastActiveBarUUID = MenuBarPerDisplayIcon.activeMenuBarDisplayUUID()
+        button.image = MenuBarPerDisplayIcon.dynamicImage(size: probe.size, render: render)
     }
 
-    /// Fix B: assign per-appearance images to the replicant status bar windows and
-    /// (re)register the appearance observers on all status bar windows
-    private func applyReplicantPass() {
-        guard let render = lastReplicantRender else { return }
-        MenuBarPerDisplayIcon.applyToReplicants(mainButton: statusItem.button, render: render)
+    /// Rebuild the dynamic wrapper when the active menu bar display changed, so the dim
+    /// baked into its per-appearance cache tracks focus. No-op otherwise.
+    ///
+    /// The rebuild alone only reaches the bar hosting the real item. The replicant bars on
+    /// other displays keep a snapshot that nothing refreshes: not reassignment, not
+    /// needsDisplay, not pixel changes, only item (re)creation (all verified live). So a
+    /// visibility blip forces the system to rebuild the snapshots. Public API, fired only
+    /// on an actual focus-display change, rate-limited to stay far away from the rapid
+    /// write patterns that make Control Center pull the item.
+    private func refreshDimIfNeeded() {
+        guard let render = lastRender, let size = lastIconSize,
+              let button = statusItem.button else { return }
+        let current = MenuBarPerDisplayIcon.activeMenuBarDisplayUUID()
+        guard current != lastActiveBarUUID else { return }
+        lastActiveBarUUID = current
+        button.image = MenuBarPerDisplayIcon.dynamicImage(size: size, render: render)
 
-        // The main button needs the same treatment: dim its color icon while its own bar is
-        // inactive, restore the dynamic icon when it is active again
-        if let mainButton = statusItem.button, let mainWindow = mainButton.window {
-            if MenuBarPerDisplayIcon.isBarActive(on: mainWindow) {
-                if let icon = lastMainIcon, mainButton.image !== icon {
-                    mainButton.image = icon
-                }
-            } else {
-                let isDark = UsageColorScheme.isDarkMode(for: mainButton)
-                UsageColorScheme.drawingIsDarkOverride = isDark
-                let bright = render(isDark)
-                UsageColorScheme.drawingIsDarkOverride = nil
-                mainButton.image = MenuBarPerDisplayIcon.dimmed(bright)
-            }
-        }
-
-        replicantAppearanceObservations = MenuBarPerDisplayIcon.statusBarWindows().map { window in
-            window.observe(\.effectiveAppearance) { [weak self] _, _ in
-                // Defer out of the KVO callback: applyReplicantPass releases and recreates
-                // the very observation that is firing
-                DispatchQueue.main.async { self?.applyReplicantPass() }
-            }
+        // Blip visibility to re-snapshot the replicant bars, at most once per 5s
+        let now = Date()
+        guard now.timeIntervalSince(lastVisibilityBlip) > 5 else { return }
+        lastVisibilityBlip = now
+        statusItem.isVisible = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
+            self?.statusItem.isVisible = true
         }
     }
 
@@ -737,5 +739,6 @@ class MenuBarUI {
         for observer in activeDisplayObservers {
             NSWorkspace.shared.notificationCenter.removeObserver(observer)
         }
+        dimHeartbeat?.invalidate()
     }
 }
