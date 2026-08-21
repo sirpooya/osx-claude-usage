@@ -235,6 +235,14 @@ enum L {
         static var paceAwareColorsDesc: String { localized("display.pace_aware_colors_desc") }
         static var showTimeMarker: String { localized("display.show_time_marker") }
         static var showTimeMarkerDesc: String { localized("display.show_time_marker_desc") }
+        // The three mutually exclusive bar / icon colouring modes, one picker
+        static var colorMode: String { localized("display.color_mode") }
+        static var colorModeType: String { localized("display.color_mode_type") }
+        static var colorModeUsage: String { localized("display.color_mode_usage") }
+        static var colorModeMonochrome: String { localized("display.color_mode_monochrome") }
+        static var colorModeTypeDesc: String { localized("display.color_mode_type_desc") }
+        static var colorModeUsageDesc: String { localized("display.color_mode_usage_desc") }
+        static var colorModeMonochromeDesc: String { localized("display.color_mode_monochrome_desc") }
     }
     
     // MARK: - Icon Style Mode

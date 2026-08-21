@@ -139,6 +139,15 @@
 "display.show_time_marker" = "タイムマーカーを表示";
 "display.show_time_marker_desc" = "期間のどこまで進んでいるかを示す目印をバーに表示します";
 
+/* The three mutually exclusive bar / icon coloring modes */
+"display.color_mode" = "色の基準";
+"display.color_mode_type" = "種類";
+"display.color_mode_usage" = "使用量";
+"display.color_mode_monochrome" = "モノクロ";
+"display.color_mode_type_desc" = "各上限が固有の色を保ち、上限に近づくほど濃くなります。";
+"display.color_mode_usage_desc" = "予測ペースに応じて青、オレンジ、赤と変化し、時間の経過より使用が速いときにバーが警告します。";
+"display.color_mode_monochrome_desc" = "ステータスカラーの代わりに、メニューバーに合わせた単一の適応色を使います。";
+
 // MARK: - Refresh Interval
 "refresh.smart_mode" = "スマート頻度";
 "refresh.fixed_mode" = "固定頻度";
@@ -269,7 +278,7 @@
 "display_options" = "表示オプション";
 "smart_display" = "スマート表示";
 "smart_display_description" = "データのある制限タイプを自動的に表示";
-"custom_display" = "カスタム表示";
+"custom_display" = "上限タイプのカスタム表示";
 "custom_display_description" = "表示する制限を手動で選択";
 "display_mode_label" = "表示モード";
 "select_limit_types" = "表示する制限タイプを選択";

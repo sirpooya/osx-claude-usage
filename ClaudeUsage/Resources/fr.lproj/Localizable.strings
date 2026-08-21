@@ -139,6 +139,15 @@
 "display.show_time_marker" = "Afficher le repère de temps";
 "display.show_time_marker_desc" = "Affiche sur les barres un repère indiquant où vous en êtes dans la période";
 
+/* The three mutually exclusive bar / icon coloring modes */
+"display.color_mode" = "Couleur selon";
+"display.color_mode_type" = "Type";
+"display.color_mode_usage" = "Utilisation";
+"display.color_mode_monochrome" = "Monochrome";
+"display.color_mode_type_desc" = "Chaque limite garde sa propre couleur, qui s'intensifie à l'approche du plafond.";
+"display.color_mode_usage_desc" = "Bleu, orange puis rouge selon le rythme projeté, pour qu'une barre alerte quand vous êtes en avance sur l'horloge.";
+"display.color_mode_monochrome_desc" = "Une couleur adaptative assortie à la barre de menus, au lieu des couleurs d'état.";
+
 // MARK: - Refresh Interval
 "refresh.smart_mode" = "Fréquence intelligente";
 "refresh.fixed_mode" = "Fréquence fixe";
@@ -269,7 +278,7 @@
 "display_options" = "Options d'affichage";
 "smart_display" = "Affichage intelligent";
 "smart_display_description" = "Afficher automatiquement tous les types de limites avec des données";
-"custom_display" = "Affichage personnalisé";
+"custom_display" = "Affichage personnalisé des types de limite";
 "custom_display_description" = "Sélectionner manuellement les limites à afficher";
 "display_mode_label" = "Mode d'affichage";
 "select_limit_types" = "Sélectionner les types de limites à afficher";

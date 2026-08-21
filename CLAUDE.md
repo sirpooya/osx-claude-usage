@@ -742,30 +742,56 @@ What has been changed from upstream so far:
   - Verified live against the countdown text, which is the useful check because it ties the tick
     to something independently readable: with "4h 8m left" of a 5h window (17.3% elapsed) the
     tick measured at 17.2% of the bar, and with "1d 1h left" of 7d (85.1%) it measured at 84.5%.
-- **`paceAwareBarColors` now colours the bar fill on a three step ramp**, via new
-  `Helpers/UsagePaceStatus.swift`. Blue while the rate is sustainable, orange once it pulls ahead
-  of the clock, red when the window is on course to end at the cap. No new setting and no new
-  locale keys: this is what the existing switch always promised ("Color progress bars based on
-  projected pace"), and it is what the switch now does.
-  - Thresholds on the projected end-of-window figure: under 70% `systemBlue`, 70-90%
-    `systemOrange`, 90% or more `systemRed`. The ramp only escalates, because more usage per unit
-    of elapsed time is always worse.
+- **Bar and icon colour is one three way choice now, not two overlapping switches.** New
+  `Helpers/UsagePaceStatus.swift` carries the pace ramp; the General tab's Display Settings card
+  offers a segmented **Color By** picker with **Type** / **Usage** / **Monochrome**.
+  - The three are mutually exclusive (a bar has exactly one colour source) but used to be two
+    independent toggles, and Monochrome silently won over Pace-Aware in every renderer, so a user
+    could switch pace colours on, see nothing change, and have no way to tell why. A picker makes
+    the exclusivity the control's own shape.
+  - `ColorMode` in `GeneralSettingsDisplaySection` is **derived** from the two stored settings
+    (`iconStyleMode` + `paceAwareBarColors`) rather than stored itself, so nothing had to migrate.
+    Selecting Monochrome deliberately leaves `paceAwareBarColors` as it was: switching to
+    Monochrome and back should not silently forget that the user wanted pace colours.
+  - The card shows only the **selected** mode's description, not all three, so it explains the
+    current choice instead of leaving the reader to work out which line applies.
+  - Labels went through Status (rejected: describes all three) and Limit Type before landing on
+    Type / Usage / Monochrome. 7 new `display.color_mode*` keys, really translated in all 7 locales.
+- **The Usage mode's ramp: blue, orange, red on the projected end-of-window figure.** Under 70%
+  `systemBlue`, 70-90% `systemOrange`, 90% or more `systemRed`. The ramp only escalates, because
+  more usage per unit of elapsed time is always worse.
   - **Blue, not green, for the healthy step.** The five hour limit's own bar is green, so a green
     fill there would say nothing.
   - The 70/90 breakpoints match what the per-limit palette functions already escalate on, so
-    turning the setting on changes *which* colour a limit shows, not when it starts worrying.
-  - Priority in `UnifiedLimitRow.barColor` is pace, then Monochrome brand colour, then the
-    per-limit palette. Pace wins because a setting that loses to another setting looks broken.
-  - Falls back to the palette (not to a flat colour) whenever there is nothing to project from:
-    no fixed window (the Extra Usage buckets), too early in the window, or no usage yet. So a row
-    never loses its identity colour for want of a projection.
+    switching modes changes *which* colour a limit shows, not when it starts worrying.
+  - Applies to the popover bars (`UnifiedLimitRow.barColor`, pace beats palette) **and the menu
+    bar icons**. The icons were the whole point of the exercise and were missed on the first pass:
+    `MenuBarIconRenderer.paceColor` plus a `paceColor:` override threaded through
+    `createCircleImage` and both `ShapeIconRenderer` draw functions, so a limit that is orange in
+    the popover is orange in the menu bar.
+  - `UsagePaceStatus.color(usedPercentage:resetsAt:type:)` is the single entry point both sides
+    call, so the two cannot disagree about what colour a given pace is.
+  - `MenuBarUI.generateCacheKey`'s pace token keys on the ramp **step**, not the projected figure.
+    `UsagePaceCalculator.projectedPercentage` clamps to 100, so two very different paces can share
+    a figure while landing on different colours; keying on the figure served a stale icon in
+    exactly the case where the colour changed.
+  - Falls back to the palette (never to a flat colour) when there is nothing to project from: no
+    fixed window (the Extra Usage buckets), too early in the window, or no usage yet.
   - Gate is 3% elapsed, `UsagePaceStatus.minimumElapsedFraction`, and the projection is uncapped,
-    unlike `UsagePaceCalculator.projectedPercentage` which clamps to 100.
+    unlike `UsagePaceCalculator.projectedPercentage`.
   - **The time marker tick was deliberately left alone.** An earlier pass wired this ramp into the
-    tick instead of the fill, which meant the pace switch did nothing at all unless `showTimeMarker`
-    was also on. Wrong feature: the setting says bar colours. The tick stays the neutral
+    tick instead of the fill, which meant the pace setting did nothing unless `showTimeMarker` was
+    also on. Wrong feature: the setting is about bar colours. The tick stays the neutral
     `labelColor` line it has always been.
-  - Not yet verified on screen: built, installed and running, but the popover was not photographed.
+- **The limit type checkboxes are real checkboxes now.** `LimitTypeCheckbox` was a plain `Button`
+  drawing `checkmark.square.fill` / `square` SF Symbols: recognisable but not an AppKit checkbox,
+  so it had the wrong box size, corner radius and blue, no focus ring, no mixed state and none of
+  the system's disabled or accent handling, while every other checkbox on the page was a real
+  `Toggle(.checkbox)`. Now it is one too, with the limit's shape glyph and name as its label.
+- **The custom limit list lost its `Divider()` and its "Select Limit Types to Display" heading.**
+  The list only ever appears directly under the radio that reveals it, so the radio already names
+  it. That radio is now **Custom Limit Type Display** (was "Custom Display"), translated in all 7
+  locales. `L.DisplayOptions.selectLimitTypes` and its key are now unused but kept.
 - **Battery style display: `showRemainingPercentage`.** New `UserSettings` flag (default off,
   key `showRemainingPercentage`, posts `.settingsChanged`), surfaced as a **Show Remaining**
   switch in the Display Settings card with the description "Display remaining capacity instead

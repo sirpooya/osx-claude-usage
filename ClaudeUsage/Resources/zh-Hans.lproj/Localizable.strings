@@ -139,6 +139,15 @@
 "display.show_time_marker" = "显示时间标记";
 "display.show_time_marker_desc" = "在进度条上显示一个刻度，标示当前周期已过去多少";
 
+/* The three mutually exclusive bar / icon coloring modes */
+"display.color_mode" = "着色依据";
+"display.color_mode_type" = "类型";
+"display.color_mode_usage" = "用量";
+"display.color_mode_monochrome" = "单色";
+"display.color_mode_type_desc" = "每个限额保持各自的颜色，越接近上限颜色越深。";
+"display.color_mode_usage_desc" = "按预计速度显示蓝色、橙色再到红色，当用量快于时间进度时进度条会提示。";
+"display.color_mode_monochrome_desc" = "使用与菜单栏匹配的单一自适应颜色，而非状态颜色。";
+
 // MARK: - Refresh Interval
 "refresh.smart_mode" = "智能频率";
 "refresh.fixed_mode" = "固定频率";
@@ -269,7 +278,7 @@
 "display_options" = "显示选项";
 "smart_display" = "智能显示";
 "smart_display_description" = "自动显示所有有数据的限制类型";
-"custom_display" = "自定义显示";
+"custom_display" = "自定义限额类型显示";
 "custom_display_description" = "手动选择要显示的限制";
 "display_mode_label" = "显示模式";
 "select_limit_types" = "选择要显示的限制类型";

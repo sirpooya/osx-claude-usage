@@ -139,6 +139,15 @@
 "display.show_time_marker" = "시간 마커 표시";
 "display.show_time_marker_desc" = "기간이 얼마나 지났는지 보여주는 표시를 막대에 나타냅니다";
 
+/* The three mutually exclusive bar / icon coloring modes */
+"display.color_mode" = "색상 기준";
+"display.color_mode_type" = "유형";
+"display.color_mode_usage" = "사용량";
+"display.color_mode_monochrome" = "단색";
+"display.color_mode_type_desc" = "각 한도가 고유한 색을 유지하며, 한도에 가까워질수록 진해집니다.";
+"display.color_mode_usage_desc" = "예상 속도에 따라 파랑, 주황, 빨강으로 바뀌어 시간보다 빠르게 쓰고 있을 때 경고합니다.";
+"display.color_mode_monochrome_desc" = "상태 색상 대신 메뉴 바에 맞는 단일 적응형 색상을 사용합니다.";
+
 // MARK: - Refresh Interval
 "refresh.smart_mode" = "스마트 간격";
 "refresh.fixed_mode" = "고정 간격";
@@ -269,7 +278,7 @@
 "display_options" = "표시 옵션";
 "smart_display" = "스마트 표시";
 "smart_display_description" = "데이터가 있는 모든 제한 유형을 자동으로 표시";
-"custom_display" = "사용자 정의 표시";
+"custom_display" = "한도 유형 사용자 정의 표시";
 "custom_display_description" = "표시할 제한을 수동으로 선택";
 "display_mode_label" = "표시 모드";
 "select_limit_types" = "표시할 제한 유형 선택";

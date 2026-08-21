@@ -139,6 +139,15 @@
 "display.show_time_marker" = "顯示時間標記";
 "display.show_time_marker_desc" = "在進度條上顯示一個刻度，標示目前週期已過去多少";
 
+/* The three mutually exclusive bar / icon coloring modes */
+"display.color_mode" = "著色依據";
+"display.color_mode_type" = "類型";
+"display.color_mode_usage" = "用量";
+"display.color_mode_monochrome" = "單色";
+"display.color_mode_type_desc" = "每個限額保持各自的顏色，越接近上限顏色越深。";
+"display.color_mode_usage_desc" = "按預計速度顯示藍色、橙色再到紅色，當用量快於時間進度時進度條會提示。";
+"display.color_mode_monochrome_desc" = "使用與功能表列相符的單一自適應顏色，而非狀態顏色。";
+
 // MARK: - Refresh Interval
 "refresh.smart_mode" = "智慧頻率";
 "refresh.fixed_mode" = "固定頻率";
@@ -269,7 +278,7 @@
 "display_options" = "顯示選項";
 "smart_display" = "智慧顯示";
 "smart_display_description" = "自動顯示所有有資料的限制類型";
-"custom_display" = "自訂顯示";
+"custom_display" = "自訂限額類型顯示";
 "custom_display_description" = "手動選擇要顯示的限制";
 "display_mode_label" = "顯示模式";
 "select_limit_types" = "選擇要顯示的限制類型";

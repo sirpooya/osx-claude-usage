@@ -139,6 +139,15 @@
 "display.show_time_marker" = "Show Time Marker";
 "display.show_time_marker_desc" = "Display a tick mark on progress bars showing how far through the time period you are";
 
+/* The three mutually exclusive bar / icon coloring modes */
+"display.color_mode" = "Color By";
+"display.color_mode_type" = "Type";
+"display.color_mode_usage" = "Usage";
+"display.color_mode_monochrome" = "Monochrome";
+"display.color_mode_type_desc" = "Each limit keeps its own color, deepening as it approaches its cap.";
+"display.color_mode_usage_desc" = "Blue, orange then red based on projected pace, so a bar warns when you are ahead of the clock.";
+"display.color_mode_monochrome_desc" = "One adaptive color that matches the menu bar, instead of status colors.";
+
 // MARK: - Refresh Interval
 "refresh.smart_mode" = "Smart Frequency";
 "refresh.fixed_mode" = "Fixed Frequency";
@@ -269,7 +278,7 @@
 "display_options" = "Display Options";
 "smart_display" = "Smart Display";
 "smart_display_description" = "Automatically display all limit types with data";
-"custom_display" = "Custom Display";
+"custom_display" = "Custom Limit Type Display";
 "custom_display_description" = "Manually select which limits to display";
 "display_mode_label" = "Display Mode";
 "select_limit_types" = "Select Limit Types to Display";

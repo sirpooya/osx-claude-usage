@@ -13,6 +13,82 @@ import SwiftUI
 struct GeneralSettingsDisplaySection: View {
     @ObservedObject private var settings = UserSettings.shared
 
+    /// Which of the three colour sources a bar or icon uses. Derived from the two stored settings
+    /// rather than stored itself, so nothing had to migrate: Monochrome already won over pace in
+    /// every renderer, which is exactly the precedence this enum encodes.
+    private enum ColorMode: Int, CaseIterable, Identifiable {
+        case limitType   // each limit keeps its own hue, escalating with the percentage
+        case usage       // blue / orange / red on the projected pace
+        case monochrome  // one adaptive colour that matches the menu bar
+
+        var id: Int { rawValue }
+
+        var title: String {
+            switch self {
+            case .limitType:  return L.Display.colorModeType
+            case .usage:      return L.Display.colorModeUsage
+            case .monochrome: return L.Display.colorModeMonochrome
+            }
+        }
+
+        var description: String {
+            switch self {
+            case .limitType:  return L.Display.colorModeTypeDesc
+            case .usage:      return L.Display.colorModeUsageDesc
+            case .monochrome: return L.Display.colorModeMonochromeDesc
+            }
+        }
+    }
+
+    private var colorMode: Binding<ColorMode> {
+        Binding(
+            get: {
+                if settings.iconStyleMode == .monochrome { return .monochrome }
+                return settings.paceAwareBarColors ? .usage : .limitType
+            },
+            set: { mode in
+                switch mode {
+                case .limitType:
+                    settings.iconStyleMode = .colorTranslucent
+                    settings.paceAwareBarColors = false
+                case .usage:
+                    settings.iconStyleMode = .colorTranslucent
+                    settings.paceAwareBarColors = true
+                case .monochrome:
+                    settings.iconStyleMode = .monochrome
+                    // Left as the user had it: switching to Monochrome and back should not
+                    // silently forget that they wanted pace colours.
+                    break
+                }
+            }
+        )
+    }
+
+    /// Segmented, because the three are peers and one is always active. The description below is
+    /// the selected mode's own, so the card explains the current choice instead of listing all
+    /// three and leaving the reader to work out which one applies.
+    private var colorModePicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(L.Display.colorMode)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(.primary)
+
+            Picker("", selection: colorMode) {
+                ForEach(ColorMode.allCases) { mode in
+                    Text(mode.title).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .focusable(false)
+
+            Text(colorMode.wrappedValue.description)
+                .font(.system(size: 11))
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
     var body: some View {
         SettingSection(
             icon: "gauge.with.dots.needle.0percent",
@@ -20,18 +96,11 @@ struct GeneralSettingsDisplaySection: View {
             title: L.SettingsGeneral.displaySection
         ) {
             VStack(alignment: .leading, spacing: 16) {
-                // One switch rather than two sibling radios: naming the modes as peers
-                // ("Color Translucent" vs "Monochrome") asks the user to decode an
-                // implementation detail. Off keeps the status colors, which carry the
-                // information, so monochrome is the opt-in for a uniform menu bar.
-                SettingToggleRow(
-                    title: L.IconStyle.monochrome,
-                    description: L.IconStyle.monochromeToggleHint,
-                    isOn: Binding(
-                        get: { settings.iconStyleMode == .monochrome },
-                        set: { settings.iconStyleMode = $0 ? .monochrome : .colorTranslucent }
-                    )
-                )
+                // One picker rather than two switches. The three modes are mutually exclusive
+                // (a bar has exactly one colour source), but as separate toggles nothing said so:
+                // Monochrome silently won over Pace-Aware, so a user could have both on and see
+                // only one take effect. A picker makes the exclusivity the control's own shape.
+                colorModePicker
 
                 Divider()
 
@@ -40,15 +109,6 @@ struct GeneralSettingsDisplaySection: View {
                     title: L.Display.showRemaining,
                     description: L.Display.showRemainingDesc,
                     isOn: $settings.showRemainingPercentage
-                )
-
-                Divider()
-
-                // Pace-aware colors: escalate on the projected end-of-window figure
-                SettingToggleRow(
-                    title: L.Display.paceAwareColors,
-                    description: L.Display.paceAwareColorsDesc,
-                    isOn: $settings.paceAwareBarColors
                 )
 
                 Divider()

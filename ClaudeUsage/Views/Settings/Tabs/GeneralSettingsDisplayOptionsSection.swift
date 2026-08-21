@@ -34,14 +34,11 @@ struct GeneralSettingsDisplayOptionsSection: View {
 
                 // Custom selection (shown in custom mode only)
                 if settings.displayMode == .custom {
-                    Divider()
-
+                    // No divider and no "Select Limit Types to Display" heading: the checkbox list
+                    // only ever appears directly under the Custom Display radio that reveals it,
+                    // so the radio already names it and a rule plus a second label just repeated
+                    // the same step twice.
                     VStack(alignment: .leading, spacing: 12) {
-                        Text(L.DisplayOptions.selectLimitTypes)
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                            .foregroundColor(.secondary)
-
                         VStack(alignment: .leading, spacing: 8) {
                             ForEach(LimitType.allCases, id: \.self) { limitType in
                                 LimitTypeCheckbox(
@@ -159,28 +156,27 @@ struct LimitTypeCheckbox: View {
     let onToggle: () -> Void
 
     var body: some View {
-        Button(action: {
-            if !isDisabled {
-                onToggle()
-            }
-        }) {
-            HStack(spacing: 8) {
-                Image(systemName: isSelected ? "checkmark.square.fill" : "square")
-                    .foregroundColor(isDisabled ? .secondary : (isSelected ? .blue : .primary))
-                    .font(.body)
+        // A real Toggle, not a Button drawing SF Symbol squares. The hand rolled version drew
+        // `checkmark.square.fill` / `square`, which is close enough to be recognisable but is not
+        // an AppKit checkbox: wrong box size and corner radius, wrong blue, no focus ring, no
+        // mixed state, and none of the system's own disabled or accent handling. Every other
+        // checkbox on this page is a `Toggle(.checkbox)`, so this one was also the odd one out.
+        Toggle(isOn: Binding(
+            get: { isSelected },
+            set: { _ in onToggle() }
+        )) {
+            HStack(spacing: 6) {
+                // Limit type icon
+                limitTypeIcon
+                    .font(.caption)
 
-                HStack(spacing: 6) {
-                    // Limit type icon
-                    limitTypeIcon
-                        .font(.caption)
-
-                    // Limit type name
-                    Text(limitType.displayName)
-                        .foregroundColor(isDisabled ? .secondary : .primary)
-                }
+                // Limit type name
+                Text(limitType.displayName)
+                    .foregroundColor(isDisabled ? .secondary : .primary)
             }
         }
-        .buttonStyle(.plain)
+        .toggleStyle(.checkbox)
+        .focusable(false)
         .disabled(isDisabled)
         .help(isDisabled ? L.DisplayOptions.circularIconConstraint : "")
         .fixedSize()
