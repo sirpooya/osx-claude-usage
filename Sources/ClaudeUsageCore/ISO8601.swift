@@ -5,24 +5,42 @@ import Foundation
 /// rejects fractional seconds outright, so we parse with an explicit pair of
 /// formatters and fall back to the non fractional form.
 public enum ISO8601 {
-    private static let withFraction: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter
-    }()
+    /// `ISO8601DateFormatter` is not Sendable and is not internally thread
+    /// safe, so the shared instances live behind a lock rather than being
+    /// rebuilt per call. Formatter construction is the expensive part here.
+    private final class Formatters: @unchecked Sendable {
+        static let shared = Formatters()
 
-    private static let withoutFraction: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        return formatter
-    }()
+        private let lock = NSLock()
+        private let withFraction: ISO8601DateFormatter
+        private let withoutFraction: ISO8601DateFormatter
+
+        init() {
+            withFraction = ISO8601DateFormatter()
+            withFraction.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            withoutFraction = ISO8601DateFormatter()
+            withoutFraction.formatOptions = [.withInternetDateTime]
+        }
+
+        func date(from string: String) -> Date? {
+            lock.lock()
+            defer { lock.unlock() }
+            return withFraction.date(from: string) ?? withoutFraction.date(from: string)
+        }
+
+        func string(from date: Date) -> String {
+            lock.lock()
+            defer { lock.unlock() }
+            return withFraction.string(from: date)
+        }
+    }
 
     public static func date(from string: String) -> Date? {
-        withFraction.date(from: string) ?? withoutFraction.date(from: string)
+        Formatters.shared.date(from: string)
     }
 
     public static func string(from date: Date) -> String {
-        withFraction.string(from: date)
+        Formatters.shared.string(from: date)
     }
 
     /// A decoder configured for this endpoint's shape.

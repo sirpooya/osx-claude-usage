@@ -1,0 +1,33 @@
+{
+  "": {
+    "swift-dependencies": "/Users/pooya/Documents/GitHub/osx-claude-usage/.build/arm64-apple-macosx/debug/ClaudeUsageCoreTests.build/primary.swiftdeps"
+  },
+  "/Users/pooya/Documents/GitHub/osx-claude-usage/Tests/ClaudeUsageCoreTests/HistoryStoreTests.swift": {
+    "dependencies": "/Users/pooya/Documents/GitHub/osx-claude-usage/.build/arm64-apple-macosx/debug/ClaudeUsageCoreTests.build/HistoryStoreTests.d",
+    "object": "/Users/pooya/Documents/GitHub/osx-claude-usage/.build/arm64-apple-macosx/debug/ClaudeUsageCoreTests.build/HistoryStoreTests.swift.o",
+    "swiftmodule": "/Users/pooya/Documents/GitHub/osx-claude-usage/.build/arm64-apple-macosx/debug/ClaudeUsageCoreTests.build/HistoryStoreTests~partial.swiftmodule",
+    "swift-dependencies": "/Users/pooya/Documents/GitHub/osx-claude-usage/.build/arm64-apple-macosx/debug/ClaudeUsageCoreTests.build/HistoryStoreTests.swiftdeps",
+    "diagnostics": "/Users/pooya/Documents/GitHub/osx-claude-usage/.build/arm64-apple-macosx/debug/ClaudeUsageCoreTests.build/HistoryStoreTests.dia"
+  },
+  "/Users/pooya/Documents/GitHub/osx-claude-usage/Tests/ClaudeUsageCoreTests/KeychainParsingTests.swift": {
+    "dependencies": "/Users/pooya/Documents/GitHub/osx-claude-usage/.build/arm64-apple-macosx/debug/ClaudeUsageCoreTests.build/KeychainParsingTests.d",
+    "object": "/Users/pooya/Documents/GitHub/osx-claude-usage/.build/arm64-apple-macosx/debug/ClaudeUsageCoreTests.build/KeychainParsingTests.swift.o",
+    "swiftmodule": "/Users/pooya/Documents/GitHub/osx-claude-usage/.build/arm64-apple-macosx/debug/ClaudeUsageCoreTests.build/KeychainParsingTests~partial.swiftmodule",
+    "swift-dependencies": "/Users/pooya/Documents/GitHub/osx-claude-usage/.build/arm64-apple-macosx/debug/ClaudeUsageCoreTests.build/KeychainParsingTests.swiftdeps",
+    "diagnostics": "/Users/pooya/Documents/GitHub/osx-claude-usage/.build/arm64-apple-macosx/debug/ClaudeUsageCoreTests.build/KeychainParsingTests.dia"
+  },
+  "/Users/pooya/Documents/GitHub/osx-claude-usage/Tests/ClaudeUsageCoreTests/PollPolicyTests.swift": {
+    "dependencies": "/Users/pooya/Documents/GitHub/osx-claude-usage/.build/arm64-apple-macosx/debug/ClaudeUsageCoreTests.build/PollPolicyTests.d",
+    "object": "/Users/pooya/Documents/GitHub/osx-claude-usage/.build/arm64-apple-macosx/debug/ClaudeUsageCoreTests.build/PollPolicyTests.swift.o",
+    "swiftmodule": "/Users/pooya/Documents/GitHub/osx-claude-usage/.build/arm64-apple-macosx/debug/ClaudeUsageCoreTests.build/PollPolicyTests~partial.swiftmodule",
+    "swift-dependencies": "/Users/pooya/Documents/GitHub/osx-claude-usage/.build/arm64-apple-macosx/debug/ClaudeUsageCoreTests.build/PollPolicyTests.swiftdeps",
+    "diagnostics": "/Users/pooya/Documents/GitHub/osx-claude-usage/.build/arm64-apple-macosx/debug/ClaudeUsageCoreTests.build/PollPolicyTests.dia"
+  },
+  "/Users/pooya/Documents/GitHub/osx-claude-usage/Tests/ClaudeUsageCoreTests/UsageDecodingTests.swift": {
+    "dependencies": "/Users/pooya/Documents/GitHub/osx-claude-usage/.build/arm64-apple-macosx/debug/ClaudeUsageCoreTests.build/UsageDecodingTests.d",
+    "object": "/Users/pooya/Documents/GitHub/osx-claude-usage/.build/arm64-apple-macosx/debug/ClaudeUsageCoreTests.build/UsageDecodingTests.swift.o",
+    "swiftmodule": "/Users/pooya/Documents/GitHub/osx-claude-usage/.build/arm64-apple-macosx/debug/ClaudeUsageCoreTests.build/UsageDecodingTests~partial.swiftmodule",
+    "swift-dependencies": "/Users/pooya/Documents/GitHub/osx-claude-usage/.build/arm64-apple-macosx/debug/ClaudeUsageCoreTests.build/UsageDecodingTests.swiftdeps",
+    "diagnostics": "/Users/pooya/Documents/GitHub/osx-claude-usage/.build/arm64-apple-macosx/debug/ClaudeUsageCoreTests.build/UsageDecodingTests.dia"
+  }
+}

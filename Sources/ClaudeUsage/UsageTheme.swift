@@ -9,6 +9,7 @@ enum UsageTier {
     case warning
     case critical
 
+    @MainActor
     static func forPercent(_ percent: Int, preferences: Preferences) -> UsageTier {
         if percent >= preferences.criticalThreshold { return .critical }
         if percent >= preferences.warningThreshold { return .warning }
