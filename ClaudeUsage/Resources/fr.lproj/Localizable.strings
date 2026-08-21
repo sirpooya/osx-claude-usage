@@ -235,7 +235,7 @@
 "diagnostic.suggestion_configure_auth" = "Veuillez configurer l'identifiant d'organisation et la clé de session dans les champs ci-dessus";
 "diagnostic.suggestion_check_org_id" = "Vérifiez que le format de l'identifiant d'organisation est correct (doit être un UUID)";
 "diagnostic.suggestion_export_and_share" = "Exportez ce rapport de diagnostic et partagez-le sur GitHub Issues";
-"diagnostic.suggestion_contact_support" = "Contactez le développeur pour obtenir de l'aide sur github.com/f-is-h/Usage4Claude/issues";
+"diagnostic.suggestion_contact_support" = "Contactez le développeur pour obtenir de l'aide sur github.com/sirpooya/osx-claude-usage/issues";
 "diagnostic.open_log_folder" = "Ouvrir le dossier des journaux";
 
 // MARK: - Limit Types (v2.0.0)
@@ -297,7 +297,7 @@
 "welcome.finish" = "Terminer";
 "welcome.authentication_setup" = "Configuration de l'authentification";
 "welcome.session_key" = "Clé de session";
-"welcome.manual_session_key" = "Avancé : clé de session manuelle";
+"welcome.manual_session_key" = "Clé de session manuelle";
 "welcome.session_key_placeholder" = "Collez votre clé de session ici";
 "welcome.session_key_hint" = "Collez la valeur complète du cookie sessionKey";
 "welcome.valid_format" = "Format valide";

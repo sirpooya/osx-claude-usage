@@ -235,7 +235,7 @@
 "diagnostic.suggestion_configure_auth" = "Please configure Organization ID and Session Key in the fields above";
 "diagnostic.suggestion_check_org_id" = "Check if Organization ID format is correct (should be a UUID)";
 "diagnostic.suggestion_export_and_share" = "Export this diagnostic report and share it on GitHub Issues";
-"diagnostic.suggestion_contact_support" = "Contact developer for help at github.com/f-is-h/Usage4Claude/issues";
+"diagnostic.suggestion_contact_support" = "Contact developer for help at github.com/sirpooya/osx-claude-usage/issues";
 "diagnostic.open_log_folder" = "Open Log Folder";
 
 // MARK: - Limit Types (v2.0.0)
@@ -297,7 +297,7 @@
 "welcome.finish" = "Finish";
 "welcome.authentication_setup" = "Authentication Setup";
 "welcome.session_key" = "Session Key";
-"welcome.manual_session_key" = "Advanced: Manual Session Key";
+"welcome.manual_session_key" = "Manual Session Key";
 "welcome.session_key_placeholder" = "Paste your Session Key here";
 "welcome.session_key_hint" = "Paste the full sessionKey cookie value";
 "welcome.valid_format" = "Valid format";

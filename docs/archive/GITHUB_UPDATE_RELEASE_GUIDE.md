@@ -224,9 +224,9 @@ git push origin v1.0.1
 
 **预期输出：**
 ```
-To https://github.com/f-is-h/ClaudeUsage.git
+To https://github.com/sirpooya/osx-claude-usage.git
    abc1234..def5678  main -> main
-To https://github.com/f-is-h/ClaudeUsage.git
+To https://github.com/sirpooya/osx-claude-usage.git
  * [new tag]         v1.0.1 -> v1.0.1
 ```
 
@@ -292,21 +292,21 @@ This release addresses potential "Request Exceeded" errors by adjusting refresh 
 3. Your settings (including current refresh interval) will be preserved
 
 ### 📝 Full Changelog
-See [CHANGELOG.md](https://github.com/f-is-h/ClaudeUsage/blob/main/CHANGELOG.md) for complete version history.
+See [CHANGELOG.md](https://github.com/sirpooya/osx-claude-usage/blob/main/CHANGELOG.md) for complete version history.
 
 ### 🐛 Bug Reports
-Found an issue? Please [open an issue](https://github.com/f-is-h/ClaudeUsage/issues/new) on GitHub.
+Found an issue? Please [open an issue](https://github.com/sirpooya/osx-claude-usage/issues/new) on GitHub.
 
 ---
 
-**Previous Version:** [v1.0.0](https://github.com/f-is-h/ClaudeUsage/releases/tag/v1.0.0)
+**Previous Version:** [v1.0.0](https://github.com/sirpooya/osx-claude-usage/releases/tag/v1.0.0)
 ````
 
 ### 步骤 10：在 GitHub 创建 Release
 
 1. **访问 Releases 页面**
    ```
-   https://github.com/f-is-h/ClaudeUsage/releases
+   https://github.com/sirpooya/osx-claude-usage/releases
    ```
 
 2. **点击 `Draft a new release`**
@@ -346,7 +346,7 @@ Found an issue? Please [open an issue](https://github.com/f-is-h/ClaudeUsage/iss
 
 **访问 Release 页面验证：**
 ```
-https://github.com/f-is-h/ClaudeUsage/releases/tag/v1.0.1
+https://github.com/sirpooya/osx-claude-usage/releases/tag/v1.0.1
 ```
 
 **检查清单：**
@@ -598,15 +598,15 @@ This is a major release with significant changes and improvements.
 
 1. **验证 Release 已发布**
    ```bash
-   curl -s https://api.github.com/repos/f-is-h/ClaudeUsage/releases/latest | grep tag_name
+   curl -s https://api.github.com/repos/sirpooya/osx-claude-usage/releases/latest | grep tag_name
    ```
    应该显示 `"tag_name": "v1.0.1"`
 
 2. **检查 UpdateChecker 代码**
    ```swift
    // 确认仓库信息正确
-   private let repoOwner = "f-is-h"
-   private let repoName = "ClaudeUsage"
+   private let repoOwner = "sirpooya"
+   private let repoName = "osx-claude-usage"
    ```
 
 3. **检查版本比较逻辑**

@@ -282,7 +282,8 @@ struct UnifiedLimitRow: View {
 
         case .codexSecondary:
             guard let limitData = codexData?.secondary?.asUsageLimitData() else { return "-" }
-            return showRemainingMode ? limitData.formattedCompactRemainingWithMinutes : limitData.formattedCompactResetDateWithMinutes
+            // 和其他行统一到「天+小时」两级，多日倒计时带着分钟只是噪音
+            return showRemainingMode ? limitData.formattedCompactRemaining : limitData.formattedCompactResetDateWithMinutes
 
         case .codexExtraUsage:
             guard let extra = codexData?.extraUsage else { return "-" }

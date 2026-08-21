@@ -10,8 +10,8 @@
 [![Swift](https://img.shields.io/badge/Swift-5.0%2B-orange?style=flat-square)](https://swift.org)
 [![SwiftUI](https://img.shields.io/badge/SwiftUI-✓-green?style=flat-square)](https://developer.apple.com/xcode/swiftui/)
 [![License](https://img.shields.io/badge/License-MIT-purple?style=flat-square)](../LICENSE)
-[![Release](https://img.shields.io/github/v/release/f-is-h/ClaudeUsage?style=flat-square)](https://github.com/f-is-h/ClaudeUsage/releases)
-[![Downloads (all assets, all releases)](https://img.shields.io/github/downloads/f-is-h/ClaudeUsage/total)](https://github.com/f-is-h/ClaudeUsage/releases)
+[![Release](https://img.shields.io/github/v/release/sirpooya/osx-claude-usage?style=flat-square)](https://github.com/sirpooya/osx-claude-usage/releases)
+[![Downloads (all assets, all releases)](https://img.shields.io/github/downloads/sirpooya/osx-claude-usage/total)](https://github.com/sirpooya/osx-claude-usage/releases)
 
 **Claude（および Codex）のサブスクリプション使用量を、メニューバーで美しく追跡。**
 
@@ -175,7 +175,7 @@ Codex 現在の配色：
 
 ### 方法1：ビルド済みをダウンロード（推奨）
 
-1. [Releases ページ](https://github.com/f-is-h/ClaudeUsage/releases)へ移動
+1. [Releases ページ](https://github.com/sirpooya/osx-claude-usage/releases)へ移動
 2. 最新バージョンの `.dmg` ファイルをダウンロード
 3. ダブルクリックして開き、アプリを「アプリケーション」フォルダにドラッグ
 4. 初回起動時は、アプリを右クリックして「開く」を選択（未署名アプリの許可）
@@ -192,7 +192,7 @@ Codex 現在の配色：
 
 ```bash
 # リポジトリをクローン
-git clone https://github.com/f-is-h/ClaudeUsage.git
+git clone https://github.com/sirpooya/osx-claude-usage.git
 cd ClaudeUsage
 
 # Xcode で開く
@@ -583,8 +583,8 @@ Copyright (c) 2025-2026 f-is-h
 
 ## 📞 連絡先
 
-- **Issues**: [問題や提案を送信](https://github.com/f-is-h/ClaudeUsage/issues)
-- **Discussions**: [ディスカッションに参加](https://github.com/f-is-h/ClaudeUsage/discussions)
+- **Issues**: [問題や提案を送信](https://github.com/sirpooya/osx-claude-usage/issues)
+- **Discussions**: [ディスカッションに参加](https://github.com/sirpooya/osx-claude-usage/discussions)
 - **GitHub**: [@f-is-h](https://github.com/f-is-h)
 
 ---

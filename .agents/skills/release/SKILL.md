@@ -77,7 +77,7 @@ git log "$LAST_TAG"..HEAD --merges --format='%h %s'  # 合并的 PR（用于致�
 - **新功能的后续修改/优化/bug 修复并入该功能条目**，不在 Fixed 里重复列出。
 - 每个变更点一条，不同变更点只出现一次，简洁不赘述。
 - **更新文件底部版本链接**：新增
-  `[X.Y.Z]: https://github.com/f-is-h/ClaudeUsage/releases/tag/vX.Y.Z`
+  `[X.Y.Z]: https://github.com/sirpooya/osx-claude-usage/releases/tag/vX.Y.Z`
 
 **3b. docs/RELEASE_NOTES.md（面向用户 + 致谢）**
 - 在文件顶部插入 `## [X.Y.Z] - 当天日期` 段落（结构同 CHANGELOG）。
@@ -85,8 +85,8 @@ git log "$LAST_TAG"..HEAD --merges --format='%h %s'  # 合并的 PR（用于致�
 - 收集本版本对应的 **已合并 PR** 与 **已解决 Issue** 及作者，条目末尾致谢
   `(thanks @author, #N)`：
   ```bash
-  gh pr view <n> --repo f-is-h/ClaudeUsage --json number,title,author,state
-  gh issue view <n> --repo f-is-h/ClaudeUsage --json number,title,author,state
+  gh pr view <n> --repo sirpooya/osx-claude-usage --json number,title,author,state
+  gh issue view <n> --repo sirpooya/osx-claude-usage --json number,title,author,state
   ```
   **只对确已合并的 PR / 确已解决的 Issue 致谢**。未合并的 PR、仍 Open 且本次并未真正
   修复的 Issue **不致谢**，避免误导用户（硬规则）。
@@ -142,7 +142,7 @@ APP=$(find ~/Library/Developer/Xcode/DerivedData -name ClaudeUsage.app -path '*/
 
 ```bash
 gh run list --workflow=release.yml --limit 3
-gh run watch                     # 或看 https://github.com/f-is-h/ClaudeUsage/actions
+gh run watch                     # 或看 https://github.com/sirpooya/osx-claude-usage/actions
 ```
 
 CI 三段：validate（版本校验 + RELEASE_NOTES 段落校验）→ build（构建签名，约 8 分钟）→

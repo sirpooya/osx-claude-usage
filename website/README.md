@@ -77,7 +77,7 @@ Root directory: website
 
 1. **Connect Repository**
    - Go to Cloudflare Dashboard → Pages
-   - Connect GitHub repository: `f-is-h/ClaudeUsage`
+   - Connect GitHub repository: `sirpooya/osx-claude-usage`
    - Select root directory: `website`
 
 2. **Replace Address Placeholder**
@@ -154,8 +154,8 @@ A: Edit the CDN link in HTML:
 ## Technical Support
 
 For issues or questions:
-- GitHub Issues: https://github.com/f-is-h/ClaudeUsage/issues
-- GitHub Discussions: https://github.com/f-is-h/ClaudeUsage/discussions
+- GitHub Issues: https://github.com/sirpooya/osx-claude-usage/issues
+- GitHub Discussions: https://github.com/sirpooya/osx-claude-usage/discussions
 
 ---
 

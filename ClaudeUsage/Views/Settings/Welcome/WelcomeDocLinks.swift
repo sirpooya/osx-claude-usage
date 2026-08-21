@@ -10,11 +10,11 @@ import Foundation
 
 // MARK: - Welcome Doc Links
 
-/// 按当前语言拼出上游 README 的锚点链接。
-/// 注意仓库名是 Usage4Claude（上游）；本 fork 改名后曾经指向不存在的 f-is-h/ClaudeUsage，
-/// 那些链接全是 404。等本 fork 有了自己的仓库和文档，这里要一起改。
+/// 按当前语言拼出本仓库 README 的锚点链接。
+/// 指向 sirpooya/osx-claude-usage 自己的文档，不再指向上游 f-is-h/Usage4Claude。
+/// 每个语言的锚点都对应 README 里真实存在的小节标题，改标题时这里要一起改。
 enum WelcomeDocLinks {
-    private static let baseURL = "https://github.com/f-is-h/Usage4Claude/blob/main"
+    private static let baseURL = "https://github.com/sirpooya/osx-claude-usage/blob/main"
 
     /// “首次配置”章节
     static func initialSetupURL(for language: AppLanguage) -> String {

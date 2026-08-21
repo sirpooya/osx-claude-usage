@@ -235,7 +235,7 @@
 "diagnostic.suggestion_configure_auth" = "上記のフィールドに組織IDとセッションキーを設定してください";
 "diagnostic.suggestion_check_org_id" = "組織IDの形式が正しいか確認してください(UUID形式である必要があります)";
 "diagnostic.suggestion_export_and_share" = "この診断レポートをエクスポートしてGitHub Issuesで共有してください";
-"diagnostic.suggestion_contact_support" = "github.com/f-is-h/Usage4Claude/issuesで開発者にお問い合わせください";
+"diagnostic.suggestion_contact_support" = "github.com/sirpooya/osx-claude-usage/issuesで開発者にお問い合わせください";
 "diagnostic.open_log_folder" = "ログフォルダを開く";
 
 // MARK: - Limit Types (v2.0.0)
@@ -297,7 +297,7 @@
 "welcome.finish" = "完了";
 "welcome.authentication_setup" = "認証設定";
 "welcome.session_key" = "セッションキー";
-"welcome.manual_session_key" = "詳細設定: Session Key を手動入力";
+"welcome.manual_session_key" = "Session Key を手動入力";
 "welcome.session_key_placeholder" = "セッションキーをここに貼り付けてください";
 "welcome.session_key_hint" = "完全な sessionKey Cookie 値を貼り付けてください";
 "welcome.valid_format" = "形式が正しい";

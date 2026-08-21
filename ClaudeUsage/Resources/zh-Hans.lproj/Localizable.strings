@@ -235,7 +235,7 @@
 "diagnostic.suggestion_configure_auth" = "请在上方字段中配置组织 ID 和会话密钥";
 "diagnostic.suggestion_check_org_id" = "检查组织 ID 格式是否正确(应该是 UUID 格式)";
 "diagnostic.suggestion_export_and_share" = "导出此诊断报告并在 GitHub Issues 上分享";
-"diagnostic.suggestion_contact_support" = "在 github.com/f-is-h/Usage4Claude/issues 联系开发者寻求帮助";
+"diagnostic.suggestion_contact_support" = "在 github.com/sirpooya/osx-claude-usage/issues 联系开发者寻求帮助";
 "diagnostic.open_log_folder" = "打开日志文件夹";
 
 // MARK: - Limit Types (v2.0.0)
@@ -297,7 +297,7 @@
 "welcome.finish" = "完成";
 "welcome.authentication_setup" = "认证设置";
 "welcome.session_key" = "Session Key";
-"welcome.manual_session_key" = "高级：手动输入 Session Key";
+"welcome.manual_session_key" = "手动输入 Session Key";
 "welcome.session_key_placeholder" = "在此粘贴您的 Session Key";
 "welcome.session_key_hint" = "粘贴完整的 sessionKey Cookie 值";
 "welcome.valid_format" = "格式正确";

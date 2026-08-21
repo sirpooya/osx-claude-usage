@@ -10,8 +10,8 @@
 [![Swift](https://img.shields.io/badge/Swift-5.0%2B-orange?style=flat-square)](https://swift.org)
 [![SwiftUI](https://img.shields.io/badge/SwiftUI-✓-green?style=flat-square)](https://developer.apple.com/xcode/swiftui/)
 [![License](https://img.shields.io/badge/License-MIT-purple?style=flat-square)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/f-is-h/ClaudeUsage?style=flat-square)](https://github.com/f-is-h/ClaudeUsage/releases)
-[![Downloads (all assets, all releases)](https://img.shields.io/github/downloads/f-is-h/ClaudeUsage/total)](https://github.com/f-is-h/ClaudeUsage/releases)
+[![Release](https://img.shields.io/github/v/release/sirpooya/osx-claude-usage?style=flat-square)](https://github.com/sirpooya/osx-claude-usage/releases)
+[![Downloads (all assets, all releases)](https://img.shields.io/github/downloads/sirpooya/osx-claude-usage/total)](https://github.com/sirpooya/osx-claude-usage/releases)
 
 **Track your Claude (and Codex) subscription quota — beautifully, in your menu bar.**
 
@@ -175,7 +175,7 @@ Codex current colors:
 
 ### Option 1: Download Pre-built (Recommended)
 
-1. Go to [Releases page](https://github.com/f-is-h/ClaudeUsage/releases)
+1. Go to [Releases page](https://github.com/sirpooya/osx-claude-usage/releases)
 2. Download the latest `.dmg` file
 3. Double-click to open, drag app to Applications folder
 4. Right-click the app and select "Open" on first launch (allow unsigned app)
@@ -194,7 +194,7 @@ Codex current colors:
 
 ```bash
 # Clone repository
-git clone https://github.com/f-is-h/ClaudeUsage.git
+git clone https://github.com/sirpooya/osx-claude-usage.git
 cd ClaudeUsage
 
 # Open in Xcode
@@ -585,8 +585,8 @@ and/or sell copies of the Software.
 
 ## 📞 Contact
 
-- **Issues**: [Submit issues or suggestions](https://github.com/f-is-h/ClaudeUsage/issues)
-- **Discussions**: [Join discussions](https://github.com/f-is-h/ClaudeUsage/discussions)
+- **Issues**: [Submit issues or suggestions](https://github.com/sirpooya/osx-claude-usage/issues)
+- **Discussions**: [Join discussions](https://github.com/sirpooya/osx-claude-usage/discussions)
 - **GitHub**: [@f-is-h](https://github.com/f-is-h)
 
 ---

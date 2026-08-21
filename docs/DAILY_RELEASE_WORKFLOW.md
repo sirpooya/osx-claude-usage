@@ -78,7 +78,7 @@ Cmd + R
 1. 在文件顶部添加新版本条目（完整技术改动）
 2. **重要**: 更新底部的版本链接
    ```markdown
-   [1.X.X]: https://github.com/f-is-h/ClaudeUsage/releases/tag/v1.X.X
+   [1.X.X]: https://github.com/sirpooya/osx-claude-usage/releases/tag/v1.X.X
    ```
 
 **docs/RELEASE_NOTES.md：**
@@ -100,8 +100,8 @@ Cmd + R
 ## [1.1.0] - 2025-11-15
 ...
 
-[1.2.0]: https://github.com/f-is-h/ClaudeUsage/releases/tag/v1.2.0
-[1.1.0]: https://github.com/f-is-h/ClaudeUsage/releases/tag/v1.1.0
+[1.2.0]: https://github.com/sirpooya/osx-claude-usage/releases/tag/v1.2.0
+[1.1.0]: https://github.com/sirpooya/osx-claude-usage/releases/tag/v1.1.0
 ```
 
 ---
@@ -136,7 +136,7 @@ git push origin main
 
 **访问 Actions 页面监控：**
 ```
-https://github.com/f-is-h/ClaudeUsage/actions
+https://github.com/sirpooya/osx-claude-usage/actions
 ```
 
 **Workflow 流程（约10分钟）：**
@@ -178,7 +178,7 @@ CI 已经**自动发布**了 release——标题来自 commit 第一行，正文
 
 1. **访问 Releases 页面并 Edit 目标 release（vX.Y.Z）**
    ```
-   https://github.com/f-is-h/ClaudeUsage/releases
+   https://github.com/sirpooya/osx-claude-usage/releases
    ```
 2. **润色正文**：补充总览段落、emoji 标题等，更新后点 "Update release"。
 
@@ -193,7 +193,7 @@ CI 已经**自动发布**了 release——标题来自 commit 第一行，正文
 
 1. **访问 Release 页面：**
    ```
-   https://github.com/f-is-h/ClaudeUsage/releases/tag/vX.Y.Z
+   https://github.com/sirpooya/osx-claude-usage/releases/tag/vX.Y.Z
    ```
 
 2. **验证内容：**

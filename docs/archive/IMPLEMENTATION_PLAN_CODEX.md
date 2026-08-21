@@ -166,7 +166,7 @@ Codex 的位置应该在副标题/Features 区段而非头图，符合"作者本
 
 ### 不改的东西（明确清单）
 
-- 仓库名 `f-is-h/ClaudeUsage` — 不改
+- 仓库名 `sirpooya/osx-claude-usage` — 不改
 - Bundle ID `com.claudeusage.ClaudeUsage` — 不改
 - 产品 Display Name `ClaudeUsage` — 不改
 - `UpdateChecker.swift` 的 `repoOwner` / `repoName` — 不改（因此不需要发"过渡版"）

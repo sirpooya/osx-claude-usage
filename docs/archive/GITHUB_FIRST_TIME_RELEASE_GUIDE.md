@@ -236,14 +236,14 @@ git tag -l
 
 ```bash
 # 添加远程仓库（替换为你的用户名）
-git remote add origin https://github.com/f-is-h/ClaudeUsage.git
+git remote add origin https://github.com/sirpooya/osx-claude-usage.git
 
 # 验证远程仓库
 git remote -v
 
 # 应该看到：
-# origin  https://github.com/f-is-h/ClaudeUsage.git (fetch)
-# origin  https://github.com/f-is-h/ClaudeUsage.git (push)
+# origin  https://github.com/sirpooya/osx-claude-usage.git (fetch)
+# origin  https://github.com/sirpooya/osx-claude-usage.git (push)
 ```
 
 ### 步骤 10：推送代码和标签
@@ -270,7 +270,7 @@ git push origin v1.0.0
 Enumerating objects: 123, done.
 Counting objects: 100% (123/123), done.
 ...
-To https://github.com/f-is-h/ClaudeUsage.git
+To https://github.com/sirpooya/osx-claude-usage.git
  * [new branch]      main -> main
 ```
 
@@ -278,7 +278,7 @@ To https://github.com/f-is-h/ClaudeUsage.git
 
 在浏览器中访问：
 ```
-https://github.com/f-is-h/ClaudeUsage
+https://github.com/sirpooya/osx-claude-usage
 ```
 
 **检查：**
@@ -293,7 +293,7 @@ https://github.com/f-is-h/ClaudeUsage
 
 ### 步骤 12：设置 About 部分
 
-1. **在仓库页面**（https://github.com/f-is-h/ClaudeUsage）
+1. **在仓库页面**（https://github.com/sirpooya/osx-claude-usage）
 
 2. **点击右侧的 ⚙️ 图标**（在 About 框右上角）
 
@@ -306,7 +306,7 @@ https://github.com/f-is-h/ClaudeUsage
    
    **Website:** （留空或填写）
    ```
-   https://github.com/f-is-h/ClaudeUsage
+   https://github.com/sirpooya/osx-claude-usage
    ```
    
    **Topics:** （添加标签，用空格分隔）
@@ -420,7 +420,7 @@ GitHub 会自动生成预览，但效果一般。
 ### 步骤 16：上传预览图
 
 1. **回到 GitHub 仓库页面**
-   - 访问：https://github.com/f-is-h/ClaudeUsage
+   - 访问：https://github.com/sirpooya/osx-claude-usage
 
 2. **进入 Settings**
    - 点击顶部 `Settings` 标签
@@ -455,7 +455,7 @@ ls -lh /Users/iMac/Coding/Projects/ClaudeUsage/build/ClaudeUsage1.0.0/ClaudeUsag
 
 1. **访问 Releases 页面**
    ```
-   https://github.com/f-is-h/ClaudeUsage/releases
+   https://github.com/sirpooya/osx-claude-usage/releases
    ```
 
 2. **点击 `Draft a new release`** 或 `Create a new release`
@@ -522,10 +522,10 @@ ls -lh /Users/iMac/Coding/Projects/ClaudeUsage/build/ClaudeUsage1.0.0/ClaudeUsag
 
    ### 📝 Documentation
 
-   - [Complete README](https://github.com/f-is-h/ClaudeUsage#readme)
-   - [User Guide](https://github.com/f-is-h/ClaudeUsage#-user-guide)
-   - [FAQ](https://github.com/f-is-h/ClaudeUsage#-faq)
-   - [Contributing](https://github.com/f-is-h/ClaudeUsage/blob/main/CONTRIBUTING.md)
+   - [Complete README](https://github.com/sirpooya/osx-claude-usage#readme)
+   - [User Guide](https://github.com/sirpooya/osx-claude-usage#-user-guide)
+   - [FAQ](https://github.com/sirpooya/osx-claude-usage#-faq)
+   - [Contributing](https://github.com/sirpooya/osx-claude-usage/blob/main/CONTRIBUTING.md)
 
    ### 🙏 Acknowledgments
 
@@ -574,7 +574,7 @@ ls -lh /Users/iMac/Coding/Projects/ClaudeUsage/build/ClaudeUsage1.0.0/ClaudeUsag
 
 #### 20.1 检查仓库首页
 
-访问：https://github.com/f-is-h/ClaudeUsage
+访问：https://github.com/sirpooya/osx-claude-usage
 
 **确认：**
 - ✅ README 正确渲染
@@ -647,7 +647,7 @@ cat ~/.ssh/id_ed25519.pub
 # 复制输出，粘贴到 GitHub Settings → SSH Keys
 
 # 修改远程仓库为 SSH
-git remote set-url origin git@github.com:f-is-h/ClaudeUsage.git
+git remote set-url origin git@github.com:sirpooya/osx-claude-usage.git
 ```
 
 ### Q2: 推送后 README 图片不显示
@@ -665,7 +665,7 @@ git remote set-url origin git@github.com:f-is-h/ClaudeUsage.git
 ![icon](docs/images/icon@2x.png)
 
 <!-- 或 GitHub 完整路径 -->
-![icon](https://raw.githubusercontent.com/f-is-h/ClaudeUsage/main/docs/images/icon@2x.png)
+![icon](https://raw.githubusercontent.com/sirpooya/osx-claude-usage/main/docs/images/icon@2x.png)
 ```
 
 ### Q3: Topics 标签添加后不显示
@@ -709,13 +709,13 @@ git remote set-url origin git@github.com:f-is-h/ClaudeUsage.git
 **检查：**
 ```swift
 // 在 UpdateChecker.swift 中确认：
-private let repoOwner = "f-is-h"  // 正确
-private let repoName = "ClaudeUsage"  // 正确
+private let repoOwner = "sirpooya"  // 正确
+private let repoName = "osx-claude-usage"  // 正确
 ```
 
 **测试 API：**
 ```bash
-curl https://api.github.com/repos/f-is-h/ClaudeUsage/releases/latest
+curl https://api.github.com/repos/sirpooya/osx-claude-usage/releases/latest
 ```
 
 应该返回 JSON，包含 `tag_name: "v1.0.0"`

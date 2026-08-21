@@ -409,7 +409,7 @@ else
         echo ""
         cat <<EOF
     <enclosure
-        url="https://github.com/f-is-h/$PROJECT_NAME/releases/download/v$VERSION/$DMG_NAME"
+        url="https://github.com/sirpooya/osx-claude-usage/releases/download/v$VERSION/$DMG_NAME"
         $SIGN_OUTPUT
         type="application/octet-stream"/>
 EOF

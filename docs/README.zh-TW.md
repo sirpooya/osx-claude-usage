@@ -10,8 +10,8 @@
 [![Swift](https://img.shields.io/badge/Swift-5.0%2B-orange?style=flat-square)](https://swift.org)
 [![SwiftUI](https://img.shields.io/badge/SwiftUI-✓-green?style=flat-square)](https://developer.apple.com/xcode/swiftui/)
 [![License](https://img.shields.io/badge/License-MIT-purple?style=flat-square)](../LICENSE)
-[![Release](https://img.shields.io/github/v/release/f-is-h/ClaudeUsage?style=flat-square)](https://github.com/f-is-h/ClaudeUsage/releases)
-[![Downloads (all assets, all releases)](https://img.shields.io/github/downloads/f-is-h/ClaudeUsage/total)](https://github.com/f-is-h/ClaudeUsage/releases)
+[![Release](https://img.shields.io/github/v/release/sirpooya/osx-claude-usage?style=flat-square)](https://github.com/sirpooya/osx-claude-usage/releases)
+[![Downloads (all assets, all releases)](https://img.shields.io/github/downloads/sirpooya/osx-claude-usage/total)](https://github.com/sirpooya/osx-claude-usage/releases)
 
 **在選單列中優雅地追蹤您的 Claude（以及 Codex）訂閱用量。**
 
@@ -175,7 +175,7 @@ Codex 目前配色：
 
 ### 方式一：下載預編譯版本（推薦）
 
-1. 前往 [Releases 頁面](https://github.com/f-is-h/ClaudeUsage/releases)
+1. 前往 [Releases 頁面](https://github.com/sirpooya/osx-claude-usage/releases)
 2. 下載最新版本的 `.dmg` 檔案
 3. 雙擊開啟，將應用程式拖入「應用程式」資料夾
 4. 首次執行時，右鍵點擊應用程式選擇「開啟」（需要允許執行未簽署應用程式）
@@ -192,7 +192,7 @@ Codex 目前配色：
 
 ```bash
 # 複製儲存庫
-git clone https://github.com/f-is-h/ClaudeUsage.git
+git clone https://github.com/sirpooya/osx-claude-usage.git
 cd ClaudeUsage
 
 # 在 Xcode 中開啟
@@ -582,8 +582,8 @@ Copyright (c) 2025-2026 f-is-h
 
 ## 📞 聯絡方式
 
-- **Issues**: [提交問題或建議](https://github.com/f-is-h/ClaudeUsage/issues)
-- **Discussions**: [參與討論](https://github.com/f-is-h/ClaudeUsage/discussions)
+- **Issues**: [提交問題或建議](https://github.com/sirpooya/osx-claude-usage/issues)
+- **Discussions**: [參與討論](https://github.com/sirpooya/osx-claude-usage/discussions)
 - **GitHub**: [@f-is-h](https://github.com/f-is-h)
 
 ---

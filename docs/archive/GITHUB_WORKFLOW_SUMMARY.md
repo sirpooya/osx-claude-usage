@@ -524,7 +524,7 @@ cat cert_base64.txt
 **在GitHub网页配置**:
 
 1. 访问项目设置：  
-   `https://github.com/f-is-h/ClaudeUsage/settings/secrets/actions`
+   `https://github.com/sirpooya/osx-claude-usage/settings/secrets/actions`
 
 2. 点击 "New repository secret"
 
@@ -680,7 +680,7 @@ git push origin test-release
 **在GitHub观察**:
 
 1. 访问 Actions 页面：  
-   `https://github.com/f-is-h/ClaudeUsage/actions`
+   `https://github.com/sirpooya/osx-claude-usage/actions`
 
 2. 查看运行的workflow：  
    - 名称：Build and Release
@@ -826,11 +826,11 @@ git push origin main
 **验证结果**:
 
 1. 检查Tags：  
-   `https://github.com/f-is-h/ClaudeUsage/tags`
+   `https://github.com/sirpooya/osx-claude-usage/tags`
    - 应该看到 `test-v1.2.0`
 
 2. 检查Releases：  
-   `https://github.com/f-is-h/ClaudeUsage/releases`
+   `https://github.com/sirpooya/osx-claude-usage/releases`
    - 应该看到Draft Release
    - 标题：`test-v1.2.0 - ⚠️ DRY RUN TEST ⚠️`
 
@@ -912,7 +912,7 @@ git push origin main
 **编辑Draft Release**:
 
 1. 收到邮件通知后，访问：  
-   `https://github.com/f-is-h/ClaudeUsage/releases`
+   `https://github.com/sirpooya/osx-claude-usage/releases`
 
 2. 找到Draft Release：  
    `v1.1.3 - ❗️❗️❗️请在这里输入你的简短描述❗️❗️❗️`
@@ -1021,14 +1021,14 @@ git push origin main
 # - Workflow完成（成功/失败）
 
 # 可选：在Actions页面监控进度
-# https://github.com/f-is-h/ClaudeUsage/actions
+# https://github.com/sirpooya/osx-claude-usage/actions
 
 # ============================================
 # 步骤3: 完善Release Notes（网页，2分钟）
 # ============================================
 
 # 3.1 访问Releases页面
-# https://github.com/f-is-h/ClaudeUsage/releases
+# https://github.com/sirpooya/osx-claude-usage/releases
 
 # 3.2 找到Draft Release（标题带❗️提示）
 
@@ -1366,7 +1366,7 @@ git tag -d test-v1.2.0
 git push --delete origin test-v1.2.0
 
 # 3. 删除GitHub Release
-# 访问: https://github.com/f-is-h/ClaudeUsage/releases
+# 访问: https://github.com/sirpooya/osx-claude-usage/releases
 # 找到test-v1.2.0
 # Edit → Delete
 

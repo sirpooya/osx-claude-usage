@@ -5,7 +5,7 @@
 ## 准备工作
 
 - ✅ Cloudflare 账号
-- ✅ GitHub 仓库：`f-is-h/ClaudeUsage`
+- ✅ GitHub 仓库：`sirpooya/osx-claude-usage`
 - ✅ 域名：`fi5h.xyz`（已注册）
 - ✅ 目标网址：`u4c.fi5h.xyz`
 
@@ -17,7 +17,7 @@
 2. 左侧菜单选择 **Workers & Pages**
 3. 点击 **Create application** → **Pages** → **Connect to Git**
 4. 授权 Cloudflare 访问你的 GitHub 账号
-5. 选择仓库：**f-is-h/ClaudeUsage**
+5. 选择仓库：**sirpooya/osx-claude-usage**
 
 ---
 

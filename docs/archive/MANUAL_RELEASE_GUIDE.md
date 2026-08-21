@@ -288,7 +288,7 @@ ClaudeUsage是一个macOS菜单栏应用，用于实时监控 Claude AI 的5小�
 
 1. **访问仓库Release页面**
    ```
-   https://github.com/f-is-h/ClaudeUsage/releases
+   https://github.com/sirpooya/osx-claude-usage/releases
    ```
 
 2. **创建新Release**
@@ -337,7 +337,7 @@ gh release create v1.0.0 \
 
 1. **访问Release页面**
    ```
-   https://github.com/f-is-h/ClaudeUsage/releases
+   https://github.com/sirpooya/osx-claude-usage/releases
    ```
 
 2. **检查内容**

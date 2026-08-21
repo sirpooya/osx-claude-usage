@@ -70,8 +70,12 @@ struct UsageDetailView: View {
     // 显示更新通知
     @State private var showUpdateNotification = false
     // 显示模式切换（false: 重置时间, true: 剩余时间）
-    @AppStorage("showRemainingMode") private var savedRemainingMode = false
-    @State private var showRemainingMode = UserDefaults.standard.bool(forKey: "showRemainingMode")
+    // 默认走剩余时间：倒计时（"3d 12h left"）比绝对时间戳（"Aug 24 2 AM"）更直接，
+    // 用户不用自己算差值。注意不能用 UserDefaults.bool(forKey:)，键不存在时它返回
+    // false，会把这个默认值又翻回重置时间。
+    @AppStorage("showRemainingMode") private var savedRemainingMode = true
+    @State private var showRemainingMode =
+        (UserDefaults.standard.object(forKey: "showRemainingMode") as? Bool) ?? true
     
     // MARK: - Body
 

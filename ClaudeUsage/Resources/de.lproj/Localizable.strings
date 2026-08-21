@@ -234,7 +234,7 @@
 "diagnostic.suggestion_configure_auth" = "Bitte Organisations-ID und Session Key in den Feldern oben konfigurieren";
 "diagnostic.suggestion_check_org_id" = "Prüfen, ob das Format der Organisations-ID korrekt ist (sollte eine UUID sein)";
 "diagnostic.suggestion_export_and_share" = "Diesen Diagnosebericht exportieren und über GitHub Issues teilen";
-"diagnostic.suggestion_contact_support" = "Entwickler für Hilfe unter github.com/f-is-h/Usage4Claude/issues kontaktieren";
+"diagnostic.suggestion_contact_support" = "Entwickler für Hilfe unter github.com/sirpooya/osx-claude-usage/issues kontaktieren";
 "diagnostic.open_log_folder" = "Log-Ordner öffnen";
 
 // MARK: - Limit Types (v2.0.0)
@@ -296,7 +296,7 @@
 "welcome.finish" = "Fertigstellen";
 "welcome.authentication_setup" = "Anmeldung einrichten";
 "welcome.session_key" = "Session Key";
-"welcome.manual_session_key" = "Erweitert: Session Key manuell";
+"welcome.manual_session_key" = "Session Key manuell";
 "welcome.session_key_placeholder" = "Den Session Key hier einfügen";
 "welcome.session_key_hint" = "Den vollständigen sessionKey-Cookie-Wert einfügen";
 "welcome.valid_format" = "Gültiges Format";

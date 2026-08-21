@@ -95,7 +95,7 @@ in your keychain. Public key: hGTiB0kyn45HOB8WWKdAHc28+Bthe8Rv8O7asa4nG2c=
 
    ```
        <enclosure
-           url="https://github.com/f-is-h/ClaudeUsage/releases/download/v3.2.0/ClaudeUsage-v3.2.0.dmg"
+           url="https://github.com/sirpooya/osx-claude-usage/releases/download/v3.2.0/ClaudeUsage-v3.2.0.dmg"
            sparkle:edSignature="qZ0Y8nm..."
            length="9437184"
            type="application/octet-stream"/>

@@ -10,8 +10,8 @@
 [![Swift](https://img.shields.io/badge/Swift-5.0%2B-orange?style=flat-square)](https://swift.org)
 [![SwiftUI](https://img.shields.io/badge/SwiftUI-✓-green?style=flat-square)](https://developer.apple.com/xcode/swiftui/)
 [![License](https://img.shields.io/badge/License-MIT-purple?style=flat-square)](../LICENSE)
-[![Release](https://img.shields.io/github/v/release/f-is-h/ClaudeUsage?style=flat-square)](https://github.com/f-is-h/ClaudeUsage/releases)
-[![Downloads (all assets, all releases)](https://img.shields.io/github/downloads/f-is-h/ClaudeUsage/total)](https://github.com/f-is-h/ClaudeUsage/releases)
+[![Release](https://img.shields.io/github/v/release/sirpooya/osx-claude-usage?style=flat-square)](https://github.com/sirpooya/osx-claude-usage/releases)
+[![Downloads (all assets, all releases)](https://img.shields.io/github/downloads/sirpooya/osx-claude-usage/total)](https://github.com/sirpooya/osx-claude-usage/releases)
 
 **메뉴 바에서 Claude(및 Codex) 구독 할당량을 아름답게 추적하세요.**
 
@@ -177,7 +177,7 @@ Codex 현재 색상:
 
 ### 방법 1: 미리 빌드된 버전 다운로드(권장)
 
-1. [Releases 페이지](https://github.com/f-is-h/ClaudeUsage/releases)로 이동
+1. [Releases 페이지](https://github.com/sirpooya/osx-claude-usage/releases)로 이동
 2. 최신 `.dmg` 파일 다운로드
 3. 더블 클릭하여 열고 앱을 Applications 폴더로 드래그
 4. 첫 실행 시 앱을 우클릭하고 "열기" 선택(서명되지 않은 앱 허용)
@@ -194,7 +194,7 @@ Codex 현재 색상:
 
 ```bash
 # 저장소 복제
-git clone https://github.com/f-is-h/ClaudeUsage.git
+git clone https://github.com/sirpooya/osx-claude-usage.git
 cd ClaudeUsage
 
 # Xcode에서 열기
@@ -584,8 +584,8 @@ Copyright (c) 2025-2026 f-is-h
 
 ## 📞 연락처
 
-- **Issues**: [문제 또는 제안 제출](https://github.com/f-is-h/ClaudeUsage/issues)
-- **Discussions**: [토론 참여](https://github.com/f-is-h/ClaudeUsage/discussions)
+- **Issues**: [문제 또는 제안 제출](https://github.com/sirpooya/osx-claude-usage/issues)
+- **Discussions**: [토론 참여](https://github.com/sirpooya/osx-claude-usage/discussions)
 - **GitHub**: [@f-is-h](https://github.com/f-is-h)
 
 ---

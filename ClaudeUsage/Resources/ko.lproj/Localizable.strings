@@ -235,7 +235,7 @@
 "diagnostic.suggestion_configure_auth" = "위 필드에 조직 ID와 세션 키를 설정하세요";
 "diagnostic.suggestion_check_org_id" = "조직 ID 형식이 올바른지 확인하세요(UUID 형식이어야 함)";
 "diagnostic.suggestion_export_and_share" = "이 진단 보고서를 내보내서 GitHub Issues에 공유하세요";
-"diagnostic.suggestion_contact_support" = "github.com/f-is-h/Usage4Claude/issues에서 개발자에게 도움을 요청하세요";
+"diagnostic.suggestion_contact_support" = "github.com/sirpooya/osx-claude-usage/issues에서 개발자에게 도움을 요청하세요";
 "diagnostic.open_log_folder" = "로그 폴더 열기";
 
 // MARK: - Limit Types (v2.0.0)
@@ -297,7 +297,7 @@
 "welcome.finish" = "완료";
 "welcome.authentication_setup" = "인증 설정";
 "welcome.session_key" = "Session Key";
-"welcome.manual_session_key" = "고급: Session Key 직접 입력";
+"welcome.manual_session_key" = "Session Key 직접 입력";
 "welcome.session_key_placeholder" = "여기에 Session Key를 붙여넣으세요";
 "welcome.session_key_hint" = "전체 sessionKey Cookie 값을 붙여넣으세요";
 "welcome.valid_format" = "형식이 올바릅니다";

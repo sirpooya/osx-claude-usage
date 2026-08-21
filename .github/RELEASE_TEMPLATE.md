@@ -19,10 +19,10 @@
 
 ### 📝 Full Changelog
 
-See [CHANGELOG.md](https://github.com/f-is-h/ClaudeUsage/blob/main/CHANGELOG.md) for complete version history.
+See [CHANGELOG.md](https://github.com/sirpooya/osx-claude-usage/blob/main/CHANGELOG.md) for complete version history.
 
-**Previous Version:** [v{{PREVIOUS_VERSION}}](https://github.com/f-is-h/ClaudeUsage/releases/tag/v{{PREVIOUS_VERSION}})
+**Previous Version:** [v{{PREVIOUS_VERSION}}](https://github.com/sirpooya/osx-claude-usage/releases/tag/v{{PREVIOUS_VERSION}})
 
 ---
 
-**Full Changelog**: https://github.com/f-is-h/ClaudeUsage/compare/v{{PREVIOUS_VERSION}}...v{{VERSION}}
+**Full Changelog**: https://github.com/sirpooya/osx-claude-usage/compare/v{{PREVIOUS_VERSION}}...v{{VERSION}}
