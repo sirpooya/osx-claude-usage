@@ -8,51 +8,51 @@
 
 import Foundation
 
-/// Claude（claude.ai）OAuth 配置常量
+/// Claude (claude.ai) OAuth configuration constants
 ///
-/// 复用 Anthropic 官方 Claude Code 的 public OAuth client（PKCE，无 client secret）。
-/// 认证在用户的系统默认浏览器中完成，从而绕开 WKWebView 对 Google 嵌入式登录的封锁，
-/// 以及 passkey/WebAuthn 在内嵌 WebView 中不可用的问题（见 Issue #49）。
+/// Reuses Anthropic's official Claude Code public OAuth client (PKCE, no client secret).
+/// Authentication happens in the user's default browser, which sidesteps WKWebView's block on Google's embedded login
+/// and the fact that passkeys and WebAuthn do not work in an embedded WebView (see Issue #49).
 enum ClaudeOAuthConfig {
-    /// 授权端点（在 claude.ai 上完成登录与授权）
+    /// Authorization endpoint (login and consent happen on claude.ai)
     static let authorizeURL = "https://claude.ai/oauth/authorize"
-    /// token / refresh 端点
+    /// token / refresh endpoint
     static let tokenURL = "https://console.anthropic.com/v1/oauth/token"
 
-    /// Claude Code 官方 public client id（PKCE，无 client secret）
+    /// Claude Code's official public client id (PKCE, no client secret)
     static let clientID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"
 
-    /// OAuth scope：只读用量只需 user:profile（不请求 user:inference，避免过大权限）
+    /// OAuth scope: read only usage needs user:profile alone (user:inference is not requested, to avoid over broad permissions)
     static let scope = "user:profile"
 
-    // MARK: - 用量 / 账户接口（Bearer access_token）
+    // MARK: - Usage and account endpoints (Bearer access_token)
 
-    /// 订阅用量：返回 five_hour / seven_day 利用率与重置时间、extra_usage
+    /// Subscription usage: returns the five_hour / seven_day utilizations, their reset times and extra_usage
     static let usageURL = "https://api.anthropic.com/api/oauth/usage"
-    /// 账户信息：返回 account（email 等）与 organization
+    /// Account info: returns account (email and so on) plus organization
     static let profileURL = "https://api.anthropic.com/api/oauth/profile"
-    /// OAuth 接口要求的 beta 头
+    /// The beta header the OAuth endpoints require
     static let betaHeader = "oauth-2025-04-20"
-    /// OAuth 用量/账户接口要求的 User-Agent。
-    /// 这个头是硬性要求，不是礼貌性标识：缺了它，即便 access_token 完全有效，
-    /// 端点也会立刻返回持续的 429 rate_limit_error（见 anthropics/claude-code#31021）。
+    /// The User-Agent the OAuth usage and account endpoints require.
+    /// This header is a hard requirement, not a courtesy: without it the endpoint returns an instant and
+    /// persistent 429 rate_limit_error even with a perfectly valid access_token (see anthropics/claude-code#31021).
     static let userAgent = "claude-cli/2.0.0 (external, cli)"
 
-    // MARK: - 本地回调（优先）/ 手动粘贴（fallback）
+    // MARK: - Local callback (preferred) / manual paste (fallback)
 
-    /// 本地回调端口（loopback 自动回调，优先尝试）
+    /// Local callback port (loopback auto callback, tried first)
     ///
-    /// 必须避开 macOS 的 ephemeral 端口范围（49152–65535），否则系统出站连接
-    /// 可能动态抢占该端口，导致登录回调服务器绑定失败（尤其重启后系统网络活动密集时）。
-    /// 选用 registered-port 区间的固定端口，并与 Codex 的 1455/1457 错开。
+    /// It has to avoid macOS's ephemeral port range (49152-65535), otherwise a system outbound connection
+    /// can claim the port dynamically and the login callback server fails to bind (especially after a restart, when system network activity is heavy).
+    /// A fixed port from the registered range was chosen, kept clear of Codex's 1455/1457.
     static let primaryPort: UInt16 = 1456
     static let fallbackPort: UInt16 = 1458
     static let callbackPath = "/callback"
 
-    /// Claude Code 官方手动粘贴 redirect（若 client 不接受 localhost 则回退到此模式）
+    /// Claude Code's official manual paste redirect (the fallback when the client does not accept localhost)
     static let manualRedirectURI = "https://console.anthropic.com/oauth/code/callback"
 
-    /// 构造本地 redirect_uri
+    /// Build the local redirect_uri
     static func redirectURI(port: UInt16) -> String {
         "http://localhost:\(port)\(callbackPath)"
     }

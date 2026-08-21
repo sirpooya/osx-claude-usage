@@ -2,13 +2,13 @@
 //  ClaudeCodeSyncService.swift
 //  ClaudeUsage
 //
-//  "CLI Account Sync"：把 Claude Code CLI 已经登录好的账号直接接过来用，
-//  用户不需要再粘 sessionKey、也不需要再走一遍浏览器 OAuth。
+//  "CLI Account Sync": adopt the account Claude Code CLI already signed in,
+//  so the user pastes no sessionKey and goes through no browser OAuth.
 //
-//  与手动/浏览器登录的关系：
-//  - 三条路互不干扰，任一条配好即可出数据（同 Claude.ai cookie / API Console / CLI 三分法）。
-//  - CLI 同步来的账户标 credentialSource == .claudeCodeCLI，取 token 时每次都重读钥匙串，
-//    因为 Claude Code 自己会在我们背后轮换它。
+//  How it relates to manual and browser login:
+//  - The three paths do not interfere; configuring any one of them produces data (the same Claude.ai cookie / API Console / CLI split).
+//  - A CLI synced account is marked credentialSource == .claudeCodeCLI, and re-reads the Keychain every time it needs a token,
+//    because Claude Code rotates it behind our back.
 //
 
 import Combine
@@ -30,12 +30,12 @@ final class ClaudeCodeSyncService: ObservableObject {
     // MARK: - Published
 
     @Published private(set) var state: SyncState = .notSynced
-    /// 当前读到的凭据（界面只展示打码后的 token / 订阅类型 / scopes）
+    /// The credentials currently read (the UI shows only the masked token, the subscription type and the scopes)
     @Published private(set) var credentials: ClaudeCodeCredentials?
-    /// 机器上所有可用的 Claude Code 钥匙串条目
+    /// Every usable Claude Code Keychain entry on this machine
     @Published private(set) var availableEntries: [ClaudeCodeKeychain.Entry] = []
 
-    /// 用户在"凭据来源"里锁定的钥匙串条目；nil 表示自动（默认条目优先）
+    /// The Keychain entry the user pinned under "credential source"; nil means automatic (the default entry wins)
     @Published var pinnedService: String? {
         didSet {
             guard pinnedService != oldValue else { return }
@@ -54,47 +54,47 @@ final class ClaudeCodeSyncService: ObservableObject {
         availableEntries = ClaudeCodeKeychain.listEntries()
     }
 
-    // MARK: - 查询
+    // MARK: - Queries
 
-    /// 机器上是否存在 Claude Code 的凭据条目（只看条目在不在，不读机密数据，因此不会弹授权框）
+    /// Whether a Claude Code credential entry exists on this machine (only whether it exists, no secret data is read, so no prompt appears)
     var isAvailable: Bool { !availableEntries.isEmpty }
 
-    /// 当前已同步的 CLI 账户（如果有）
+    /// The CLI account already synced (if any)
     var syncedAccount: Account? {
         UserSettings.shared.accounts.first { $0.credentialSource.isCLISynced }
     }
 
     var isSynced: Bool { syncedAccount != nil }
 
-    /// 重新枚举钥匙串条目（"Refresh" 按钮 / 打开设置页时调用）
+    /// Re-enumerate the Keychain entries (called by the Refresh button and when the settings page opens)
     func refreshEntries() {
         availableEntries = ClaudeCodeKeychain.listEntries()
     }
 
-    // MARK: - 同步
+    // MARK: - Sync
 
-    /// 启动时的静默同步：只在"还没有任何 CLI 账户、但机器上存在 CLI 凭据"时接管，
-    /// 成功后调用方就不必再弹登录窗口了。
-    /// - Returns: 是否成功建立了可用账户
+    /// The silent sync at launch: adopts only when there is no CLI account yet and CLI credentials do exist on the machine,
+    /// so on success the caller does not have to show the login window.
+    /// - Returns: whether a usable account was established
     func syncOnLaunchIfNeeded() async -> Bool {
         refreshEntries()
         guard isAvailable else { return false }
 
-        // 已有 CLI 账户：只把 token 对齐到钥匙串里的最新值，不重建账户
+        // A CLI account already exists: only realign its token to the latest Keychain value, do not rebuild the account
         if let existing = syncedAccount {
             realignStoredToken(for: existing)
             state = .synced(at: Date())
             return true
         }
 
-        // 用户已经手动配好了 Claude 账户，就别擅自替换他的选择
+        // The user already configured a Claude account by hand, so do not replace their choice
         guard UserSettings.shared.accounts.isEmpty else { return false }
 
         return await sync()
     }
 
-    /// 执行一次同步（首次接入 / "Re-sync" 按钮 / 换 pinned 条目）
-    /// - Returns: 是否成功
+    /// Run one sync (first time setup, the Re-sync button, or a changed pinned entry)
+    /// - Returns: whether it succeeded
     @discardableResult
     func sync() async -> Bool {
         state = .syncing
@@ -109,7 +109,7 @@ final class ClaudeCodeSyncService: ObservableObject {
         self.credentials = credentials
 
         guard !credentials.refreshToken.isEmpty else {
-            // 只有 access_token 的条目撑不过一小时，拒绝建账户，免得用户以为配好了
+            // An entry with nothing but an access_token would not last an hour, so refuse to create an account and leave the user thinking they are set up
             state = .failed(message: L.CLISync.errorNoRefreshToken)
             Logger.settings.error("CLI sync: keychain item has no refresh_token, refusing to create an account")
             return false
@@ -122,8 +122,8 @@ final class ClaudeCodeSyncService: ObservableObject {
         return true
     }
 
-    /// 解除同步：删掉 CLI 同步来的账户，并清空本服务状态。
-    /// 只动我们自己的账户列表，绝不碰 Claude Code 的钥匙串条目。
+    /// Unsync: delete the CLI synced account and clear this service's state.
+    /// Only our own account list is touched, Claude Code's Keychain entry is never modified.
     func removeSync() {
         if let account = syncedAccount {
             UserSettings.shared.removeAccount(account)
@@ -133,9 +133,9 @@ final class ClaudeCodeSyncService: ObservableObject {
         Logger.settings.notice("CLI sync: removed the synced account (the Claude Code keychain item was left untouched)")
     }
 
-    // MARK: - 供 API 层调用
+    // MARK: - For the API layer
 
-    /// 读取当前应使用的 CLI 凭据（每次轮询都重读，不缓存 token）
+    /// Read the CLI credentials to use right now (re-read on every poll, the token is never cached)
     nonisolated static func currentCredentials(preferredService: String?) -> ClaudeCodeCredentials? {
         if let preferredService,
            let credentials = ClaudeCodeKeychain.readCredentials(service: preferredService) {
@@ -146,13 +146,13 @@ final class ClaudeCodeSyncService: ObservableObject {
 
     // MARK: - Private
 
-    /// 按 pinned 设置解析出该读哪个条目
+    /// Resolve which entry to read from the pinned setting
     private func readResolvedCredentials() -> ClaudeCodeCredentials? {
         Self.currentCredentials(preferredService: pinnedService)
     }
 
-    /// Claude Code 轮换 token 后，把账户里存的那份对齐过去，
-    /// 避免我们拿着一个早已失效的 refresh_token 去刷新。
+    /// Once Claude Code rotates the token, realign the copy stored on the account,
+    /// so we do not try to refresh with a long dead refresh_token.
     private func realignStoredToken(for account: Account) {
         guard let credentials = Self.currentCredentials(preferredService: account.keychainService ?? pinnedService) else { return }
         self.credentials = credentials
@@ -160,7 +160,7 @@ final class ClaudeCodeSyncService: ObservableObject {
         UserSettings.shared.silentlyUpdateCurrentClaudeSessionToken(credentials.refreshToken)
     }
 
-    /// 拉 profile 补齐账户显示名，失败不阻断同步
+    /// Fetch the profile to fill in the account display name, a failure does not abort the sync
     private func fetchProfile(credentials: ClaudeCodeCredentials) async -> (email: String, orgId: String, orgName: String)? {
         guard credentials.isAccessTokenUsable else { return nil }
         return await withCheckedContinuation { continuation in
@@ -173,7 +173,7 @@ final class ClaudeCodeSyncService: ObservableObject {
         }
     }
 
-    /// 建立或更新 CLI 同步账户
+    /// Create or update the CLI synced account
     private func upsertAccount(
         credentials: ClaudeCodeCredentials,
         profile: (email: String, orgId: String, orgName: String)?
@@ -182,11 +182,11 @@ final class ClaudeCodeSyncService: ObservableObject {
         let email = profile?.email ?? ""
         let orgId = profile?.orgId ?? ""
         let displayName = email.isEmpty ? L.CLISync.defaultAccountName : email
-        // 与浏览器 OAuth 登录保持同一去重标识：组织 uuid，缺失时退回 email，
-        // 都没有就用钥匙串 service 名兜底（保证同一条目不会重复建号）
+        // Same dedupe identity as browser OAuth login: the organization uuid, falling back to the email,
+        // and to the Keychain service name when neither exists (so one entry cannot create two accounts)
         let stableOrgId = !orgId.isEmpty ? orgId : (!email.isEmpty ? email : credentials.serviceName)
 
-        // 同一标识的旧账户先移除（addAccount 遇到已存在的 organizationId 会直接跳过）
+        // Remove an older account with the same identity first (addAccount skips an organizationId that already exists)
         if let existing = settings.accounts.first(where: {
             $0.organizationId == stableOrgId || $0.credentialSource.isCLISynced
         }) {

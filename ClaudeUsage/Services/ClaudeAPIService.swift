@@ -9,75 +9,75 @@
 import Foundation
 import OSLog
 
-/// Claude API 服务类
-/// 负责与 Claude.ai API 通信，获取用户的使用情况数据
-/// 包含请求构建、认证处理、Cloudflare 绕过和数据解析功能
+/// Claude API service
+/// Talks to the Claude.ai API and fetches the user's usage data
+/// Covers request building, authentication, getting past Cloudflare and parsing the data
 class ClaudeAPIService {
     // MARK: - Properties
 
-    /// 一次性校验场景（登录页/设置页验证 sessionKey）复用的共享实例。
-    /// 这类调用点过去各自 `ClaudeAPIService()` 创建局部实例，其 URLSession 从不
-    /// `finishTasksAndInvalidate()`；若实例在请求进行中被释放，`[weak self]` 闭包
-    /// 里挂起的单飞等待者也会随之丢失。复用同一长生命周期实例可一并避免这两个问题。
+    /// Shared instance reused by the one shot validation paths (the login page and settings page validating a sessionKey).
+    /// Those call sites used to create a local `ClaudeAPIService()` each, whose URLSession was never
+    /// `finishTasksAndInvalidate()`ed; and if the instance was released mid request, the single flight waiters
+    /// suspended inside its `[weak self]` closures were lost with it. Reusing one long lived instance avoids both.
     static let shared = ClaudeAPIService()
 
-    /// API 基础 URL
+    /// API base URL
     private let baseURL = "https://claude.ai/api/organizations"
 
-    /// 用户设置实例，用于获取认证信息
+    /// User settings instance, used to read the authentication data
     private let settings = UserSettings.shared
 
-    /// 共享的 URLSession 实例
+    /// Shared URLSession instance
     private let session: URLSession
 
-    /// 当前正在执行的网络请求任务
+    /// The network request currently in flight
     private var currentTask: URLSessionDataTask?
 
-    // MARK: - Claude OAuth 单飞 & 缓存
+    // MARK: - Claude OAuth single flight and cache
     //
-    // Claude OAuth refresh_token 每次续期后都会轮换（旧值立即失效）。
-    // 多个并发刷新调用可能用同一个 refresh_token，导致后到者触发 401。
-    // 单飞合并 + 缓存都委托给 OAuthTokenCache（actor，见 Services/OAuthTokenCache.swift），
-    // 用 actor 的串行化天然替代手写 NSLock + 等待者数组。
+    // A Claude OAuth refresh_token rotates on every renewal (the old value dies immediately).
+    // Several concurrent refresh calls can use the same refresh_token, so whichever arrives later gets a 401.
+    // Single flight coalescing and the cache are both delegated to OAuthTokenCache (an actor, see Services/OAuthTokenCache.swift),
+    // whose serialization naturally replaces a hand written NSLock plus waiter array.
     private let oauthTokenCache = OAuthTokenCache()
 
     // MARK: - Initialization
 
     init() {
-        // 配置 URLSession
+        // Configure the URLSession
         let configuration = URLSessionConfiguration.default
-        configuration.timeoutIntervalForRequest = 30  // 请求超时：30秒
-        configuration.timeoutIntervalForResource = 60 // 资源超时：60秒
+        configuration.timeoutIntervalForRequest = 30  // Request timeout: 30 seconds
+        configuration.timeoutIntervalForResource = 60 // Resource timeout: 60 seconds
         configuration.httpCookieAcceptPolicy = .always
         configuration.httpShouldSetCookies = true
-        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData  // 不使用缓存
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData  // No caching
 
         self.session = URLSession(configuration: configuration)
     }
 
     // MARK: - Claude OAuth Support
 
-    /// 判断凭据是否为 Claude OAuth refresh_token（以 "sk-ant-ort01-" 开头）
+    /// Decide whether a credential is a Claude OAuth refresh_token (it starts with "sk-ant-ort01-")
     static func isOAuthRefreshToken(_ credential: String) -> Bool {
         credential.hasPrefix("sk-ant-ort01-")
     }
 
-    /// 清除 OAuth access_token 缓存（账户切换时调用；401 重试路径见 fetchClaudeOAuthUsageData，
-    /// 那里需要等 clear 完成后再重试，走的是 oauthTokenCache.clear() 的 await 版本）
+    /// Clear the OAuth access_token cache (called on an account switch; the 401 retry path is in fetchClaudeOAuthUsageData,
+    /// which has to await the clear before retrying and so uses the awaitable oauthTokenCache.clear())
     func clearOAuthTokenCache() {
         Task { await oauthTokenCache.clear() }
     }
     
     // MARK: - Public Methods
     
-    /// 获取用户的 Claude 使用情况（并行获取主用量和 Extra Usage）
-    /// - Parameter completion: 完成回调，包含成功的 UsageData 或失败的 Error
-    /// - Note: 请求会自动添加必要的 Headers 以绕过 Cloudflare 防护
-    /// - Important: 调用前确保用户已配置有效的认证信息
-    /// - Note: 同时并行调用主 usage API 和 Extra Usage API，Extra Usage 失败不影响主功能
+    /// Fetch the user's Claude usage (main usage and Extra Usage in parallel)
+    /// - Parameter completion: called with the UsageData on success or an Error on failure
+    /// - Note: the request adds the headers needed to get past Cloudflare automatically
+    /// - Important: make sure valid authentication is configured before calling
+    /// - Note: the main usage API and the Extra Usage API are called in parallel, and an Extra Usage failure does not affect the main feature
     func fetchUsage(completion: @escaping (Result<UsageData, Error>) -> Void) {
         #if DEBUG
-        // 调试模式：返回模拟数据（立即返回，无延迟）
+        // Debug mode: return mock data (immediately, with no delay)
         if settings.debugModeEnabled {
             let mockData = createMockData()
             DispatchQueue.main.async {
@@ -87,28 +87,28 @@ class ClaudeAPIService {
         }
         #endif
 
-        // 取消之前的请求（如果存在）
+        // Cancel the previous request (if there is one)
         currentTask?.cancel()
 
-        // 检查认证信息
+        // Check the authentication info
         guard settings.hasValidCredentials else {
             DispatchQueue.main.async { completion(.failure(UsageError.noCredentials)) }
             return
         }
 
-        // OAuth 账户：凭据是 refresh_token，走 /api/oauth/usage 路径，跳过 Cloudflare cookie 流程
+        // OAuth account: the credential is a refresh_token, so take the /api/oauth/usage path and skip the Cloudflare cookie flow
         if Self.isOAuthRefreshToken(settings.sessionKey) {
             fetchOAuthUsage(completion: completion)
             return
         }
 
-        // 使用 DispatchGroup 并行请求两个 API
+        // Use a DispatchGroup to request both APIs in parallel
         let dispatchGroup = DispatchGroup()
         var mainUsageData: UsageData?
         var extraUsageData: ExtraUsageData?
         var mainError: Error?
 
-        // ========== 请求1: 主 Usage API ==========
+        // ========== Request 1: the main usage API ==========
         dispatchGroup.enter()
         fetchMainUsage { result in
             switch result {
@@ -120,49 +120,49 @@ class ClaudeAPIService {
             dispatchGroup.leave()
         }
 
-        // ========== 请求2: Extra Usage API（可选） ==========
+        // ========== Request 2: the Extra Usage API (optional) ==========
         dispatchGroup.enter()
         fetchExtraUsage { result in
             switch result {
             case .success(let data):
-                extraUsageData = data  // 可能为 nil（功能未启用或失败）
+                extraUsageData = data  // May be nil (the feature is off, or the request failed)
             case .failure:
-                // Extra Usage 失败不影响主功能，保持 extraUsageData 为 nil
+                // An Extra Usage failure does not affect the main feature, extraUsageData just stays nil
                 Logger.api.info("Extra Usage API failed, continuing with main usage data only")
             }
             dispatchGroup.leave()
         }
 
-        // ========== 等待两个请求完成后合并结果 ==========
+        // ========== Wait for both requests, then merge the results ==========
         dispatchGroup.notify(queue: .main) {
-            // 如果主 API 失败，则整体失败
+            // A failure of the main API fails the whole thing
             if let error = mainError {
                 completion(.failure(error))
                 return
             }
 
-            // 主 API 成功，合并 Extra Usage 数据
+            // The main API succeeded, merge in the Extra Usage data
             guard var finalData = mainUsageData else {
                 completion(.failure(UsageError.decodingError))
                 return
             }
 
-            // 创建包含 Extra Usage 的完整数据（整体保留所有模型槽，如 Fable / Opus / Sonnet）
+            // Build the full data including Extra Usage (keeping every model slot, Fable / Opus / Sonnet and so on)
             finalData = UsageData(
                 fiveHour: finalData.fiveHour,
                 sevenDay: finalData.sevenDay,
                 weeklyModels: finalData.weeklyModels,
-                extraUsage: extraUsageData  // 可能为 nil
+                extraUsage: extraUsageData  // May be nil
             )
 
             completion(.success(finalData))
         }
     }
 
-    /// 获取主 Usage API 数据（内部方法）
-    /// - Parameter completion: 完成回调
+    /// Fetch the main usage API data (internal)
+    /// - Parameter completion: the completion callback
     private func fetchMainUsage(completion: @escaping (Result<UsageData, Error>) -> Void) {
-        // Service 层统一约定：所有 completion 一律在主线程回调，调用方无需再包一层 DispatchQueue.main.async
+        // Service layer convention: every completion is called back on the main thread, so callers never need to wrap it in another DispatchQueue.main.async
         let complete: (Result<UsageData, Error>) -> Void = { result in
             DispatchQueue.main.async { completion(result) }
         }
@@ -178,14 +178,14 @@ class ClaudeAPIService {
         request.httpMethod = "GET"
         request.assumesHTTP3Capable = false
 
-        // 使用统一的 Header 构建器添加完整的浏览器 Headers 以绕过 Cloudflare
+        // Use the shared header builder to add the full browser headers, getting past Cloudflare
         ClaudeAPIHeaderBuilder.applyHeaders(
             to: &request,
             organizationId: settings.organizationId,
             sessionKey: settings.sessionKey
         )
 
-        // 创建并保存任务引用
+        // Create the task and keep a reference
         currentTask = session.dataTask(with: request) { data, response, error in
             if let error = error {
                 Logger.api.debug("Network error: \(error.localizedDescription)")
@@ -198,11 +198,11 @@ class ClaudeAPIService {
                 return
             }
 
-            // 打印原始响应用于调试
+            // Print the raw response for debugging
             if let jsonString = String(data: data, encoding: .utf8) {
                 Logger.api.debug("Main Usage API Response: \(jsonString)")
 
-                // 检查是否是HTML响应（Cloudflare拦截）
+                // Check for an HTML response (a Cloudflare block)
                 if jsonString.contains("<!DOCTYPE html>") || jsonString.contains("<html") {
                     Logger.api.debug("⚠️ Received HTML response, possibly intercepted by Cloudflare.")
                     complete(.failure(UsageError.cloudflareBlocked))
@@ -210,46 +210,46 @@ class ClaudeAPIService {
                 }
             }
 
-            // 检查HTTP状态码
+            // Check the HTTP status code
             if let httpResponse = response as? HTTPURLResponse {
                 Logger.api.debug("Main Usage HTTP Status: \(httpResponse.statusCode)")
 
-                // 处理各种 HTTP 错误状态码
+                // Handle the various HTTP error status codes
                 switch httpResponse.statusCode {
                 case 200...299:
-                    // 成功响应，继续处理
+                    // Successful response, keep going
                     break
                 case 401:
-                    // 未授权，通常是认证信息无效
+                    // Unauthorized, usually invalid authentication
                     complete(.failure(UsageError.unauthorized))
                     return
                 case 403:
-                    // HTML 已在上方提前返回 cloudflareBlocked，此处 403 均为 JSON 鉴权失败
+                    // HTML already returned cloudflareBlocked above, so a 403 here is always a JSON auth failure
                     complete(.failure(UsageError.unauthorized))
                     return
                 case 429:
-                    // 请求频率过高
+                    // Too many requests
                     complete(.failure(UsageError.rateLimited))
                     return
                 default:
-                    // 其他 HTTP 错误
+                    // Other HTTP errors
                     Logger.api.error("HTTP error: \(httpResponse.statusCode)")
                     complete(.failure(UsageError.httpError(statusCode: httpResponse.statusCode)))
                     return
                 }
             }
 
-            // 解码 JSON 响应
+            // Decode the JSON response
             let decoder = JSONDecoder()
 
-            // 检查是否是错误响应
+            // Check for an error response
             if let errorResponse = try? decoder.decode(ErrorResponse.self, from: data),
                errorResponse.error.type == "permission_error" {
                 complete(.failure(UsageError.sessionExpired))
                 return
             }
 
-            // 解析成功响应
+            // Parse a successful response
             do {
                 let response = try decoder.decode(UsageResponse.self, from: data)
                 let usageData = response.toUsageData()
@@ -260,18 +260,18 @@ class ClaudeAPIService {
             }
         }
 
-        // 启动任务
+        // Start the task
         currentTask?.resume()
     }
 
-    /// 获取用户的组织列表
+    /// Fetch the user's organization list
     /// - Parameters:
-    ///   - sessionKey: 可选的 sessionKey，如果不提供则使用 settings.sessionKey
-    ///   - cookieHeader: 可选的完整 Cookie header 字符串（由 WebView 登录流程提供，含 cf_clearance/__cf_bm）
-    ///   - completion: 完成回调，包含成功的组织数组或失败的 Error
-    /// - Note: 用于自动获取 Organization ID，简化用户配置流程
+    ///   - sessionKey: optional sessionKey, settings.sessionKey is used when it is not provided
+    ///   - cookieHeader: optional full Cookie header string (supplied by the WebView login flow, carrying cf_clearance and __cf_bm)
+    ///   - completion: called with the organization array on success or an Error on failure
+    /// - Note: used to fetch the organization ID automatically, which simplifies setup
     func fetchOrganizations(sessionKey: String? = nil, cookieHeader: String? = nil, completion: @escaping (Result<[Organization], Error>) -> Void) {
-        // Service 层统一约定：所有 completion 一律在主线程回调，调用方无需再包一层 DispatchQueue.main.async
+        // Service layer convention: every completion is called back on the main thread, so callers never need to wrap it in another DispatchQueue.main.async
         let complete: (Result<[Organization], Error>) -> Void = { result in
             DispatchQueue.main.async { completion(result) }
         }
@@ -287,16 +287,16 @@ class ClaudeAPIService {
         request.httpMethod = "GET"
         request.assumesHTTP3Capable = false
 
-        // 使用统一的 Header 构建器，仅需要 sessionKey
-        // 如果提供了 sessionKey 参数则使用它，否则使用 settings.sessionKey
+        // Use the shared header builder, only the sessionKey is needed
+        // Use the sessionKey parameter when it is given, otherwise settings.sessionKey
         let actualSessionKey = sessionKey ?? settings.sessionKey
         ClaudeAPIHeaderBuilder.applyHeaders(
             to: &request,
-            organizationId: nil,  // 获取组织列表不需要 organizationId
+            organizationId: nil,  // Fetching the organization list does not need an organizationId
             sessionKey: actualSessionKey
         )
-        // 若提供了来自 WebView 的完整 Cookie header（含 cf_clearance/__cf_bm），
-        // 覆盖 applyHeaders 仅含 sessionKey 的 Cookie 字段，确保 Cloudflare 通行证一并携带
+        // When a full Cookie header from the WebView is provided (carrying cf_clearance and __cf_bm),
+        // override the sessionKey only Cookie field applyHeaders set, so the Cloudflare pass comes along too
         if let cookieHeader = cookieHeader {
             request.setValue(cookieHeader, forHTTPHeaderField: "Cookie")
         }
@@ -313,24 +313,24 @@ class ClaudeAPIService {
                 return
             }
 
-            // 打印原始响应用于调试
+            // Print the raw response for debugging
             if let jsonString = String(data: data, encoding: .utf8) {
                 Logger.api.debug("Organizations API Response: \(jsonString)")
             }
 
-            // 检查HTTP状态码
+            // Check the HTTP status code
             if let httpResponse = response as? HTTPURLResponse {
                 Logger.api.debug("HTTP Status Code: \(httpResponse.statusCode)")
 
                 switch httpResponse.statusCode {
                 case 200...299:
-                    // 成功响应，继续处理
+                    // Successful response, keep going
                     break
                 case 401:
                     complete(.failure(UsageError.unauthorized))
                     return
                 case 403:
-                    // Cloudflare 拦截返回 HTML；API 鉴权失败返回 JSON
+                    // A Cloudflare block returns HTML; an API auth failure returns JSON
                     let isHTML = String(data: data, encoding: .utf8).map {
                         $0.contains("<!DOCTYPE html>") || $0.contains("<html")
                     } ?? false
@@ -343,7 +343,7 @@ class ClaudeAPIService {
                 }
             }
 
-            // 解码 JSON 响应
+            // Decode the JSON response
             let decoder = JSONDecoder()
             do {
                 let organizations = try decoder.decode([Organization].self, from: data)
@@ -357,16 +357,16 @@ class ClaudeAPIService {
         task.resume()
     }
 
-    /// 获取 Extra Usage 额外用量数据
-    /// - Parameter completion: 完成回调，包含成功的 ExtraUsageData 或失败的 Error
-    /// - Note: 此方法是可选的，即使失败也不应影响主要功能
+    /// Fetch the Extra Usage data
+    /// - Parameter completion: called with the ExtraUsageData on success or an Error on failure
+    /// - Note: this call is optional, a failure should not affect the main feature
     func fetchExtraUsage(completion: @escaping (Result<ExtraUsageData?, Error>) -> Void) {
-        // Service 层统一约定：所有 completion 一律在主线程回调，调用方无需再包一层 DispatchQueue.main.async
+        // Service layer convention: every completion is called back on the main thread, so callers never need to wrap it in another DispatchQueue.main.async
         let complete: (Result<ExtraUsageData?, Error>) -> Void = { result in
             DispatchQueue.main.async { completion(result) }
         }
 
-        // 检查认证信息
+        // Check the authentication info
         guard settings.hasValidCredentials else {
             complete(.failure(UsageError.noCredentials))
             return
@@ -383,7 +383,7 @@ class ClaudeAPIService {
         request.httpMethod = "GET"
         request.assumesHTTP3Capable = false
 
-        // 使用统一的 Header 构建器添加完整的浏览器 Headers
+        // Use the shared header builder to add the full browser headers
         ClaudeAPIHeaderBuilder.applyHeaders(
             to: &request,
             organizationId: settings.organizationId,
@@ -402,21 +402,21 @@ class ClaudeAPIService {
                 return
             }
 
-            // 打印原始响应用于调试
+            // Print the raw response for debugging
             if let jsonString = String(data: data, encoding: .utf8) {
                 Logger.api.debug("Extra Usage API Response: \(jsonString)")
             }
 
-            // 检查HTTP状态码
+            // Check the HTTP status code
             if let httpResponse = response as? HTTPURLResponse {
                 Logger.api.debug("Extra Usage HTTP Status: \(httpResponse.statusCode)")
 
                 switch httpResponse.statusCode {
                 case 200...299:
-                    // 成功响应，继续处理
+                    // Successful response, keep going
                     break
                 case 403, 404:
-                    // Extra Usage 未启用或无权限，返回 nil 表示功能不可用
+                    // Extra Usage is off or not permitted, so nil means the feature is unavailable
                     Logger.api.info("Extra Usage not available (HTTP \(httpResponse.statusCode))")
                     complete(.success(nil))
                     return
@@ -425,12 +425,12 @@ class ClaudeAPIService {
                     return
                 default:
                     Logger.api.warning("Extra Usage HTTP error: \(httpResponse.statusCode)")
-                    complete(.success(nil))  // 优雅降级
+                    complete(.success(nil))  // Graceful degradation
                     return
                 }
             }
 
-            // 解码 JSON 响应
+            // Decode the JSON response
             let decoder = JSONDecoder()
             do {
                 let extraUsageResponse = try decoder.decode(ExtraUsageResponse.self, from: data)
@@ -438,7 +438,7 @@ class ClaudeAPIService {
                 complete(.success(extraUsageData))
             } catch {
                 Logger.api.debug("Extra Usage decoding error: \(error.localizedDescription)")
-                complete(.success(nil))  // 优雅降级
+                complete(.success(nil))  // Graceful degradation
             }
         }
 
@@ -447,12 +447,12 @@ class ClaudeAPIService {
 
     // MARK: - OAuth Usage Path
 
-    /// OAuth 账户专用：用 refresh_token 换 access_token 后调用 /api/oauth/usage
-    /// - Parameter retryOnUnauthorized: 收到 401 时是否清缓存后立即重试一次（强制换新 access_token）。
-    ///   仿照 Codex 侧 `DataRefreshManager.fetchCodexOnly(retryOnUnauthorized:)` 的既有模式，
-    ///   避免用户在下一个刷新周期到来前一直看到错误状态。
+    /// OAuth accounts only: trade the refresh_token for an access_token, then call /api/oauth/usage
+    /// - Parameter retryOnUnauthorized: on a 401, whether to clear the cache and retry once immediately (forcing a fresh access_token).
+    ///   Follows the existing pattern of `DataRefreshManager.fetchCodexOnly(retryOnUnauthorized:)` on the Codex side,
+    ///   so the user does not stare at an error state until the next refresh cycle.
     private func fetchOAuthUsage(retryOnUnauthorized: Bool = true, completion: @escaping (Result<UsageData, Error>) -> Void) {
-        // CLI 同步账户走单独一条路：token 的主人是 Claude Code，不是我们
+        // CLI synced accounts take their own path: the token belongs to Claude Code, not to us
         if settings.currentAccount?.credentialSource.isCLISynced == true {
             fetchCLISyncedUsage(retryOnUnauthorized: retryOnUnauthorized, completion: completion)
             return
@@ -472,18 +472,18 @@ class ClaudeAPIService {
 
     // MARK: - CLI Account Sync
 
-    /// CLI 同步账户专用取数路径。
+    /// The fetch path for CLI synced accounts.
     ///
-    /// 与浏览器 OAuth 账户的关键差别：refresh_token 的所有者是 Claude Code CLI，
-    /// 服务端换发时旧值立即失效。所以这里的顺序是
-    ///   1. 每次都重读钥匙串（CLI 可能已经在我们背后换过 token 了）
-    ///   2. access_token 还没过期就直接用，一次网络请求都不多花，也不打扰 CLI
-    ///   3. 真过期了才自己刷新，并把轮换后的新值**写回钥匙串**，
-    ///      否则用户的 Claude Code 会在下次刷新时被登出
+    /// The key difference from a browser OAuth account: the refresh_token belongs to Claude Code CLI,
+    /// and the server kills the old value the moment it issues a new one. So the order here is
+    ///   1. Re-read the Keychain every time (the CLI may already have rotated the token behind our back)
+    ///   2. Use the access_token directly while it is still valid, which costs no extra request and leaves the CLI alone
+    ///   3. Only refresh ourselves once it has really expired, and write the rotated values **back into the Keychain**,
+    ///      otherwise the user's Claude Code gets logged out on its next refresh
     private func fetchCLISyncedUsage(retryOnUnauthorized: Bool, completion: @escaping (Result<UsageData, Error>) -> Void) {
         let preferredService = settings.currentAccount?.keychainService
 
-        // 钥匙串读取可能触发系统授权框，不能占着主线程
+        // Reading the Keychain can raise a system authorization prompt, so it must not hold the main thread
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self else { return }
             guard let credentials = ClaudeCodeSyncService.currentCredentials(preferredService: preferredService) else {
@@ -492,7 +492,7 @@ class ClaudeAPIService {
                 return
             }
 
-            // access_token 仍在有效期内：直接用，不碰 refresh_token
+            // The access_token is still valid: use it and leave the refresh_token alone
             if credentials.isAccessTokenUsable {
                 self.fetchClaudeOAuthUsageData(
                     accessToken: credentials.accessToken,
@@ -517,9 +517,9 @@ class ClaudeAPIService {
         }
     }
 
-    /// 用钥匙串里的 refresh_token 换新 access_token，并把轮换结果写回钥匙串条目。
-    /// 写回失败不阻断本次取数（我们手里的新 token 本轮仍然可用），但会记一条日志：
-    /// 那意味着 CLI 那边握着的已是失效值，下次同步要重新对齐。
+    /// Trade the Keychain's refresh_token for a new access_token, writing the rotated pair back into the Keychain entry.
+    /// A failed write back does not abort this fetch (the new token in hand still works for this round), but it is logged:
+    /// it means the CLI is holding a dead value and the next sync has to realign.
     private func refreshCLISyncedToken(
         credentials: ClaudeCodeCredentials,
         completion: @escaping (Result<String, Error>) -> Void
@@ -552,7 +552,7 @@ class ClaudeAPIService {
         }
     }
 
-    /// 用 refresh_token 获取 access_token，带缓存 + 单飞合并（委托给 OAuthTokenCache actor）
+    /// Trade the refresh_token for an access_token, with caching and single flight coalescing (delegated to the OAuthTokenCache actor)
     private func fetchOAuthAccessToken(refreshToken: String, completion: @escaping (Result<String, Error>) -> Void) {
         Task {
             do {
@@ -567,8 +567,8 @@ class ClaudeAPIService {
         }
     }
 
-    /// 实际发起网络请求向 Claude OAuth 端点换取新 token；处理 refresh_token 轮换的静默写回。
-    /// 只会在 OAuthTokenCache 判定"确实需要发起新刷新"时才被调用一次（并发调用者共享同一次结果）。
+    /// Actually calls the Claude OAuth endpoint for a new token, and silently writes back a rotated refresh_token.
+    /// Called exactly once whenever OAuthTokenCache decides "a new refresh really is needed" (concurrent callers share the one result).
     private func refreshClaudeOAuthTokens(refreshToken: String) async throws -> OAuthTokenCache.Tokens {
         do {
             let tokens = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<ClaudeOAuthTokens, Error>) in
@@ -577,7 +577,7 @@ class ClaudeAPIService {
                 }
             }
 
-            // refresh_token 轮换：若响应携带新值则静默写回账户
+            // refresh_token rotation: when the response carries a new value, write it back to the account silently
             let newRefresh = tokens.refreshToken.isEmpty ? refreshToken : tokens.refreshToken
             if newRefresh != refreshToken {
                 Logger.api.notice("Claude OAuth: refresh_token rotated, written back silently")
@@ -586,7 +586,7 @@ class ClaudeAPIService {
                 }
             }
 
-            // expires_in 通常为 3600 秒；未给出时保守使用 30 分钟
+            // expires_in is usually 3600 seconds; when it is missing, assume a conservative 30 minutes
             let expiry = tokens.expiresAt ?? Date().addingTimeInterval(30 * 60)
             return OAuthTokenCache.Tokens(accessToken: tokens.accessToken, refreshToken: newRefresh, expiresAt: expiry)
         } catch {
@@ -595,9 +595,9 @@ class ClaudeAPIService {
         }
     }
 
-    /// 用 access_token 调用 /api/oauth/usage，解析为 UsageData
+    /// Call /api/oauth/usage with the access_token and parse it into UsageData
     private func fetchClaudeOAuthUsageData(accessToken: String, retryOnUnauthorized: Bool, completion: @escaping (Result<UsageData, Error>) -> Void) {
-        // Service 层统一约定：所有 completion 一律在主线程回调，调用方无需再包一层 DispatchQueue.main.async
+        // Service layer convention: every completion is called back on the main thread, so callers never need to wrap it in another DispatchQueue.main.async
         let complete: (Result<UsageData, Error>) -> Void = { result in
             DispatchQueue.main.async { completion(result) }
         }
@@ -609,8 +609,8 @@ class ClaudeAPIService {
         var request = URLRequest(url: url)
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         request.setValue(ClaudeOAuthConfig.betaHeader, forHTTPHeaderField: "anthropic-beta")
-        // User-Agent 是这个端点的硬性要求：缺了它即使 token 有效也会被立刻打成
-        // 持续 429 rate_limit_error（anthropics/claude-code#31021 踩的就是这个坑）
+        // The User-Agent is a hard requirement of this endpoint: without it, even a perfectly valid token gets an
+        // instant and persistent 429 rate_limit_error (the trap anthropics/claude-code#31021 hit)
         request.setValue(ClaudeOAuthConfig.userAgent, forHTTPHeaderField: "User-Agent")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.cachePolicy = .reloadIgnoringLocalCacheData
@@ -630,10 +630,10 @@ class ClaudeAPIService {
                 switch http.statusCode {
                 case 200...299: break
                 case 401:
-                    // access_token 已失效，清缓存以便下次用 refresh_token 重新换取，
-                    // 避免在 5 分钟缓存窗口内反复用坏 token 触发 401。
-                    // 用 Task 顺序 await 清缓存再重试，避免 clear 与重试的缓存读取产生竞态
-                    // （二者都要进 actor，若各开一个 Task 无法保证 clear 先于重试执行）。
+                    // The access_token is dead, so clear the cache to force a fresh exchange with the refresh_token next time,
+                    // rather than reusing a broken token for the 5 minute cache window and getting 401 after 401.
+                    // Use a Task to await the clear before retrying, so the clear and the retry's cache read cannot race
+                    // (both enter the actor, and separate Tasks could not guarantee the clear runs first).
                     if retryOnUnauthorized {
                         Logger.api.info("Claude OAuth usage 401. Cleared the cache and retrying once with a new access_token from refresh_token")
                         Task {
@@ -659,17 +659,17 @@ class ClaudeAPIService {
 
             let decoder = JSONDecoder()
             do {
-                // 复用现有 UsageResponse 解码器（five_hour/seven_day/opus/sonnet 字段名一致）
+                // Reuse the existing UsageResponse decoder (the five_hour/seven_day/opus/sonnet field names match)
                 let baseResponse = try decoder.decode(UsageResponse.self, from: data)
                 var usageData = baseResponse.toUsageData()
 
-                // 尝试额外解码 extra_usage 字段
-                // Issue #64: 此前四层 try? 静默吞掉失败原因，导致无法判断是
-                // 「字段不存在」「字段名不同」还是「结构不匹配」，这里改为显式分支打日志诊断。
+                // Try decoding the extra_usage field as well
+                // Issue #64: four nested try? used to swallow the reason silently, so there was no telling whether
+                // the field was absent, named differently or shaped differently. Now each case is explicit and logged.
                 if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
                     if let extraJson = json["extra_usage"] as? [String: Any] {
-                        // 诊断用：即使解码成功也打一行 keys，因为 ExtraUsageResponse 全字段可选，
-                        // 字段名对不上时不会抛错，只会静默产出全 nil 的“已禁用”结果。
+                        // Diagnostics: log the keys even on a successful decode, because every ExtraUsageResponse field is optional,
+                        // so mismatched names throw nothing and silently produce an all nil "disabled" result.
                         Logger.api.debug("Claude OAuth usage extra_usage keys=\(Array(extraJson.keys).sorted())")
                         if let extraData = try? JSONSerialization.data(withJSONObject: extraJson) {
                             do {
@@ -701,18 +701,18 @@ class ClaudeAPIService {
         }.resume()
     }
 
-    /// 取消所有正在进行的网络请求
-    /// 在应用退出或需要中断请求时调用
+    /// Cancel every in flight network request
+    /// Called when the app quits, or when requests have to be interrupted
     func cancelAllRequests() {
         currentTask?.cancel()
         currentTask = nil
         Logger.api.debug("Cancelled all network requests")
     }
 
-    // MARK: - Async 包装
+    // MARK: - Async wrappers
 
-    /// `fetchUsage(completion:)` 的 async 包装，供结构化并发调用方使用。
-    /// 结果用 Result 表达而非 throws，与 completion 版本的错误语义保持一致。
+    /// async wrapper around `fetchUsage(completion:)` for structured concurrency callers.
+    /// The outcome is a Result rather than a throw, to match the error semantics of the completion version.
     func fetchUsageResult() async -> Result<UsageData, Error> {
         await withCheckedContinuation { continuation in
             fetchUsage { continuation.resume(returning: $0) }
@@ -722,32 +722,32 @@ class ClaudeAPIService {
     // MARK: - Debug Mock Data
 
     #if DEBUG
-    /// 创建分钟为00的未来时间
-    /// - Parameter hoursFromNow: 从现在开始的小时数
-    /// - Returns: 分钟为00的未来日期
+    /// Build a future time whose minute is 00
+    /// - Parameter hoursFromNow: hours from now
+    /// - Returns: a future date whose minute is 00
     private func createResetTime(hoursFromNow: Double) -> Date {
         let calendar = Calendar.current
         let now = Date()
         let targetDate = now.addingTimeInterval(3600 * hoursFromNow)
         
-        // 获取目标日期的组件
+        // Get the components of the target date
         var components = calendar.dateComponents([.year, .month, .day, .hour], from: targetDate)
         components.minute = 0
         components.second = 0
         
-        // 返回分钟为00的时间
+        // Return the time with minute set to 00
         return calendar.date(from: components) ?? targetDate
     }
     
-    /// 创建模拟数据用于调试
-    /// - Returns: 模拟的 UsageData 实例，基于各个百分比滑块的值
+    /// Build mock data for debugging
+    /// - Returns: a mock UsageData built from the percentage sliders
     private func createMockData() -> UsageData {
-        // 根据各个滑块值创建对应的限制数据
+        // Build the limit data from each slider value
         let extraUsageData: ExtraUsageData? = {
             guard settings.debugExtraUsageEnabled else {
                 return ExtraUsageData(enabled: false, used: nil, limit: nil, currency: "USD")
             }
-            // 调试数据以美分为单位存储，与真实 API 格式一致，除以 100 转换为美元
+            // Debug data is stored in cents, matching the real API, so divide by 100 for dollars
             return ExtraUsageData(
                 enabled: true,
                 used: settings.debugExtraUsageUsed / 100.0,
@@ -759,19 +759,19 @@ class ClaudeAPIService {
         return UsageData(
             fiveHour: UsageData.LimitData(
                 percentage: settings.debugFiveHourPercentage,
-                resetsAt: createResetTime(hoursFromNow: 1.8)  // 1.8小时后重置
+                resetsAt: createResetTime(hoursFromNow: 1.8)  // Resets in 1.8 hours
             ),
             sevenDay: UsageData.LimitData(
                 percentage: settings.debugSevenDayPercentage,
-                resetsAt: createResetTime(hoursFromNow: 24 * 2.3)  // 2.3天后重置
+                resetsAt: createResetTime(hoursFromNow: 24 * 2.3)  // Resets in 2.3 days
             ),
             opus: UsageData.LimitData(
                 percentage: settings.debugOpusPercentage,
-                resetsAt: createResetTime(hoursFromNow: 24 * 4.5)  // 4.5天后重置
+                resetsAt: createResetTime(hoursFromNow: 24 * 4.5)  // Resets in 4.5 days
             ),
             sonnet: UsageData.LimitData(
                 percentage: settings.debugSonnetPercentage,
-                resetsAt: createResetTime(hoursFromNow: 24 * 5.2)  // 5.2天后重置
+                resetsAt: createResetTime(hoursFromNow: 24 * 5.2)  // Resets in 5.2 days
             ),
             extraUsage: extraUsageData
         )
@@ -780,7 +780,7 @@ class ClaudeAPIService {
 }
 
 
-/// 用量查询相关错误
+/// Errors from a usage query
 enum UsageError: LocalizedError {
     case invalidURL
     case noData
@@ -789,9 +789,9 @@ enum UsageError: LocalizedError {
     case noCredentials
     case networkError
     case decodingError
-    case unauthorized              // 401 未授权
-    case rateLimited               // 429 请求频率过高
-    case httpError(statusCode: Int)  // 其他 HTTP 错误
+    case unauthorized              // 401 unauthorized
+    case rateLimited               // 429 too many requests
+    case httpError(statusCode: Int)  // Other HTTP errors
 
     var errorDescription: String? {
         switch self {

@@ -10,17 +10,17 @@ import Foundation
 import Security
 import OSLog
 
-/// 凭据存储后端协议：Debug 用 UserDefaults（便于开发测试、不触发系统弹窗），
-/// Release 用 Keychain（安全存储）。两种实现各自独立，`KeychainManager` 只在
-/// 选择实现时区分 `#if DEBUG`，业务方法本身不再重复。
+/// Credential storage backend protocol: Debug uses UserDefaults (convenient for development, and it raises no system prompt),
+/// Release uses the Keychain (secure storage). The two implementations are independent, and `KeychainManager` only
+/// uses `#if DEBUG` to pick one, so the methods themselves are not duplicated.
 protocol CredentialStorage {
     func save(key: String, value: String) -> Bool
     func load(key: String) -> String?
     func delete(key: String) -> Bool
 }
 
-/// Debug 模式存储：明文写入 UserDefaults
-/// - Warning: 未加密，勿在共享机器上用真实账号跑 Debug 构建
+/// Debug storage: written to UserDefaults in plaintext
+/// - Warning: unencrypted, so do not run a Debug build with a real account on a shared machine
 private struct UserDefaultsCredentialStorage: CredentialStorage {
     private let keyPrefix = "DEBUG_"
     private let defaults = UserDefaults.standard
@@ -40,7 +40,7 @@ private struct UserDefaultsCredentialStorage: CredentialStorage {
     }
 }
 
-/// Release 模式存储：写入系统 Keychain
+/// Release storage: written to the system Keychain
 private struct KeychainCredentialStorage: CredentialStorage {
     let service: String
 
@@ -54,7 +54,7 @@ private struct KeychainCredentialStorage: CredentialStorage {
             kSecValueData as String: data
         ]
 
-        // 先尝试删除已存在的项，再添加新项
+        // Delete any existing item first, then add the new one
         SecItemDelete(query as CFDictionary)
         let status = SecItemAdd(query as CFDictionary, nil)
 
@@ -106,10 +106,10 @@ private struct KeychainCredentialStorage: CredentialStorage {
     }
 }
 
-/// 管理认证凭据存储的类
-/// 用于安全存储敏感信息（如 Organization ID 和 Session Key）
-/// Debug 模式：使用 UserDefaults（便于开发测试，不弹窗）
-/// Release 模式：使用 Keychain（安全存储）
+/// Manages credential storage
+/// Stores sensitive data securely (the organization ID and session key, for instance)
+/// Debug mode: UserDefaults (convenient for development, no prompt)
+/// Release mode: the Keychain (secure storage)
 class KeychainManager {
     static let shared = KeychainManager()
 
@@ -119,7 +119,7 @@ class KeychainManager {
         #if DEBUG
         storage = UserDefaultsCredentialStorage()
         #else
-        // 动态获取 Bundle ID，如果获取失败则使用默认值
+        // Read the bundle ID dynamically, falling back to a default when it is unavailable
         storage = KeychainCredentialStorage(service: Bundle.main.bundleIdentifier ?? "com.claudeusage.ClaudeUsage")
         #endif
     }
@@ -154,8 +154,8 @@ class KeychainManager {
         storage.delete(key: "sessionKey")
     }
 
-    /// 删除所有认证信息
-    /// - Returns: 是否全部删除成功
+    /// Delete all authentication data
+    /// - Returns: whether every deletion succeeded
     @discardableResult
     func deleteAll() -> Bool {
         let result1 = deleteOrganizationId()
@@ -163,14 +163,14 @@ class KeychainManager {
         return result1 && result2
     }
 
-    /// 删除所有凭证信息（deleteAll 的别名，更符合业务语义）
-    /// - Returns: 是否全部删除成功
+    /// Delete every credential (an alias for deleteAll, which reads better here)
+    /// - Returns: whether every deletion succeeded
     @discardableResult
     func deleteCredentials() -> Bool {
         deleteAll()
     }
 
-    // MARK: - 账户列表存储（v2.1.0 多账户支持）
+    // MARK: - Account list storage (v2.1.0 multi account support)
 
     @discardableResult
     func saveAccounts(_ accounts: [Account]) -> Bool {
@@ -186,7 +186,7 @@ class KeychainManager {
         storage.delete(key: "accounts")
     }
 
-    // MARK: - Codex 账户列表存储
+    // MARK: - Codex account list storage
 
     @discardableResult
     func saveCodexAccounts(_ accounts: [Account]) -> Bool {
@@ -202,7 +202,7 @@ class KeychainManager {
         storage.delete(key: "accounts_codex")
     }
 
-    // MARK: - 账户列表的 JSON 编解码封装
+    // MARK: - JSON coding wrappers for the account list
 
     @discardableResult
     private func saveAccountsList(_ accounts: [Account], key: String) -> Bool {

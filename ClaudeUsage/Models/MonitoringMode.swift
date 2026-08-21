@@ -9,28 +9,28 @@
 
 import Foundation
 
-/// 监控模式（内部使用，智能频率下的4级模式）
+/// Monitoring mode (internal, the 4 levels under smart refresh)
 enum MonitoringMode: String, Codable {
-    /// 活跃模式 - 1分钟刷新
+    /// Active mode, refresh every minute
     case active = "active"
-    /// 短期静默 - 3分钟刷新
+    /// Short quiet, refresh every 3 minutes
     case idleShort = "idle_short"
-    /// 中期静默 - 5分钟刷新
+    /// Medium quiet, refresh every 5 minutes
     case idleMedium = "idle_medium"
-    /// 长期静默 - 10分钟刷新
+    /// Long quiet, refresh every 10 minutes
     case idleLong = "idle_long"
 
-    /// 获取对应的刷新间隔（秒）
+    /// The matching refresh interval (seconds)
     var interval: Int {
         switch self {
         case .active:
-            return 60      // 1分钟
+            return 60      // 1 minute
         case .idleShort:
-            return 180     // 3分钟
+            return 180     // 3 minutes
         case .idleMedium:
-            return 300     // 5分钟
+            return 300     // 5 minutes
         case .idleLong:
-            return 600     // 10分钟
+            return 600     // 10 minutes
         }
     }
 }

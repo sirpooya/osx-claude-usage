@@ -10,41 +10,41 @@
 import OSLog
 
 extension Logger {
-    /// 应用的统一 subsystem 标识符
+    /// The app's shared subsystem identifier
     private static var subsystem = Bundle.main.bundleIdentifier ?? "com.claudeusage.ClaudeUsage"
 
-    /// 菜单栏管理器日志
-    /// 用于记录菜单栏、刷新、更新检查等相关操作
+    /// Menu bar manager log
+    /// Records menu bar, refresh and update check activity
     static let menuBar = Logger(subsystem: subsystem, category: "MenuBar")
 
-    /// 用户设置日志
-    /// 用于记录设置变更、智能模式切换、开机启动等操作
+    /// User settings log
+    /// Records settings changes, smart mode switches, launch at login and similar activity
     static let settings = Logger(subsystem: subsystem, category: "Settings")
 
-    /// Keychain 管理日志
-    /// 用于记录敏感信息的存储、读取和删除操作
+    /// Keychain log
+    /// Records reads, writes and deletes of sensitive data
     static let keychain = Logger(subsystem: subsystem, category: "Keychain")
 
-    /// API 服务日志
-    /// 用于记录 API 请求、响应和错误
+    /// API service log
+    /// Records API requests, responses and errors
     static let api = Logger(subsystem: subsystem, category: "API")
 
-    /// 本地化管理日志
-    /// 用于记录语言切换和本地化相关操作
+    /// Localization log
+    /// Records language switches and other localization activity
     static let localization = Logger(subsystem: subsystem, category: "Localization")
 }
 
-// MARK: - 日志级别说明
+// MARK: - Log levels
 /*
- OSLog 提供5个日志级别，Release 版本会自动禁用低级别日志：
+ OSLog has 5 log levels, and a Release build disables the low ones automatically:
 
- 1. .debug    - 调试信息，仅开发时输出，Release 不执行
- 2. .info     - 一般信息，默认不持久化
- 3. .notice   - 重要事件，默认持久化
- 4. .error    - 错误信息，总是持久化
- 5. .fault    - 严重错误，总是持久化
+ 1. .debug    - debug detail, printed while developing only, not executed in Release
+ 2. .info     - general information, not persisted by default
+ 3. .notice   - notable events, persisted by default
+ 4. .error    - errors, always persisted
+ 5. .fault    - critical failures, always persisted
 
- 使用示例：
+ Examples:
  ```swift
  Logger.menuBar.debug("debug detail")
  Logger.menuBar.info("general info")
@@ -53,8 +53,8 @@ extension Logger {
  Logger.menuBar.fault("critical failure")
  ```
 
- 查看日志：
- 1. Xcode Console (开发时)
- 2. Console.app (搜索 subsystem:com.claudeusage.ClaudeUsage)
- 3. 命令行: log show --predicate 'subsystem == "com.claudeusage.ClaudeUsage"' --last 1h
+ Reading the logs:
+ 1. Xcode Console (while developing)
+ 2. Console.app (search subsystem:com.claudeusage.ClaudeUsage)
+ 3. Command line: log show --predicate 'subsystem == "com.claudeusage.ClaudeUsage"' --last 1h
  */

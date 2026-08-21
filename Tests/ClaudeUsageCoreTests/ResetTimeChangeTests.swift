@@ -1,7 +1,7 @@
 import XCTest
 @testable import ClaudeUsageCore
 
-/// 覆盖风险：误判导致「重置验证」定时器该取消时未取消，或该调度时未调度。
+/// Risk covered: a misjudgment leaving the reset validation timers uncancelled when they should be cancelled, or unscheduled when they should be scheduled.
 final class ResetTimeChangeTests: XCTestCase {
 
     func testBothNilIsNoChange() {

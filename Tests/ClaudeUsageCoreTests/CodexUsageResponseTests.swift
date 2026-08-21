@@ -38,8 +38,8 @@ final class CodexUsageResponseTests: XCTestCase {
     }
 
     func testClassifiesSevenDayWindowAsSecondaryEvenWhenInPrimarySlot() throws {
-        // Codex 曾临时取消5小时限制：唯一窗口仍出现在 primary_window 位置，
-        // 但 limit_window_seconds 是 604800（7天）——不能按字段名硬映射。
+        // Codex once dropped the 5 hour limit temporarily: the single window still arrived in the primary_window slot
+        // while limit_window_seconds was 604800 (7 days), so it cannot be mapped by field name.
         let json = """
         {
             "rate_limit": {
@@ -108,7 +108,7 @@ final class CodexUsageResponseTests: XCTestCase {
             }
         }
         """
-        // used_percent 非 0，即使没有重置信息也应视为有效数据（只有 used_percent==0 且无重置信息才判无效）
+        // A non zero used_percent counts as valid data even with no reset info (only used_percent == 0 with no reset info is invalid)
         let data = try decode(json).toCodexUsageData()
         XCTAssertEqual(data.primary?.percentage, 10)
         XCTAssertNil(data.primary?.resetsAt)
@@ -229,7 +229,7 @@ final class CodexExtraUsageDataTests: XCTestCase {
     }
 
     func testParseBalanceIsLocaleInvariant() {
-        // en_US_POSIX 强制小数点为 "."，不受系统 locale（如用逗号做小数点的语言环境）影响
+        // en_US_POSIX forces "." as the decimal separator, regardless of the system locale (a language that uses a comma, for instance)
         XCTAssertEqual(CodexExtraUsageData.parseBalance("1234.56"), Decimal(string: "1234.56"))
     }
 

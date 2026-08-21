@@ -8,16 +8,16 @@
 
 import SwiftUI
 
-// MARK: - Manual Session Key (登录窗口的第二页)
+// MARK: - Manual session key (the login window's second page)
 
-/// 手动粘贴 Session Key 的进阶入口。
-/// 主页面只放浏览器登录，这一页从主页面的次要按钮进来，左上角带返回。
+/// The advanced entry point for pasting a session key by hand.
+/// The main page holds only the browser login; this page is reached from that page's secondary button and has a back arrow in its top left.
 struct ManualSessionKeyView: View {
     @Binding var sessionKey: String
     @Binding var isShowingPassword: Bool
-    /// 正在校验 Session Key 并创建账户
+    /// Validating the session key and creating the account
     let isSubmitting: Bool
-    /// 校验失败的提示，nil 表示没有错误
+    /// The validation failure message, nil means there is no error
     let errorMessage: String?
     let onBack: () -> Void
     let onSubmit: () -> Void
@@ -50,7 +50,7 @@ struct ManualSessionKeyView: View {
 
             Spacer().frame(height: 6)
 
-            // 提示语与校验结果共用一行高度，避免输入时布局跳动
+            // The hint and the validation result share one line's height, so the layout does not jump while typing
             statusLine
                 .frame(height: 15, alignment: .leading)
 

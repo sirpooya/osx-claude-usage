@@ -2,21 +2,21 @@
 //  OAuthTokenCache.swift
 //  ClaudeUsage
 //
-//  审计报告 4.2：OAuth access_token 的缓存 + 单飞合并，用 actor 替代手写
-//  NSLock + 等待者数组。actor 方法天然串行化：并发调用者在 await 挂起点让出
-//  执行权，后到者发现 refreshTask 已存在就直接复用同一个 Task，无需手动维护
-//  等待者列表或操心「忘记唤醒某个等待者」这类问题。
+//  Audit report 4.2: caching plus single flight coalescing for the OAuth access_token, with an actor in place of a
+//  hand written NSLock and waiter array. Actor methods serialize naturally: concurrent callers yield at the await
+//  suspension point, and whoever arrives later finds refreshTask already there and reuses that same Task, so there is
+//  no waiter list to maintain and no way to forget to wake one up.
 //  Copyright © 2025 f-is-h. All rights reserved.
 //
 
 import Foundation
 
-/// 单个 Provider 的 OAuth access_token 缓存 + 单飞刷新
+/// OAuth access_token cache plus single flight refresh, for one provider
 actor OAuthTokenCache {
-    /// 一次刷新换到的结果（不同 Provider 的响应结构不同，调用方在 refresh 闭包里统一成这个形状）
+    /// The result of one refresh (providers return different response shapes, and callers normalize to this one inside the refresh closure)
     struct Tokens {
         let accessToken: String
-        /// 刷新端点可能不轮换 refresh_token（返回空字符串时应视为沿用旧值，由调用方在闭包里处理好）
+        /// The refresh endpoint may not rotate the refresh_token (an empty string means keep the old value, which the caller handles in the closure)
         let refreshToken: String
         let expiresAt: Date
     }
@@ -28,12 +28,12 @@ actor OAuthTokenCache {
     private var refreshTask: Task<Tokens, Error>?
     private var refreshTaskToken: String?
 
-    /// 获取有效的 access_token：命中缓存直接返回；否则发起刷新，
-    /// 同一 refresh_token 的并发调用自动复用同一次网络请求的结果。
+    /// Get a valid access_token: a cache hit returns immediately, otherwise a refresh starts,
+    /// and concurrent calls with the same refresh_token automatically share the one network request.
     /// - Parameters:
-    ///   - refreshToken: 当前 refresh_token
-    ///   - margin: 提前刷新余量，避免用到临期 token（默认 5 分钟）
-    ///   - refresh: 实际发起网络刷新的闭包，返回新的 token 三元组
+    ///   - refreshToken: the current refresh_token
+    ///   - margin: early refresh margin, so a nearly expired token is not used (5 minutes by default)
+    ///   - refresh: the closure that actually performs the network refresh, returning the new token triple
     func accessToken(
         refreshToken: String,
         margin: TimeInterval = 5 * 60,
@@ -46,7 +46,7 @@ actor OAuthTokenCache {
             return cached
         }
 
-        // 同一 refresh_token 已有刷新在进行中：直接复用同一个 Task 的结果
+        // A refresh for this refresh_token is already running: reuse that Task's result
         if let task = refreshTask, refreshTaskToken == refreshToken {
             return try await task.value.accessToken
         }
@@ -58,7 +58,7 @@ actor OAuthTokenCache {
         refreshTaskToken = refreshToken
 
         defer {
-            // 避免把已完成（成功或失败）的旧 Task 留在原地，导致下次误判为"仍在进行中"
+            // Do not leave a finished Task (successful or not) in place, or the next call would read it as "still running"
             if refreshTaskToken == refreshToken {
                 refreshTask = nil
                 refreshTaskToken = nil
@@ -72,9 +72,9 @@ actor OAuthTokenCache {
         return tokens.accessToken
     }
 
-    /// 返回尚未过期的缓存 token（不触发刷新）
-    /// 供刷新失败（网络瞬断/服务端抖动）时回退使用：默认 margin 0——
-    /// 哪怕 token 已进入提前刷新窗口，只要还没真正过期就可以顶用一轮。
+    /// Return the cached token while it has not expired (without triggering a refresh)
+    /// The fallback for a failed refresh (a network blip or server hiccup): margin 0 by default, so
+    /// a token already inside the early refresh window still carries one more round as long as it has not really expired.
     func validCachedToken(refreshToken: String, margin: TimeInterval = 0) -> String? {
         guard let cached = cachedAccessToken, !cached.isEmpty,
               let expiry = cachedExpiry,
@@ -83,7 +83,7 @@ actor OAuthTokenCache {
         return cached
     }
 
-    /// 清除缓存（账户切换或收到 401 时调用，强制下次重新走网络刷新）
+    /// Clear the cache (called on an account switch or a 401, forcing the next call through a network refresh)
     func clear() {
         cachedAccessToken = nil
         cachedExpiry = nil

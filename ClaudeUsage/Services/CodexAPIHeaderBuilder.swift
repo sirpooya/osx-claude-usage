@@ -8,16 +8,16 @@
 
 import Foundation
 
-/// Codex API HTTP 请求头构建器
-/// 提供两种请求头：
-///   - Session 端点（/api/auth/session）：使用 session-token Cookie
-///   - Usage 端点（/backend-api/wham/usage）：使用 Bearer accessToken
+/// Codex API HTTP header builder
+/// Two header sets:
+///   - the session endpoint (/api/auth/session): a session-token cookie
+///   - the usage endpoint (/backend-api/wham/usage): a Bearer accessToken
 class CodexAPIHeaderBuilder {
 
-    // MARK: - Session 端点 Headers（Cookie 认证）
+    // MARK: - Session endpoint headers (cookie authentication)
 
-    /// 构建 /api/auth/session 请求的 Headers
-    /// - Parameter sessionToken: __Secure-next-auth.session-token cookie 值
+    /// Build the headers for an /api/auth/session request
+    /// - Parameter sessionToken: the __Secure-next-auth.session-token cookie value
     static func buildSessionHeaders(sessionToken: String) -> [String: String] {
         return [
             "accept": "*/*",
@@ -32,7 +32,7 @@ class CodexAPIHeaderBuilder {
         ]
     }
 
-    /// 为 URLRequest 应用 Session 端点 Headers
+    /// Apply the session endpoint headers to a URLRequest
     static func applySessionHeaders(to request: inout URLRequest, sessionToken: String) {
         let headers = buildSessionHeaders(sessionToken: sessionToken)
         for (key, value) in headers {
@@ -40,10 +40,10 @@ class CodexAPIHeaderBuilder {
         }
     }
 
-    // MARK: - Usage 端点 Headers（Bearer Token 认证）
+    // MARK: - Usage endpoint headers (Bearer token authentication)
 
-    /// 构建 /backend-api/wham/usage 请求的 Headers
-    /// - Parameter accessToken: 从 /api/auth/session 获取的 Bearer token
+    /// Build the headers for a /backend-api/wham/usage request
+    /// - Parameter accessToken: the Bearer token obtained from /api/auth/session
     static func buildUsageHeaders(accessToken: String) -> [String: String] {
         return [
             "accept": "*/*",
@@ -59,7 +59,7 @@ class CodexAPIHeaderBuilder {
         ]
     }
 
-    /// 为 URLRequest 应用 Usage 端点 Headers
+    /// Apply the usage endpoint headers to a URLRequest
     static func applyUsageHeaders(to request: inout URLRequest, accessToken: String) {
         let headers = buildUsageHeaders(accessToken: accessToken)
         for (key, value) in headers {

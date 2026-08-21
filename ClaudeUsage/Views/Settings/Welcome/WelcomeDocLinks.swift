@@ -10,13 +10,13 @@ import Foundation
 
 // MARK: - Welcome Doc Links
 
-/// 按当前语言拼出本仓库 README 的锚点链接。
-/// 指向 sirpooya/osx-claude-usage 自己的文档，不再指向上游 f-is-h/Usage4Claude。
-/// 每个语言的锚点都对应 README 里真实存在的小节标题，改标题时这里要一起改。
+/// Build the anchor link into this repo's README for the current language.
+/// It points at sirpooya/osx-claude-usage's own docs, no longer at upstream f-is-h/Usage4Claude.
+/// Every language's anchor matches a section heading that really exists in the README, so renaming a heading means changing this too.
 enum WelcomeDocLinks {
     private static let baseURL = "https://github.com/sirpooya/osx-claude-usage/blob/main"
 
-    /// “首次配置”章节
+    /// The "initial setup" section
     static func initialSetupURL(for language: AppLanguage) -> String {
         switch language {
         case .english:

@@ -11,14 +11,14 @@ import Combine
 import Foundation
 import OSLog
 
-/// Claude OAuth 登录协调器
+/// Claude OAuth login coordinator
 ///
-/// 编排 "Sign in with Claude" 流程：系统浏览器授权 → localhost 回调 → 授权码换 token
-/// → 拉 profile → 把 refresh_token 存入账户。彻底绕开内嵌 WKWebView 对 Google /
-/// passkey 等登录方式的限制（Issue #49）。
+/// Orchestrates the "Sign in with Claude" flow: browser authorization, localhost callback, code for token exchange,
+/// profile fetch, then the refresh_token into the account. It fully sidesteps embedded WKWebView's limits on Google
+/// and passkey logins (Issue #49).
 ///
-/// 凭据约定：refresh_token（sk-ant-ort01-…）存入 `Account.sessionKey`，
-/// `organizationId` 存组织 uuid（与旧 cookie 账户去重标识一致，便于平滑迁移）。
+/// Credential convention: the refresh_token (sk-ant-ort01-...) goes into `Account.sessionKey`, and
+/// `organizationId` holds the organization uuid (the same dedupe identity as older cookie accounts, which eases migration).
 @MainActor
 final class ClaudeOAuthCoordinator: ObservableObject {
 
@@ -82,17 +82,17 @@ final class ClaudeOAuthCoordinator: ObservableObject {
         NSWorkspace.shared.open(url)
     }
 
-    /// 手动回退（Issue #68）：接收用户从系统浏览器地址栏粘回的回调链接，
-    /// 解析出 code / state 后走与自动 loopback 回调完全相同的处理路径
-    /// （包括 state 校验，并用同一 loopback redirect_uri 交换 token，无需重开浏览器）。
-    /// 适用于浏览器已跳到 localhost 回调页、但本地回调服务器收不到请求的环境（如某些 Chromium 变体）。
-    /// - Returns: 是否成功解析出 code 并进入后续流程；false 表示粘贴内容里没有可用的 code。
+    /// Manual fallback (Issue #68): takes the callback link the user pastes back from the browser address bar,
+    /// parses the code and state out of it and follows exactly the same path as the automatic loopback callback
+    /// (state validation included, exchanging the token with the same loopback redirect_uri, with no need to reopen the browser).
+    /// For environments where the browser has already reached the localhost callback page but the local callback server never sees the request (some Chromium variants, for instance).
+    /// - Returns: whether a code was parsed and the rest of the flow started; false means the pasted content held no usable code.
     @discardableResult
     func submitManualCallback(_ pasted: String) -> Bool {
         guard !finished else { return false }
         let query = Self.parseManualCallback(pasted)
-        // code 或 error 至少有其一才交给 handleCallback：error 场景由其给出准确的失败原因，
-        // 两者皆无（粘贴内容无效）则返回 false，由 UI 内联提示重新粘完整链接。
+        // handleCallback is called when there is a code or an error: the error case gives it an accurate failure reason,
+        // and when there is neither (invalid pasted content) it returns false so the UI can inline a prompt to paste the full link again.
         guard query["code"] != nil || query["error"] != nil else {
             Logger.settings.error("ClaudeOAuth: no code could be parsed out of the pasted content")
             return false
@@ -122,14 +122,14 @@ final class ClaudeOAuthCoordinator: ObservableObject {
         return comps?.url
     }
 
-    /// 从用户手动粘贴的内容里解析 OAuth 回调参数（code / state）。
-    /// 兼容三种形态：完整回调 URL（含 ?code=...&state=...）、`code#state`、以及纯 code。
+    /// Parse the OAuth callback parameters (code and state) out of what the user pasted.
+    /// Three shapes are accepted: a full callback URL (with ?code=...&state=...), `code#state`, and a bare code.
     static func parseManualCallback(_ raw: String) -> [String: String] {
         let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return [:] }
 
-        // 1) 带 query 的 URL：一律以 query 解析为准（含 code / state / error，queryItems 已做百分号解码），
-        //    避免把整条 URL 误当成 code（例如授权被拒时回调只带 error 不带 code）。
+        // 1) A URL with a query: always parse the query (code / state / error, with queryItems already percent decoded),
+        //    so the whole URL is not mistaken for the code (when consent is denied, for instance, the callback carries an error and no code).
         if let items = URLComponents(string: text)?.queryItems, !items.isEmpty {
             var result: [String: String] = [:]
             for key in ["code", "state", "error"] {
@@ -140,7 +140,7 @@ final class ClaudeOAuthCoordinator: ObservableObject {
             return result
         }
 
-        // 2) `code#state` 形态
+        // 2) The `code#state` shape
         if text.contains("#"), !text.contains("?"), !text.contains("/") {
             let parts = text.split(separator: "#", maxSplits: 1).map(String.init)
             var result = ["code": parts[0]]
@@ -148,7 +148,7 @@ final class ClaudeOAuthCoordinator: ObservableObject {
             return result
         }
 
-        // 3) 纯 code（无 state；handleCallback 的 state 校验会拦下并提示重新粘完整链接）
+        // 3) A bare code (no state; handleCallback's state validation catches it and prompts for the full link)
         return ["code": text]
     }
 
@@ -195,7 +195,7 @@ final class ClaudeOAuthCoordinator: ObservableObject {
                 fail(L.WebLogin.codexOAuthFailed)
                 return
             }
-            // 拉 profile 完善账户信息（email / 组织 uuid），失败也不阻断登录
+            // Fetch the profile to complete the account info (email, organization uuid); a failure does not block the login
             ClaudeOAuthService.fetchProfile(accessToken: tokens.accessToken) { [weak self] profile in
                 Task { @MainActor in self?.createAccount(tokens: tokens, profile: profile) }
             }
@@ -212,10 +212,10 @@ final class ClaudeOAuthCoordinator: ObservableObject {
             orgId = p.orgId
         }
         let displayName = email.isEmpty ? "Claude" : email
-        // organizationId 用组织 uuid（缺失时退回 email），与旧 cookie 账户的去重标识一致
+        // organizationId holds the organization uuid (falling back to the email), the same dedupe identity as older cookie accounts
         let stableOrgId = orgId.isEmpty ? email : orgId
 
-        // 迁移：addAccount 对已存在的 organizationId 会直接跳过，故先移除同标识的旧账户再添加
+        // Migration: addAccount skips an organizationId that already exists, so remove the old account with the same identity before adding
         if !stableOrgId.isEmpty,
            let existing = UserSettings.shared.accounts.first(where: { $0.organizationId == stableOrgId }) {
             UserSettings.shared.removeAccount(existing)

@@ -348,7 +348,7 @@ final class UsageResponseTests: XCTestCase {
         XCTAssertEqual(usage.weeklyModels.count, 3)
         XCTAssertEqual(usage.weeklyModels.map(\.modelName), ["Fable", "Opus", "Sonnet"])
         XCTAssertEqual(usage.weeklyModels.map { $0.limit.percentage }, [21, 8, 3])
-        // 前两个仍派生到 opus / sonnet 槽位
+        // The first two still map to the opus and sonnet slots
         XCTAssertEqual(usage.opus?.percentage, 21)
         XCTAssertEqual(usage.opusModelName, "Fable")
         XCTAssertEqual(usage.sonnet?.percentage, 8)

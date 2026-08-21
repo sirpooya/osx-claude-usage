@@ -7,11 +7,11 @@
 
 import Foundation
 
-/// 检测重置时间是否发生变化，用于决定「重置验证」定时器该取消还是重新调度
+/// Detect whether the reset time changed, which decides whether the reset validation timers are cancelled or rescheduled
 /// - Parameters:
-///   - oldTime: 上次记录的重置时间
-///   - newTime: 最新拉取到的重置时间
-/// - Returns: 若两者相差超过 1 秒（含一个为 nil 一个不为 nil 的情况）则视为发生了变化
+///   - oldTime: the previously recorded reset time
+///   - newTime: the reset time just fetched
+/// - Returns: true when they differ by more than 1 second (including one being nil and the other not)
 func hasResetTimeChanged(from oldTime: Date?, to newTime: Date?) -> Bool {
     if oldTime == nil && newTime == nil {
         return false

@@ -10,16 +10,16 @@ import Foundation
 import WebKit
 import OSLog
 
-/// Codex 隐藏 WebView 静默续期协调器（级别 2 兜底）
+/// Codex hidden WebView silent renewal coordinator (the level 2 fallback)
 ///
-/// 原理：用 WKWebsiteDataStore.default()（进程级单例）创建一个不加入视图层级的隐藏
-/// WKWebView，load chatgpt.com。WebKit 会自动携带当前进程中已有的所有 Cookie（含
-/// Cloudflare 的 cf_clearance/__cf_bm），服务端进行 NextAuth OAuth 刷新后通过
-/// Set-Cookie 下发续期后的新 session-token，WebKit 自动存入共享 data store。
-/// 加载完成后从 cookie store 读取新 session-token 并静默写回 Keychain。
+/// How it works: WKWebsiteDataStore.default() (a process wide singleton) backs a hidden WKWebView that never joins
+/// the view hierarchy and loads chatgpt.com. WebKit automatically sends every cookie the process already has (Cloudflare's
+/// cf_clearance and __cf_bm included), the server performs the NextAuth OAuth refresh and issues the renewed
+/// session-token through Set-Cookie, which WebKit stores in the shared data store.
+/// Once loading finishes, the new session-token is read from the cookie store and written back to the Keychain silently.
 ///
-/// 适用场景：Level 1 SSR 刷新失败后的降级路径。比 URLSession 路径更可靠，
-/// 因为 WebKit 使用真实浏览器级别的 Cookie + TLS 指纹，通过 Cloudflare 的成功率更高。
+/// When it applies: the fallback path after a failed level 1 SSR refresh. It is more reliable than the URLSession path,
+/// because WebKit uses real browser level cookies and TLS fingerprints and gets past Cloudflare more often.
 @MainActor
 final class CodexSilentRefreshCoordinator: NSObject {
 
@@ -39,7 +39,7 @@ final class CodexSilentRefreshCoordinator: NSObject {
 
     // MARK: - Public
 
-    /// 触发静默刷新。成功时 Result.success 携带最新的 session-token 字符串。
+    /// Trigger the silent refresh. On success Result.success carries the latest session-token string.
     func refresh(completion: @escaping (Result<String, Error>) -> Void) {
         guard !isRefreshing else {
             Logger.settings.debug("CodexSilentRefresh: a refresh is already in progress, skipping")
@@ -56,20 +56,20 @@ final class CodexSilentRefreshCoordinator: NSObject {
         isRefreshing = true
         self.completion = completion
 
-        // 使用进程级共享 data store，与登录窗口的 WKWebView 共享同一套 cookie
+        // Use the process wide shared data store, sharing cookies with the login window's WKWebView
         let config = WKWebViewConfiguration()
         config.websiteDataStore = .default()
 
         let wv = WKWebView(frame: .zero, configuration: config)
         wv.customUserAgent = safariUserAgent
-        // 不加入任何视图层级，仅作后台加载用途
+        // Never joins any view hierarchy, it exists only to load in the background
 
         let delegate = NavigationDelegate(coordinator: self)
         wv.navigationDelegate = delegate
         self.navigationDelegate = delegate
         self.webView = wv
 
-        // 超时保护
+        // Timeout protection
         timeoutTask = Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: UInt64((self?.timeoutInterval ?? 25) * 1_000_000_000))
             guard !Task.isCancelled else { return }
@@ -83,10 +83,10 @@ final class CodexSilentRefreshCoordinator: NSObject {
             return
         }
 
-        // 续期前重置 default() store 的 session-token：
-        // 1. 删除所有残留（含其他账号 / 旧分片 .0/.1）
-        // 2. 注入当前账号的完整 session-token
-        // 3. 全部完成后再 load，确保服务端看到正确账号的 session
+        // Reset the default() store's session-token before renewing:
+        // 1. Delete every leftover (other accounts and old .0/.1 shards included)
+        // 2. Inject the current account's full session-token
+        // 3. Only load once all of that is done, so the server sees the right account's session
         let cookieStore = wv.configuration.websiteDataStore.httpCookieStore
         cookieStore.getAllCookies { cookies in
             let toDelete = cookies.filter { c in
@@ -103,10 +103,10 @@ final class CodexSilentRefreshCoordinator: NSObject {
 
             group.notify(queue: .main) {
                 let baseName = "__Secure-next-auth.session-token"
-                // WebKit 单 cookie 上限约 4KB，NextAuth 超限时会自动分片为 .0/.1/.2...
-                // 注入时同样分片，与 extractSessionToken 的读取逻辑对齐
+                // WebKit caps a single cookie at about 4KB, and NextAuth shards past that into .0/.1/.2...
+                // The injection shards the same way, matching how extractSessionToken reads it
                 let chunkSize = 4000
-                // originURL（HTTPS）是 __Secure- 前缀 cookie 合法性验证的必要条件
+                // originURL (HTTPS) is required for a __Secure- prefixed cookie to validate
                 let origin = URL(string: "https://chatgpt.com")!
 
                 let tokenChunks = stride(from: 0, to: sessionToken.count, by: chunkSize).map { start -> String in
@@ -217,7 +217,7 @@ extension CodexSilentRefreshCoordinator {
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            // 用 JS 读取页面标题，检测 Cloudflare 交互式挑战页
+            // Read the page title with JS, to detect a Cloudflare interactive challenge page
             webView.evaluateJavaScript("document.title") { [weak self] result, _ in
                 let title = result as? String ?? ""
                 if title.contains("Just a moment") || title.contains("Attention Required") || title.contains("cf-browser-verification") {

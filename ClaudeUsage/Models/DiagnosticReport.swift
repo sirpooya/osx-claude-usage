@@ -10,7 +10,7 @@ import Foundation
 
 // MARK: - DiagnosticStep
 
-/// 单个测试步骤的结果
+/// Result of a single test step
 struct DiagnosticStep: Codable {
     let name: String
     let success: Bool
@@ -23,7 +23,7 @@ struct DiagnosticStep: Codable {
     let responseBodyPreview: String?
     let cloudflareChallenge: Bool
     let cfMitigated: Bool
-    /// 额外备注，例如 JWT 过期时间
+    /// Extra notes, the JWT expiry for instance
     let notes: String?
 
     enum ResponseType: String, Codable {
@@ -35,10 +35,10 @@ struct DiagnosticStep: Codable {
 
 // MARK: - ProviderDiagnosticResult
 
-/// 单个 provider 的诊断结果
+/// Diagnostic result for one provider
 struct ProviderDiagnosticResult: Codable {
     let providerType: ProviderType
-    /// 脱敏后的凭据键值对，用于报告展示
+    /// Redacted credential key value pairs, for the report
     let credentials: [String: String]
     let steps: [DiagnosticStep]
     let success: Bool
@@ -56,10 +56,10 @@ struct ProviderDiagnosticResult: Codable {
 
 // MARK: - DiagnosticReport
 
-/// 顶层诊断报告（provider-agnostic）
+/// Top level diagnostic report (provider agnostic)
 struct DiagnosticReport: Codable {
 
-    // MARK: - 基本信息
+    // MARK: - Basic info
 
     let timestamp: Date
     let appVersion: String
@@ -67,23 +67,23 @@ struct DiagnosticReport: Codable {
     let architecture: String
     let locale: String
 
-    // MARK: - 配置信息
+    // MARK: - Configuration
 
     let refreshMode: String
     let refreshInterval: String?
     let displayMode: String
 
-    // MARK: - Provider 诊断结果
+    // MARK: - Provider diagnostic results
 
     let providers: [ProviderDiagnosticResult]
 
-    // MARK: - 计算属性
+    // MARK: - Computed properties
 
     var overallSuccess: Bool {
         !providers.isEmpty && providers.allSatisfy { $0.success }
     }
 
-    // MARK: - Markdown 输出
+    // MARK: - Markdown output
 
     func toMarkdown() -> String {
         var report = """
@@ -235,7 +235,7 @@ struct DiagnosticReport: Codable {
 
 // MARK: - DiagnosticErrorType
 
-/// 诊断错误类型
+/// Diagnostic error types
 enum DiagnosticErrorType: String, Codable {
     // Claude
     case cloudflareBlocked = "Cloudflare Challenge"
@@ -254,7 +254,7 @@ enum DiagnosticErrorType: String, Codable {
 
 // MARK: - English Diagnostic Messages (for export only, not localized)
 
-/// 诊断报告的英文文案（导出用，不走本地化，保持语言一致性）
+/// English copy for the diagnostic report (for export, deliberately unlocalized so the language stays consistent)
 enum DiagnosticMessage {
 
     // MARK: - Claude

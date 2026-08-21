@@ -1,7 +1,7 @@
 import XCTest
 @testable import ClaudeUsageCore
 
-/// 覆盖风险：脱敏正则/长度分支写错 → 日志或诊断报告泄漏凭据。
+/// Risk covered: a wrong redaction regex or length branch leaking a credential into a log or diagnostic report.
 final class SensitiveDataRedactorTests: XCTestCase {
 
     // MARK: - redactOrganizationId

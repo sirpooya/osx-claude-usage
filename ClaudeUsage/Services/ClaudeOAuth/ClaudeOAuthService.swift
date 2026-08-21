@@ -9,21 +9,21 @@
 import Foundation
 import OSLog
 
-/// Claude OAuth token 端点返回的凭据
+/// The credentials the Claude OAuth token endpoint returns
 struct ClaudeOAuthTokens {
     let accessToken: String
-    /// refresh 端点未轮换时可能为空字符串，调用方应保留旧值
+    /// May be an empty string when the refresh endpoint does not rotate it, callers should keep the old value
     let refreshToken: String
     let expiresAt: Date?
 }
 
-/// Claude OAuth token 端点交互
+/// Talking to the Claude OAuth token endpoint
 ///
-/// 授权码交换与 refresh 均向 `console.anthropic.com/v1/oauth/token` POST **JSON** body
-/// （与官方 Claude Code 一致）。
+/// Both the code exchange and the refresh POST a **JSON** body to `console.anthropic.com/v1/oauth/token`
+/// (the same as the official Claude Code).
 enum ClaudeOAuthService {
 
-    // MARK: - 授权码换 token
+    // MARK: - Exchange the authorization code for a token
 
     static func exchangeCode(
         code: String,
@@ -42,7 +42,7 @@ enum ClaudeOAuthService {
         ], completion: completion)
     }
 
-    // MARK: - refresh_token 续期
+    // MARK: - refresh_token renewal
 
     static func refresh(
         refreshToken: String,
@@ -55,10 +55,10 @@ enum ClaudeOAuthService {
         ], completion: completion)
     }
 
-    // MARK: - 账户信息（用于账户显示名）
+    // MARK: - Account info (for the account display name)
 
-    /// 拉取 profile，返回 (email, 组织 uuid, 组织名)
-    /// 组织 uuid 用作账户的 organizationId（与旧 cookie 账户的去重标识一致，便于迁移）
+    /// Fetch the profile, returning (email, organization uuid, organization name)
+    /// The organization uuid is used as the account's organizationId (the same dedupe identity as older cookie accounts, which eases migration)
     static func fetchProfile(
         accessToken: String,
         completion: @escaping (Result<(email: String, orgId: String, orgName: String), Error>) -> Void

@@ -9,10 +9,10 @@
 import Foundation
 import OSLog
 
-/// Codex API 服务类
-/// 两步认证流程：
-///   1. GET /api/auth/session（用 session-token Cookie）→ 获取 accessToken
-///   2. GET /backend-api/wham/usage（用 Bearer token）→ 获取用量数据
+/// Codex API service
+/// The two step authentication flow:
+///   1. GET /api/auth/session (with the session-token cookie) returns the accessToken
+///   2. GET /backend-api/wham/usage (with the Bearer token) returns the usage data
 class CodexAPIService {
 
     // MARK: - Properties
@@ -21,42 +21,42 @@ class CodexAPIService {
     private let settings = UserSettings.shared
     private let session: URLSession
 
-    /// 当前进行中的任务（最多两个：session + usage）
-    /// - Note: append 发生在主线程（session 请求发起）和 URLSession 回调线程（usage 请求发起，
-    ///   由 fetchAccessToken 的 completion 触发）两处，cancelAllRequests 在主线程清空，
-    ///   并发读写需靠 tasksLock 保护（见 trackTask/cancelAllRequests）。
+    /// The tasks in flight (at most two: session and usage)
+    /// - Note: append happens on the main thread (when the session request starts) and on the URLSession callback thread
+    ///   (when the usage request starts, triggered by fetchAccessToken's completion), while cancelAllRequests clears it on the main thread,
+    ///   so the concurrent access needs tasksLock (see trackTask and cancelAllRequests).
     private var activeTasks: [URLSessionDataTask] = []
 
-    /// 保护 activeTasks 的锁
+    /// The lock protecting activeTasks
     private let tasksLock = NSLock()
 
     // MARK: - Access Token Cache
 
-    /// 主动刷新窗口：距过期不足20分钟时触发重新拉取
-    /// 设为最大刷新间隔(15min) + 5min buffer，确保任意间隔下都能主动刷新而不依赖三级链兜底
+    /// Proactive refresh window: refetch once expiry is less than 20 minutes away
+    /// Set to the longest refresh interval (15min) plus a 5min buffer, so any interval refreshes proactively rather than leaning on the three level chain
     private static let tokenRefreshMargin: TimeInterval = 20 * 60
 
-    /// access_token 缓存 + 单飞合并（actor，见 Services/OAuthTokenCache.swift；审计报告 4.2）。
-    /// cookie session 路径与 OAuth refresh 路径共用：缓存键为账户凭据
-    /// （session-token 或 "rt." 前缀的 OAuth refresh_token），互不串扰。
+    /// access_token caching plus single flight coalescing (an actor, see Services/OAuthTokenCache.swift; audit report 4.2).
+    /// Shared by the cookie session path and the OAuth refresh path: the cache key is the account credential
+    /// (a session-token, or an OAuth refresh_token with the "rt." prefix), so the two cannot cross talk.
     private let tokenCache = OAuthTokenCache()
 
-    /// 线程安全地记录进行中的任务，供 cancelAllRequests 统一取消
+    /// Record an in flight task in a thread safe way, so cancelAllRequests can cancel them all
     private func trackTask(_ task: URLSessionDataTask) {
         tasksLock.lock()
         activeTasks.append(task)
         tasksLock.unlock()
     }
 
-    /// 账户切换时清除缓存，确保下次立即重新拉取
-    /// - Note: 异步生效。401 路径的清缓存在 fetchWhamUsage 内部完成（保证先于错误传播），
-    ///   账户切换场景则依赖缓存按凭据键控——旧账户的缓存不会误配新账户的凭据。
+    /// Clear the cache on an account switch, so the next fetch starts fresh
+    /// - Note: takes effect asynchronously. The 401 path clears the cache inside fetchWhamUsage (guaranteeing it happens before the error propagates),
+    ///   while an account switch relies on the cache being keyed by credential: the old account's cache cannot be matched by the new account's credential.
     func clearAccessTokenCache() {
         Task { await tokenCache.clear() }
     }
 
-    /// 由独立计时器调用：仅在缓存即将过期时主动续期，不触发用量拉取。
-    /// fetchAccessToken 内部先查缓存（20 分钟余量），缓存仍新鲜时不会发起网络请求。
+    /// Called by its own timer: renews proactively only when the cache is about to expire, without triggering a usage fetch.
+    /// fetchAccessToken checks the cache first (with a 20 minute margin) and makes no network request while it is still fresh.
     func proactivelyRefreshIfNeeded() {
         guard settings.hasValidCodexCredentials else { return }
         fetchAccessToken(sessionToken: settings.codexSessionToken) { result in
@@ -83,8 +83,8 @@ class CodexAPIService {
 
     // MARK: - Public Methods
 
-    /// 获取 Codex 用量（两步：session → usage）
-    /// - Parameter completion: 成功返回 CodexUsageData，失败返回 Error
+    /// Fetch Codex usage (two steps: session then usage)
+    /// - Parameter completion: CodexUsageData on success, an Error on failure
     func fetchUsage(completion: @escaping (Result<CodexUsageData, Error>) -> Void) {
         #if DEBUG
         if settings.debugModeEnabled {
@@ -103,7 +103,7 @@ class CodexAPIService {
 
         let sessionToken = settings.codexSessionToken
 
-        // fetchAccessToken 的 completion 已保证主线程回调
+        // fetchAccessToken's completion already guarantees a main thread callback
         fetchAccessToken(sessionToken: sessionToken) { [weak self] result in
             guard let self = self else { return }
 
@@ -119,20 +119,20 @@ class CodexAPIService {
         }
     }
 
-    // MARK: - Private: Step 1 — 凭据 → accessToken
+    // MARK: - Private: Step 1, credential to accessToken
 
-    /// 判断账户凭据是否为 OAuth refresh_token（OpenAI 格式以 "rt." 开头）
-    /// 旧 session-token 是 next-auth 加密串，不会命中此前缀
+    /// Decide whether an account credential is an OAuth refresh_token (the OpenAI format starts with "rt.")
+    /// An older session-token is a next-auth encrypted string and never matches this prefix
     static func isOAuthRefreshToken(_ credential: String) -> Bool {
         credential.hasPrefix("rt.")
     }
 
-    /// 第一步：用账户凭据换取 accessToken
-    /// - cookie 账户：GET /api/auth/session（session-token Cookie）
-    /// - OAuth 账户（"rt." 前缀）：向 auth.openai.com 用 refresh_token 换取
+    /// Step one: trade the account credential for an accessToken
+    /// - cookie account: GET /api/auth/session (with the session-token cookie)
+    /// - OAuth account (the "rt." prefix): exchange the refresh_token at auth.openai.com
     ///
-    /// 缓存有效时（距过期 > 20 分钟）跳过网络请求；同一凭据的并发调用由
-    /// OAuthTokenCache 合并为一次网络请求。completion 一律主线程回调。
+    /// A valid cache (more than 20 minutes from expiry) skips the network request; concurrent calls with the same credential
+    /// are coalesced by OAuthTokenCache into a single network request. The completion always fires on the main thread.
     private func fetchAccessToken(sessionToken: String, completion: @escaping (Result<String, Error>) -> Void) {
         Task {
             do {
@@ -148,9 +148,9 @@ class CodexAPIService {
                 }
                 await MainActor.run { completion(.success(accessToken)) }
             } catch {
-                // 刷新失败回退：旧 token 尚未真正过期（哪怕已进入提前刷新窗口）时顶用一轮，
-                // 避免网络瞬断/服务端抖动影响用量拉取。凭据失效类错误不回退——
-                // 必须让 401 传播出去触发三级刷新链 / 重新登录提示。
+                // Fallback on a failed refresh: while the old token has not really expired (even inside the early refresh window) it carries one more round,
+                // so a brief network blip or server hiccup does not break the usage fetch. Credential failures do not fall back:
+                // a 401 has to propagate so the three level refresh chain or the sign in prompt fires.
                 switch error {
                 case UsageError.unauthorized, UsageError.sessionExpired:
                     break
@@ -166,9 +166,9 @@ class CodexAPIService {
         }
     }
 
-    /// cookie 账户：调用 /api/auth/session 换取 accessToken，返回统一的 Tokens 三元组。
-    /// 若响应通过 Set-Cookie 轮换了 session-token，静默写回账户存储，并把新值作为
-    /// 返回的 refreshToken——缓存键跟随新凭据，下次用新 session-token 查询可直接命中。
+    /// cookie account: call /api/auth/session for an accessToken, returning the shared Tokens triple.
+    /// When the response rotates the session-token through Set-Cookie, write it back to the account store silently and return the new value
+    /// as refreshToken, so the cache key follows the new credential and the next query with the new session-token hits it.
     private func fetchSessionTokens(sessionToken: String) async throws -> OAuthTokenCache.Tokens {
         guard let url = URL(string: "\(baseURL)/api/auth/session") else {
             throw UsageError.invalidURL
@@ -196,7 +196,7 @@ class CodexAPIService {
 
                     if let httpResponse = response as? HTTPURLResponse {
                         Logger.api.debug("Codex session HTTP status: \(httpResponse.statusCode)")
-                        // Phase 0 诊断：检查 /api/auth/session 是否下发新 session-token
+                        // Phase 0 diagnostics: check whether /api/auth/session issues a new session-token
                         let setCookieHeaders = httpResponse.allHeaderFields
                             .filter { ($0.key as? String)?.lowercased() == "set-cookie" }
                             .compactMap { $0.value as? String }
@@ -215,8 +215,8 @@ class CodexAPIService {
                         }
                     }
 
-                    // 检查 HTTPCookieStorage 是否收到轮换后的新 session-token
-                    // （用已捕获的 sessionToken 参数比较，避免在后台线程读取 @Published 属性）
+                    // Check whether HTTPCookieStorage received a rotated session-token
+                    // (compared against the captured sessionToken parameter, so no @Published property is read on a background thread)
                     var effectiveSessionToken = sessionToken
                     let chatgptURL = URL(string: "https://chatgpt.com")!
                     let storedCookies = HTTPCookieStorage.shared.cookies(for: chatgptURL) ?? []
@@ -259,9 +259,9 @@ class CodexAPIService {
         }
     }
 
-    /// OAuth 账户：用 refresh_token 向 auth.openai.com 换取 access_token。
-    /// 只会在 OAuthTokenCache 判定「确实需要发起新刷新」时被调用一次（并发调用共享同一次结果）。
-    /// refresh_token 轮换时静默写回账户存储，并作为返回的 refreshToken（缓存键跟随新值）。
+    /// OAuth account: exchange the refresh_token for an access_token at auth.openai.com.
+    /// Called exactly once whenever OAuthTokenCache decides "a new refresh really is needed" (concurrent callers share the one result).
+    /// A rotated refresh_token is written back to the account store silently and returned as refreshToken (so the cache key follows the new value).
     private func refreshOAuthTokens(refreshToken: String) async throws -> OAuthTokenCache.Tokens {
         let tokens = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<CodexOAuthTokens, Error>) in
             CodexOAuthService.refresh(refreshToken: refreshToken) { result in
@@ -284,17 +284,17 @@ class CodexAPIService {
         )
     }
 
-    /// 跳过 session 步骤，直接用已获取的 accessToken 查询用量（用于刷新后重试）
+    /// Skip the session step and query usage with an accessToken already in hand (used for the retry after a refresh)
     func fetchUsageWithAccessToken(_ accessToken: String, completion: @escaping (Result<CodexUsageData, Error>) -> Void) {
         fetchWhamUsage(accessToken: accessToken) { result in
             DispatchQueue.main.async { completion(result) }
         }
     }
 
-    // MARK: - Async 包装
+    // MARK: - Async wrappers
 
-    /// `fetchUsage(completion:)` 的 async 包装，供结构化并发调用方使用。
-    /// 结果用 Result 表达而非 throws，与 completion 版本的错误语义保持一致。
+    /// async wrapper around `fetchUsage(completion:)` for structured concurrency callers.
+    /// The outcome is a Result rather than a throw, to match the error semantics of the completion version.
     func fetchUsageResult() async -> Result<CodexUsageData, Error> {
         await withCheckedContinuation { continuation in
             fetchUsage { continuation.resume(returning: $0) }
@@ -303,7 +303,7 @@ class CodexAPIService {
 
     // MARK: - Private: Step 2 — accessToken → usage
 
-    /// 第二步：用 Bearer accessToken 查询用量
+    /// Step two: query usage with the Bearer accessToken
     private func fetchWhamUsage(accessToken: String, completion: @escaping (Result<CodexUsageData, Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/backend-api/wham/usage") else {
             completion(.failure(UsageError.invalidURL))
@@ -340,8 +340,8 @@ class CodexAPIService {
                 switch httpResponse.statusCode {
                 case 200...299: break
                 case 401:
-                    // 缓存的 accessToken 已失效。await 清缓存后再传播错误，
-                    // 保证调用方收到 unauthorized 后立即发起的重试不会再命中这枚坏 token
+                    // The cached accessToken is dead. Await the cache clear before propagating the error,
+                    // so the retry a caller fires right after the unauthorized cannot hit the same broken token
                     Task { [weak self] in
                         await self?.tokenCache.clear()
                         completion(.failure(UsageError.unauthorized))
@@ -372,10 +372,10 @@ class CodexAPIService {
 
     // MARK: - Validation (used by WebLoginCoordinator)
 
-    /// 验证 session token 并返回账户信息（用于 WebLogin 流程）
+    /// Validate a session token and return the account info (for the WebLogin flow)
     /// - Parameters:
-    ///   - sessionToken: __Secure-next-auth.session-token 值
-    ///   - completion: 成功返回 (email, displayName)，失败返回 Error
+    ///   - sessionToken: the __Secure-next-auth.session-token value
+    ///   - completion: (email, displayName) on success, an Error on failure
     func validateSessionToken(_ sessionToken: String, cookieHeader: String, completion: @escaping (Result<(email: String, displayName: String), Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/api/auth/session") else {
             completion(.failure(UsageError.invalidURL))
@@ -386,7 +386,7 @@ class CodexAPIService {
         request.httpMethod = "GET"
         request.assumesHTTP3Capable = false
         CodexAPIHeaderBuilder.applySessionHeaders(to: &request, sessionToken: sessionToken)
-        // 使用 WebView 的完整 Cookie header，确保 Cloudflare 相关 Cookie 一并携带
+        // Use the WebView's full Cookie header, so the Cloudflare cookies come along too
         request.setValue(cookieHeader, forHTTPHeaderField: "Cookie")
 
         let task = session.dataTask(with: request) { data, response, error in
@@ -432,8 +432,8 @@ class CodexAPIService {
                     DispatchQueue.main.async { completion(.failure(UsageError.sessionExpired)) }
                     return
                 }
-                // session-token 是 JWE 无法本地解密，但内部 accessToken 是普通 JWT
-                // 若 accessToken 已过期，说明 OAuth refresh token 也失效，拒绝此 session
+                // The session-token is a JWE and cannot be decrypted locally, but the accessToken inside it is a plain JWT
+                // An expired accessToken means the OAuth refresh token is dead too, so reject this session
                 if let exp = jwtExpiry(from: accessToken), exp < Date() {
                     Logger.api.warning("Codex validate: session stale (accessToken expired at \(exp)), rejecting login")
                     DispatchQueue.main.async { completion(.failure(UsageError.sessionExpired)) }

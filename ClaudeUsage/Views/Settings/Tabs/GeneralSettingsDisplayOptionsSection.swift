@@ -8,8 +8,8 @@
 
 import SwiftUI
 
-/// 通用设置页的"显示选项"卡片：智能/自定义显示模式 + 自定义显示类型勾选
-/// 从 GeneralSettingsView 拆出，便于保持单文件体量可控
+/// The "display options" card on the general settings page: the smart/custom display mode plus the custom type checkboxes
+/// Split out of GeneralSettingsView to keep single file size manageable
 struct GeneralSettingsDisplayOptionsSection: View {
     @ObservedObject private var settings = UserSettings.shared
 
@@ -21,7 +21,7 @@ struct GeneralSettingsDisplayOptionsSection: View {
             hint: settings.displayMode == .smart ? L.DisplayOptions.smartDisplayDescription : L.DisplayOptions.customDisplayDescription
         ) {
             VStack(alignment: .leading, spacing: 16) {
-                // 显示模式选择
+                // Display mode picker
                 VStack(alignment: .leading, spacing: 8) {
                     Text(L.DisplayOptions.displayModeLabel)
                         .font(.subheadline)
@@ -37,7 +37,7 @@ struct GeneralSettingsDisplayOptionsSection: View {
                     .focusable(false)
                 }
 
-                // 自定义选择（仅在自定义模式时显示）
+                // Custom selection (shown in custom mode only)
                 if settings.displayMode == .custom {
                     Divider()
 
@@ -60,7 +60,7 @@ struct GeneralSettingsDisplayOptionsSection: View {
                         }
                         .padding(.leading, 20)
 
-                        // 约束提示信息
+                        // Constraint hints
                         if hasOnlyOneCircularIcon {
                             HStack(alignment: .top, spacing: 4) {
                                 Image(systemName: "info.circle.fill")
@@ -74,7 +74,7 @@ struct GeneralSettingsDisplayOptionsSection: View {
                             .padding(.leading, 20)
                         }
 
-                        // 主题可用性提示
+                        // Theme availability hint
                         if !canUseColoredTheme {
                             HStack(alignment: .top, spacing: 4) {
                                 Image(systemName: "exclamationmark.circle.fill")
@@ -90,7 +90,7 @@ struct GeneralSettingsDisplayOptionsSection: View {
 
                         Divider()
 
-                        // "仅应用于菜单栏"开关：开启后 Popover 走智能显示
+                        // The "menu bar only" switch: when on, the popover uses the smart display
                         VStack(alignment: .leading, spacing: 6) {
                             Toggle(isOn: $settings.customDisplayMenuBarOnly) {
                                 Text(L.DisplayOptions.menuBarOnlyToggle)
@@ -112,24 +112,24 @@ struct GeneralSettingsDisplayOptionsSection: View {
 
     // MARK: - Display Options Helpers
 
-    /// 判断是否只剩一个圆形图标
+    /// Decide whether only one circular icon is left
     private var hasOnlyOneCircularIcon: Bool {
         let circularTypes: Set<LimitType> = [.fiveHour, .sevenDay, .codexPrimary, .codexSecondary]
         let selectedCircular = settings.customDisplayTypes.intersection(circularTypes)
         return selectedCircular.count == 1
     }
 
-    /// 判断是否可以使用彩色主题
+    /// Decide whether a color theme can be used
     private var canUseColoredTheme: Bool {
-        // 现在所有限制类型都支持彩色显示
-        // 只要有选择任何限制类型就可以使用彩色主题
+        // Every limit type supports colored display now
+        // A color theme works as long as some limit type is selected
         return !settings.customDisplayTypes.isEmpty
     }
 
-    /// 判断是否应该禁用某个复选框
+    /// Decide whether a checkbox should be disabled
     private func shouldDisableCheckbox(for limitType: LimitType) -> Bool {
         #if DEBUG
-        // Debug模式下如果开启了"单独显示所有形状"，允许取消所有限制
+        // In Debug mode, when "show every shape separately" is on, deselecting every limit is allowed
         if settings.debugShowAllShapesIndividually {
             return false
         }
@@ -137,7 +137,7 @@ struct GeneralSettingsDisplayOptionsSection: View {
 
         let circularTypes: Set<LimitType> = [.fiveHour, .sevenDay, .codexPrimary, .codexSecondary]
 
-        // 如果这是最后一个选中的圆形图标，则禁用
+        // Disable it when this is the last selected circular icon
         if circularTypes.contains(limitType) {
             let selectedCircular = settings.customDisplayTypes.intersection(circularTypes)
             return selectedCircular.count == 1 && selectedCircular.contains(limitType)
@@ -146,10 +146,10 @@ struct GeneralSettingsDisplayOptionsSection: View {
         return false
     }
 
-    /// 切换限制类型的选中状态
+    /// Toggle a limit type's selection
     private func toggleLimitType(_ limitType: LimitType) {
         if settings.customDisplayTypes.contains(limitType) {
-            // 检查是否可以取消选择
+            // Check whether it can be deselected
             if !shouldDisableCheckbox(for: limitType) {
                 settings.customDisplayTypes.remove(limitType)
             }
@@ -161,7 +161,7 @@ struct GeneralSettingsDisplayOptionsSection: View {
 
 // MARK: - Limit Type Checkbox Component
 
-/// 限制类型复选框组件
+/// Limit type checkbox
 struct LimitTypeCheckbox: View {
     let limitType: LimitType
     let isSelected: Bool
@@ -180,11 +180,11 @@ struct LimitTypeCheckbox: View {
                     .font(.body)
 
                 HStack(spacing: 6) {
-                    // 限制类型图标
+                    // Limit type icon
                     limitTypeIcon
                         .font(.caption)
 
-                    // 限制类型名称
+                    // Limit type name
                     Text(limitType.displayName)
                         .foregroundColor(isDisabled ? .secondary : .primary)
                 }
@@ -198,15 +198,15 @@ struct LimitTypeCheckbox: View {
 
     @ViewBuilder
     private var limitTypeIcon: some View {
-        // 使用与详情界面相同的Canvas绘制图标
+        // Draw the icon on a Canvas, the same way the detail UI does
         Canvas { context, canvasSize in
             let lineWidth: CGFloat = 1.8
             let path = shapePath(for: limitType, in: CGRect(origin: .zero, size: canvasSize))
 
-            // 绘制背景边框
+            // Draw the background border
             context.stroke(path, with: .color(Color.gray.opacity(0.3)), lineWidth: lineWidth)
 
-            // 绘制满进度环（100%）
+            // Draw a full progress ring (100%)
             context.stroke(path, with: .color(iconColor(for: limitType)), lineWidth: lineWidth)
         }
         .frame(width: 14, height: 14)

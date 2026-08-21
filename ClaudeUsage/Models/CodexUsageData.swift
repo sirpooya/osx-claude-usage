@@ -14,28 +14,28 @@
 
 import Foundation
 
-// MARK: - 内部数据模型
+// MARK: - Internal data models
 
-/// Codex 使用量数据（应用内部使用的标准化结构）
+/// Codex usage data (the app's normalized structure)
 struct CodexUsageData: Sendable {
-    /// 5小时窗口用量（primary）
+    /// 5 hour window usage (primary)
     let primary: LimitData?
-    /// 7天窗口用量（secondary）
+    /// 7 day window usage (secondary)
     let secondary: LimitData?
-    /// Codex Extra Usage / credits 数据
+    /// Codex Extra Usage / credits data
     let extraUsage: CodexExtraUsageData?
 
     struct LimitData: Sendable {
-        /// 当前使用百分比 (0-100)
+        /// Current usage percentage (0-100)
         let percentage: Double
-        /// 重置时间，nil 表示尚未开始使用
+        /// Reset time, nil means usage has not started yet
         let resetsAt: Date?
     }
 }
 
-// MARK: - API 响应模型
+// MARK: - API response models
 
-/// Codex /backend-api/wham/usage 响应模型
+/// Codex /backend-api/wham/usage response model
 nonisolated struct CodexUsageResponse: Codable, Sendable {
     let account_id: String?
     let email: String?
@@ -52,13 +52,13 @@ nonisolated struct CodexUsageResponse: Codable, Sendable {
     }
 
     struct Window: Codable, Sendable {
-        /// 使用百分比 (0-100)
+        /// Usage percentage (0-100)
         let used_percent: Double
-        /// 窗口时长（秒）：18000 = 5小时，604800 = 7天
+        /// Window length (seconds): 18000 = 5 hours, 604800 = 7 days
         let limit_window_seconds: Int?
-        /// 距重置剩余秒数
+        /// Seconds left until the reset
         let reset_after_seconds: Int?
-        /// 重置时间（Unix 时间戳，与 Claude 的 ISO 8601 不同）
+        /// Reset time (a Unix timestamp, unlike Claude's ISO 8601)
         let reset_at: Int?
     }
 
@@ -119,22 +119,22 @@ nonisolated struct CodexUsageResponse: Codable, Sendable {
         let reached: Bool?
     }
 
-    /// 5小时窗口的标准时长（秒）
+    /// Standard length of the 5 hour window (seconds)
     private static let fiveHourWindowSeconds = 18_000
-    /// 7天窗口的标准时长（秒）
+    /// Standard length of the 7 day window (seconds)
     private static let sevenDayWindowSeconds = 604_800
 
-    /// 判断窗口是否属于"5小时档"——按 limit_window_seconds 实际时长判断，
-    /// 而非 JSON 字段名（primary_window/secondary_window）。
-    /// 背景：Codex 曾临时取消5小时限制，此时唯一窗口仍出现在 primary_window 位置，
-    /// 但其 limit_window_seconds 是 604800（7天），若按字段位置硬映射会显示成"5小时限制"。
-    /// 缺失 limit_window_seconds 时保守判定为非5小时，避免旧数据被误分类。
+    /// Decide whether a window belongs to the "5 hour" bucket, from the real limit_window_seconds
+    /// rather than from the JSON field name (primary_window/secondary_window).
+    /// Background: Codex once dropped the 5 hour limit temporarily, and the single remaining window still arrived in the primary_window slot
+    /// while its limit_window_seconds was 604800 (7 days), so mapping by field position would have shown it as a "5 hour limit".
+    /// A missing limit_window_seconds is treated conservatively as not 5 hour, so old data is not misclassified.
     private static func isFiveHourWindow(_ window: Window) -> Bool {
         guard let seconds = window.limit_window_seconds else { return false }
         return abs(seconds - fiveHourWindowSeconds) < abs(seconds - sevenDayWindowSeconds)
     }
 
-    /// 将 API 响应转换为内部 CodexUsageData
+    /// Convert the API response into the internal CodexUsageData
     func toCodexUsageData() -> CodexUsageData {
         let now = Date()
 
@@ -150,12 +150,12 @@ nonisolated struct CodexUsageResponse: Codable, Sendable {
 
         func buildLimitData(_ window: Window?) -> CodexUsageData.LimitData? {
             guard let w = window else { return nil }
-            // 如果 used_percent 为 0 且无重置信息，视为无效数据
+            // Treat used_percent of 0 with no reset info as invalid data
             if w.used_percent == 0 && w.reset_at == nil && w.reset_after_seconds == nil { return nil }
             return .init(percentage: w.used_percent, resetsAt: resolvedResetDate(for: w))
         }
 
-        // 按实际时长分类，而不是按 JSON 字段位置——见 isFiveHourWindow 注释
+        // Classify by real duration rather than by JSON field position, see the isFiveHourWindow comment
         let windows = [rate_limit?.primary_window, rate_limit?.secondary_window].compactMap { $0 }
         let primary = buildLimitData(windows.first { Self.isFiveHourWindow($0) })
         let secondary = buildLimitData(windows.first { !Self.isFiveHourWindow($0) })
@@ -176,8 +176,8 @@ nonisolated struct CodexUsageResponse: Codable, Sendable {
     }
 }
 
-/// Codex Extra Usage / credits 数据
-/// Codex 返回的是可用余额和大致可发送消息数，而不是 Claude Extra Usage 的 used/limit 格式。
+/// Codex Extra Usage / credits data
+/// Codex returns the available balance and a rough message count, not the used/limit shape of Claude's Extra Usage.
 nonisolated struct CodexExtraUsageData: Sendable {
     let hasCredits: Bool
     let unlimited: Bool
@@ -228,8 +228,8 @@ nonisolated struct CodexExtraUsageData: Sendable {
         return nil
     }
 
-    /// 供 `CodexUsageData+Formatting.swift` 的 `L.*` 格式化属性复用，
-    /// 因此不能是 `private`（跨文件 extension 访问不到）
+    /// Reused by the `L.*` formatting properties in `CodexUsageData+Formatting.swift`,
+    /// so it cannot be `private` (an extension in another file could not reach it)
     var balanceValue: Double? {
         guard let balance else { return nil }
         return NSDecimalNumber(decimal: balance).doubleValue
@@ -241,19 +241,19 @@ nonisolated struct CodexExtraUsageData: Sendable {
     }
 }
 
-// MARK: - 格式化桥接
+// MARK: - Formatting bridge
 
 extension CodexUsageData.LimitData {
-    /// 转换为 UsageData.LimitData，复用其全部格式化方法（倒计时、重置时间等）
+    /// Convert to UsageData.LimitData, reusing all of its formatting (countdown, reset time and so on)
     func asUsageLimitData() -> UsageData.LimitData {
         return UsageData.LimitData(percentage: percentage, resetsAt: resetsAt)
     }
 }
 
-// MARK: - Session 响应模型
+// MARK: - Session response models
 
-/// Codex /api/auth/session 响应模型
-/// 用于获取 Bearer accessToken
+/// Codex /api/auth/session response model
+/// Used to obtain the Bearer accessToken
 nonisolated struct CodexSessionResponse: Codable, Sendable {
     let accessToken: String?
     let user: User?

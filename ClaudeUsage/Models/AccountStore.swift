@@ -2,9 +2,9 @@
 //  AccountStore.swift
 //  ClaudeUsage
 //
-//  Extracted from UserSettings.swift (审计报告 4.1)：账户 CRUD、Keychain 持久化、
-//  当前账户 ID、silentlyUpdate*Token 等多账户逻辑独立成一个可组合的 ObservableObject。
-//  UserSettings 通过 accountStore 属性持有并转发，对外 API 保持不变。
+//  Extracted from UserSettings.swift (audit report 4.1): account CRUD, Keychain persistence,
+//  the current account ID, silentlyUpdate*Token and the rest of the multi account logic became one composable ObservableObject.
+//  UserSettings holds it through its accountStore property and forwards to it, so the public API is unchanged.
 //  Copyright © 2025 f-is-h. All rights reserved.
 //
 
@@ -12,22 +12,22 @@ import Foundation
 import Combine
 import OSLog
 
-/// 多账户（Claude + Codex）存储、持久化与切换逻辑
+/// Multi account (Claude + Codex) storage, persistence and switching
 final class AccountStore: ObservableObject {
 
     private let defaults = UserDefaults.standard
     private let keychain = KeychainManager.shared
 
-    // MARK: - Claude 账户
+    // MARK: - Claude accounts
 
-    /// 账户列表（存储在 Keychain 中）
+    /// Account list (stored in the Keychain)
     @Published var accounts: [Account] {
         didSet {
             saveAccounts()
         }
     }
 
-    /// 当前激活账户的 ID（存储在 UserDefaults 中）
+    /// ID of the active account (stored in UserDefaults)
     @Published var currentAccountId: UUID? {
         didSet {
             #if DEBUG
@@ -43,13 +43,13 @@ final class AccountStore: ObservableObject {
         }
     }
 
-    /// 当前激活的账户
+    /// The active account
     var currentAccount: Account? {
         guard let id = currentAccountId else { return accounts.first }
         return accounts.first { $0.id == id } ?? accounts.first
     }
 
-    /// Claude Session Key（计算属性，指向当前账户）
+    /// Claude session key (computed, points at the current account)
     var sessionKey: String {
         get { currentAccount?.sessionKey ?? "" }
         set {
@@ -59,7 +59,7 @@ final class AccountStore: ObservableObject {
         }
     }
 
-    /// Claude Organization ID（计算属性，指向当前账户）
+    /// Claude organization ID (computed, points at the current account)
     var organizationId: String {
         get { currentAccount?.organizationId ?? "" }
         set {
@@ -69,25 +69,25 @@ final class AccountStore: ObservableObject {
         }
     }
 
-    /// Claude 账户列表的语义别名（等同于 accounts，用于 provider-aware 代码中保持对称）
+    /// Semantic alias for the Claude account list (same as accounts, keeps provider aware code symmetric)
     var claudeAccounts: [Account] { accounts }
 
-    /// 用于显示的账户列表
+    /// Account list used for display
     var displayAccounts: [Account] { accounts }
 
-    /// 当前账户的显示名称
+    /// Display name of the current account
     var currentAccountName: String? { currentAccount?.displayName }
 
-    // MARK: - Codex 账户
+    // MARK: - Codex accounts
 
-    /// Codex 账户列表（存储在独立 Keychain key "accounts_codex" 中，不干扰 Claude 数据）
+    /// Codex account list (stored under its own Keychain key "accounts_codex", so Claude data is untouched)
     @Published var codexAccounts: [Account] {
         didSet {
             saveCodexAccounts()
         }
     }
 
-    /// 当前激活的 Codex 账户 ID（存储在 UserDefaults 中）
+    /// ID of the active Codex account (stored in UserDefaults)
     @Published var currentCodexAccountId: UUID? {
         didSet {
             #if DEBUG
@@ -103,18 +103,18 @@ final class AccountStore: ObservableObject {
         }
     }
 
-    /// 当前激活的 Codex 账户
+    /// The active Codex account
     var currentCodexAccount: Account? {
         guard let id = currentCodexAccountId else { return codexAccounts.first }
         return codexAccounts.first { $0.id == id } ?? codexAccounts.first
     }
 
-    /// Codex Session Token（计算属性，指向当前 Codex 账户的 sessionKey 字段）
+    /// Codex session token (computed, points at the current Codex account's sessionKey field)
     var codexSessionToken: String {
         currentCodexAccount?.sessionKey ?? ""
     }
 
-    /// Codex 认证信息是否已配置
+    /// Whether Codex authentication is configured
     var hasValidCodexCredentials: Bool {
         !codexSessionToken.isEmpty
     }
@@ -122,13 +122,13 @@ final class AccountStore: ObservableObject {
     // MARK: - Initialization
 
     init() {
-        // MARK: - 加载多账户数据（v2.1.0）
+        // MARK: - Load multi account data (v2.1.0)
 
-        // 从 Keychain 加载账户列表（使用局部变量避免初始化顺序问题）
+        // Load the account list from the Keychain (into a local, to avoid initialization order problems)
         var loadedAccounts = keychain.loadAccounts() ?? []
         var loadedCurrentAccountId: UUID? = nil
 
-        // 加载当前账户 ID
+        // Load the current account ID
         #if DEBUG
         let currentAccountIdKey = "DEBUG_currentAccountId"
         #else
@@ -138,26 +138,26 @@ final class AccountStore: ObservableObject {
            let id = UUID(uuidString: idString) {
             loadedCurrentAccountId = id
         } else if let firstAccount = loadedAccounts.first {
-            // 如果没有保存当前账户 ID，默认使用第一个账户
+            // With no saved current account ID, default to the first account
             loadedCurrentAccountId = firstAccount.id
         }
 
-        // MARK: - 数据迁移（v2.0.x → v2.1.0 多账户）
+        // MARK: - Data migration (v2.0.x to v2.1.0 multi account)
 
-        // 检查是否需要从单账户迁移到多账户
+        // Check whether a single account needs migrating to multi account
         if loadedAccounts.isEmpty && !defaults.bool(forKey: "multiAccountMigrated") {
-            // 尝试从旧的单账户数据迁移
+            // Try migrating from the old single account data
             let oldSessionKey = keychain.loadSessionKey() ?? ""
             let oldOrgId = defaults.string(forKey: "organizationId") ?? ""
 
             if !oldSessionKey.isEmpty && !oldOrgId.isEmpty {
                 Logger.settings.notice("[Migration] Migrating single account to multi-account system")
 
-                // 获取组织名称（如果有缓存）
+                // Get the organization name (if it is cached)
                 let cachedOrgs = Self.loadOrganizations(from: defaults)
                 let orgName = cachedOrgs.first { $0.uuid == oldOrgId }?.name ?? "Account 1"
 
-                // 创建第一个账户
+                // Create the first account
                 let migratedAccount = Account(
                     sessionKey: oldSessionKey,
                     organizationId: oldOrgId,
@@ -166,7 +166,7 @@ final class AccountStore: ObservableObject {
                 loadedAccounts = [migratedAccount]
                 loadedCurrentAccountId = migratedAccount.id
 
-                // 清理旧的单账户数据
+                // Clean up the old single account data
                 keychain.deleteSessionKey()
                 defaults.removeObject(forKey: "organizationId")
 
@@ -176,11 +176,11 @@ final class AccountStore: ObservableObject {
             defaults.set(true, forKey: "multiAccountMigrated")
         }
 
-        // 设置 accounts 和 currentAccountId
+        // Set accounts and currentAccountId
         self.accounts = loadedAccounts
         self.currentAccountId = loadedCurrentAccountId
 
-        // MARK: - 加载 Codex 账户数据
+        // MARK: - Load Codex account data
 
         let loadedCodexAccounts = keychain.loadCodexAccounts() ?? []
         self.codexAccounts = loadedCodexAccounts
@@ -197,9 +197,9 @@ final class AccountStore: ObservableObject {
             self.currentCodexAccountId = loadedCodexAccounts.first?.id
         }
 
-        // MARK: - 旧版迁移（v1.x → v2.0.0，保留向后兼容）
+        // MARK: - Legacy migration (v1.x to v2.0.0, kept for backward compatibility)
 
-        // 迁移 Organization ID 从 Keychain 到 UserDefaults（旧版迁移，现已包含在上面的多账户迁移中）
+        // Migrate the organization ID from the Keychain to UserDefaults (legacy migration, now covered by the multi account migration above)
         if !defaults.bool(forKey: "organizationIdMigrated") {
             if let oldOrgId = keychain.loadOrganizationId(), !oldOrgId.isEmpty {
                 Logger.settings.notice("[Migration] Found Organization ID in old Keychain location")
@@ -211,28 +211,28 @@ final class AccountStore: ObservableObject {
 
     // MARK: - Claude Account Management
 
-    /// 保存账户列表到 Keychain
+    /// Save the account list to the Keychain
     private func saveAccounts() {
-        // 在调用线程（主线程）快照，避免后台队列直接读取主线程持有的可变数组造成数据竞争
+        // Snapshot on the calling thread (the main thread) so background queues never read the mutable array the main thread owns, which would be a data race
         let snapshot = accounts
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             self?.keychain.saveAccounts(snapshot)
         }
     }
 
-    /// 添加新账户
-    /// - Parameter account: 要添加的账户
-    /// - Returns: 是否是第一个 Claude 账户（调用方可据此触发额外的一次性初始化逻辑）
+    /// Add a new account
+    /// - Parameter account: the account to add
+    /// - Returns: whether this is the first Claude account (callers use it to run one time setup)
     @discardableResult
     func addAccount(_ account: Account) -> Bool {
-        // 检查是否已存在相同 organizationId 的账户
+        // Check for an existing account with the same organizationId
         if accounts.contains(where: { $0.organizationId == account.organizationId }) {
             Logger.settings.notice("Account already exists, skipping: \(account.displayName)")
             return false
         }
         let wasFirstClaudeAccount = accounts.isEmpty
         accounts.append(account)
-        // 如果是第一个账户，自动设为当前账户
+        // Make the first account the current one automatically
         if accounts.count == 1 {
             currentAccountId = account.id
         }
@@ -244,8 +244,8 @@ final class AccountStore: ObservableObject {
         return wasFirstClaudeAccount
     }
 
-    /// 删除账户
-    /// - Parameter account: 要删除的账户
+    /// Delete an account
+    /// - Parameter account: the account to delete
     func removeAccount(_ account: Account) {
         guard let index = accounts.firstIndex(where: { $0.id == account.id }) else { return }
 
@@ -253,18 +253,18 @@ final class AccountStore: ObservableObject {
         accounts.remove(at: index)
         NotificationManager.shared.resetNotificationStates(for: .claude, accountId: account.id)
 
-        // 如果删除的是当前账户，切换到第一个账户
+        // When the deleted account was the current one, switch to the first account
         if wasCurrentAccount {
             currentAccountId = accounts.first?.id
-            // 发送账户变更通知
+            // Post the account changed notification
             postAccountChanged(provider: .claude)
         }
 
         Logger.settings.notice("Removed account: \(account.displayName)")
     }
 
-    /// 切换到指定账户
-    /// - Parameter account: 要切换到的账户
+    /// Switch to the given account
+    /// - Parameter account: the account to switch to
     func switchToAccount(_ account: Account) {
         guard account.id != currentAccountId else { return }
         guard accounts.contains(where: { $0.id == account.id }) else { return }
@@ -272,14 +272,14 @@ final class AccountStore: ObservableObject {
         currentAccountId = account.id
         Logger.settings.notice("Switched to account: \(account.displayName)")
 
-        // 发送账户变更通知
+        // Post the account changed notification
         postAccountChanged(provider: .claude)
     }
 
-    /// 更新账户信息
+    /// Update account information
     /// - Parameters:
-    ///   - account: 要更新的账户
-    ///   - alias: 新的别名（可选）
+    ///   - account: the account to update
+    ///   - alias: new alias (optional)
     func updateAccount(_ account: Account, alias: String?) {
         guard let index = accounts.firstIndex(where: { $0.id == account.id }) else { return }
         accounts[index].alias = alias
@@ -287,13 +287,13 @@ final class AccountStore: ObservableObject {
         Logger.settings.notice("Updated account alias: \(displayName)")
     }
 
-    /// 静默更新当前 Claude 账户的 session-token（不触发 accountChanged 通知）
-    /// 用于 OAuth refresh_token 轮换场景——只更新持久化数据，不触发重新拉取循环
+    /// Silently update the current Claude account's session token (does not post accountChanged)
+    /// For the OAuth refresh_token rotation case: only the persisted data changes, no refetch loop is triggered
     func silentlyUpdateCurrentClaudeSessionToken(_ token: String) {
         guard let id = currentAccountId,
               let index = accounts.firstIndex(where: { $0.id == id }) else { return }
         guard accounts[index].sessionKey != token else { return }
-        // Account 是 struct，下标赋值触发 accounts.didSet → saveAccounts()，自动持久化
+        // Account is a struct, so a subscript assignment triggers accounts.didSet and saveAccounts(), persisting automatically
         accounts[index].sessionKey = token
         Logger.settings.notice("Claude session-token updated silently (auto renewal)")
     }
@@ -301,16 +301,16 @@ final class AccountStore: ObservableObject {
     // MARK: - Codex Account Management
 
     private func saveCodexAccounts() {
-        // 在调用线程（主线程）快照，避免后台队列直接读取主线程持有的可变数组造成数据竞争
+        // Snapshot on the calling thread (the main thread) so background queues never read the mutable array the main thread owns, which would be a data race
         let snapshot = codexAccounts
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             self?.keychain.saveCodexAccounts(snapshot)
         }
     }
 
-    /// 添加/更新 Codex 账户
-    /// - Returns: (存储后的账户, 是否是新增的第一个 Codex 账户)
-    ///   第二个返回值供调用方判断是否需要执行"首次接入 Codex"的一次性初始化逻辑
+    /// Add or update a Codex account
+    /// - Returns: (the stored account, whether this is the first Codex account added)
+    ///   The second value lets callers decide whether to run the one time "first Codex account" setup
     @discardableResult
     func addCodexAccount(_ account: Account) -> (account: Account, wasFirstCodexAccount: Bool) {
         let stableId = account.organizationId.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -373,13 +373,13 @@ final class AccountStore: ObservableObject {
         Logger.settings.notice("Updated Codex account alias: \(self.codexAccounts[index].displayName)")
     }
 
-    /// 静默更新当前 Codex 账户的 session-token（不触发 accountChanged 通知）
-    /// 用于自动续期场景——只更新持久化数据，不触发重新拉取循环
+    /// Silently update the current Codex account's session token (does not post accountChanged)
+    /// For the auto renewal case: only the persisted data changes, no refetch loop is triggered
     func silentlyUpdateCurrentCodexSessionToken(_ token: String) {
         guard let id = currentCodexAccountId,
               let index = codexAccounts.firstIndex(where: { $0.id == id }) else { return }
         guard codexAccounts[index].sessionKey != token else { return }
-        // Account 是 struct，下标赋值触发 codexAccounts.didSet → saveCodexAccounts()，自动持久化
+        // Account is a struct, so a subscript assignment triggers codexAccounts.didSet and saveCodexAccounts(), persisting automatically
         codexAccounts[index].sessionKey = token
         Logger.settings.notice("Codex session-token updated silently (auto renewal)")
     }
@@ -394,9 +394,9 @@ final class AccountStore: ObservableObject {
         )
     }
 
-    /// 从 UserDefaults 加载组织列表（供 v2.0.x → v2.1.0 迁移时查找组织名称使用）
-    /// - Parameter defaults: UserDefaults 实例
-    /// - Returns: 组织列表，如果加载失败则返回空数组
+    /// Load the organization list from UserDefaults (used to look up organization names during the v2.0.x to v2.1.0 migration)
+    /// - Parameter defaults: the UserDefaults instance
+    /// - Returns: the organization list, or an empty array when loading fails
     private static func loadOrganizations(from defaults: UserDefaults) -> [Organization] {
         guard let data = defaults.data(forKey: "cachedOrganizations") else {
             return []

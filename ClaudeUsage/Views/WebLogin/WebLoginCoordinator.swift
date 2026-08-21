@@ -11,8 +11,8 @@ import Foundation
 import WebKit
 import os
 
-/// WKWebView 管理和 Cookie 检测核心逻辑
-/// 负责加载 claude.ai 登录页面、监测 sessionKey Cookie、验证并创建账户
+/// WKWebView management and cookie detection
+/// Loads the claude.ai login page, watches the sessionKey cookie, validates it and creates the account
 final class WebLoginCoordinator: ObservableObject {
 
     // MARK: - Login State
@@ -39,7 +39,7 @@ final class WebLoginCoordinator: ObservableObject {
     private var navigationDelegate: NavigationDelegate?
     private var uiDelegate: UIDelegate?
 
-    /// 允许导航的域名列表
+    /// The domains navigation is allowed to
     private let allowedDomains: Set<String> = [
         "claude.ai",
         "google.com",
@@ -65,7 +65,7 @@ final class WebLoginCoordinator: ObservableObject {
 
     private func setupWebView() {
         let config = WKWebViewConfiguration()
-        // nonPersistent：完全空白，任何 OAuth provider 都无已有 session，确保多账号添加时不会 auto-SSO
+        // nonPersistent: completely blank, no OAuth provider has an existing session, which keeps auto SSO from firing when adding multiple accounts
         config.websiteDataStore = .nonPersistent()
         config.preferences.isElementFullscreenEnabled = false
 
@@ -81,7 +81,7 @@ final class WebLoginCoordinator: ObservableObject {
         webView.uiDelegate = ui
         self.uiDelegate = ui
 
-        // 监听加载进度
+        // Watch the loading progress
         progressObservation = webView.observe(\.estimatedProgress) { [weak self] webView, _ in
             DispatchQueue.main.async {
                 self?.loadProgress = webView.estimatedProgress
@@ -93,14 +93,14 @@ final class WebLoginCoordinator: ObservableObject {
 
     // MARK: - Public Methods
 
-    /// 加载登录页面
+    /// Load the login page
     func loadLoginPage() {
         guard let url = URL(string: "https://claude.ai/login") else { return }
         loginState = .loading
         webView.load(URLRequest(url: url))
     }
 
-    /// 设置账户创建回调
+    /// Set the account creation callback
     func setOnAccountCreated(_ callback: @escaping (Account) -> Void) {
         self.onAccountCreated = callback
     }
@@ -111,8 +111,8 @@ final class WebLoginCoordinator: ObservableObject {
         progressObservation = nil
     }
 
-    /// 将登录 WebView（nonPersistent）中指定域的 cookie 复制到 default store
-    /// 用于在成功登录后同步 session，供 Level 2 静默刷新使用
+    /// Copy the cookies of the given domain from the login WebView (nonPersistent) into the default store
+    /// Syncs the session after a successful login, for use by the Level 2 silent refresh
     private func transferCookiesToDefaultStore(domains: [String]) {
         let sourceStore = webView.configuration.websiteDataStore.httpCookieStore
         let destStore = WKWebsiteDataStore.default().httpCookieStore
@@ -125,7 +125,7 @@ final class WebLoginCoordinator: ObservableObject {
 
     // MARK: - Cookie Monitoring
 
-    /// 启动 Cookie 轮询定时器
+    /// Start the cookie polling timer
     fileprivate func startCookieMonitoring() {
         cookieTimer?.invalidate()
         cookieTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
@@ -133,7 +133,7 @@ final class WebLoginCoordinator: ObservableObject {
         }
     }
 
-    /// 检查 Cookie 中是否包含 sessionKey
+    /// Check whether the cookies contain a sessionKey
     private func checkForSessionKey() {
         let cookieStore = webView.configuration.websiteDataStore.httpCookieStore
         cookieStore.getAllCookies { [weak self] cookies in
@@ -143,8 +143,8 @@ final class WebLoginCoordinator: ObservableObject {
             guard let sessionCookie = claudeCookies.first(where: { $0.name == "sessionKey" }) else { return }
 
             let sessionKey = sessionCookie.value
-            // 将 WebView 的完整 cookie（含 cf_clearance/__cf_bm）拼成 header，
-            // 避免验证请求因缺少 Cloudflare 通行证而被拦截
+            // Assemble the WebView's full cookie set (cf_clearance and __cf_bm included) into a header,
+            // so the validation request is not blocked for lack of the Cloudflare pass
             let cookieHeader = claudeCookies.map { "\($0.name)=\($0.value)" }.joined(separator: "; ")
             Logger.settings.info("WebLogin: detected the sessionKey cookie")
 
@@ -158,7 +158,7 @@ final class WebLoginCoordinator: ObservableObject {
 
     // MARK: - Validation
 
-    /// 验证 sessionKey 并获取组织信息
+    /// Validate the sessionKey and fetch the organization info
     private func validateSessionKey(_ sessionKey: String, cookieHeader: String) {
         loginState = .validating
 
@@ -177,7 +177,7 @@ final class WebLoginCoordinator: ObservableObject {
                             alias: nil
                         )
 
-                        // 添加并切换到新账户
+                        // Add the new account and switch to it
                         UserSettings.shared.addAccount(account)
                         UserSettings.shared.switchToAccount(account)
 
@@ -200,7 +200,7 @@ final class WebLoginCoordinator: ObservableObject {
                     self.loginState = .failed(message: message)
                     Logger.settings.error("WebLogin: validation failed - \(message)")
 
-                    // 验证失败后重新开始监听
+                    // Start listening again after a failed validation
                     self.startCookieMonitoring()
                 }
             }
@@ -212,7 +212,7 @@ final class WebLoginCoordinator: ObservableObject {
 
 extension WebLoginCoordinator {
 
-    /// 独立的 NavigationDelegate 类，避免 NSObject + ObservableObject 冲突
+    /// A separate NavigationDelegate class, to avoid the NSObject plus ObservableObject conflict
     final class NavigationDelegate: NSObject, WKNavigationDelegate {
         private weak var coordinator: WebLoginCoordinator?
 
@@ -230,7 +230,7 @@ extension WebLoginCoordinator {
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             guard let coordinator = coordinator else { return }
-            // 页面加载完成后，如果还没在验证就开始监听 Cookie
+            // Once the page has loaded, start watching the cookies unless validation is already running
             if case .validating = coordinator.loginState { return }
             if case .success = coordinator.loginState { return }
             coordinator.loginState = .waitingForLogin
@@ -238,7 +238,7 @@ extension WebLoginCoordinator {
         }
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-            // 忽略取消的导航
+            // Ignore a cancelled navigation
             let nsError = error as NSError
             if nsError.code == NSURLErrorCancelled { return }
 
@@ -257,7 +257,7 @@ extension WebLoginCoordinator {
                 return
             }
 
-            // 检查域名是否在允许列表中
+            // Check whether the domain is on the allow list
             let isAllowed = coordinator.allowedDomains.contains { domain in
                 host == domain || host.hasSuffix(".\(domain)")
             }
@@ -265,7 +265,7 @@ extension WebLoginCoordinator {
             if isAllowed {
                 decisionHandler(.allow)
             } else {
-                // 在系统浏览器中打开不允许的域名
+                // Open a domain that is not allowed in the system browser
                 NSWorkspace.shared.open(url)
                 decisionHandler(.cancel)
             }
@@ -277,8 +277,8 @@ extension WebLoginCoordinator {
 
 extension WebLoginCoordinator {
 
-    /// 处理页面通过 window.open() 触发的弹出窗口
-    /// Google OAuth 传统流程会用弹出窗口完成授权，缺少此代理会导致登录静默失败
+    /// Handle popup windows the page opens through window.open()
+    /// The classic Google OAuth flow authorizes in a popup, and without this delegate the login fails silently
     final class UIDelegate: NSObject, WKUIDelegate {
         private weak var coordinator: WebLoginCoordinator?
 

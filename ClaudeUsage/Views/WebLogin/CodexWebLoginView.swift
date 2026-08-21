@@ -9,7 +9,7 @@
 import SwiftUI
 import WebKit
 
-/// Codex WebView 登录界面
+/// Codex WebView login UI
 struct CodexWebLoginView: View {
     @StateObject private var coordinator = CodexWebLoginCoordinator()
     var onAccountCreated: ((Account) -> Void)?

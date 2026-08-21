@@ -8,58 +8,58 @@
 
 import Foundation
 
-/// Claude API HTTP 请求头构建器
-/// 提供统一的请求头构建逻辑，用于绕过 Cloudflare 防护
-/// 包含完整的浏览器模拟 Headers
+/// Claude API HTTP header builder
+/// One place to build request headers, used to get past Cloudflare
+/// Carries a full browser impersonation header set
 class ClaudeAPIHeaderBuilder {
     // MARK: - Constants
 
-    /// 请求头里模拟的浏览器版本号（Chrome on macOS）。
-    /// 建议每隔半年左右手动升级一次，避免长期停留在过旧版本增加 Cloudflare 风控识别概率。
+    /// The browser version the headers impersonate (Chrome on macOS).
+    /// Worth bumping by hand every six months or so, since sitting on a very old version raises the odds Cloudflare flags it.
     private static let simulatedChromeVersion = "131.0.0.0"
 
     // MARK: - Public Methods
 
-    /// 构建 Claude API 请求的标准 HTTP Headers
+    /// Build the standard HTTP headers for a Claude API request
     /// - Parameters:
-    ///   - organizationId: 组织 ID（可选，某些 API 不需要）
-    ///   - sessionKey: 会话密钥
-    /// - Returns: HTTP Headers 字典
-    /// - Note: 这些 Headers 用于绕过 Cloudflare 反机器人检测
-    /// - Important: 请求头必须与真实浏览器请求保持一致，避免触发 Cloudflare Challenge
+    ///   - organizationId: organization ID (optional, some APIs do not need it)
+    ///   - sessionKey: session key
+    /// - Returns: the HTTP header dictionary
+    /// - Note: these headers are what gets past Cloudflare's bot detection
+    /// - Important: the headers have to match a real browser request, otherwise a Cloudflare challenge fires
     static func buildHeaders(
         organizationId: String?,
         sessionKey: String
     ) -> [String: String] {
         return [
-            // 基础 Headers
+            // Base headers
             "accept": "*/*",
             "accept-language": acceptLanguageHeader(),
             "content-type": "application/json",
 
-            // Anthropic 平台标识
+            // Anthropic platform identifiers
             "anthropic-client-platform": "web_claude_ai",
             "anthropic-client-version": "1.0.0",
 
-            // 浏览器标识（Chrome on macOS）
+            // Browser identifiers (Chrome on macOS)
             "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/\(simulatedChromeVersion) Safari/537.36",
 
-            // 来源和引用信息
+            // Origin and referrer
             "origin": "https://claude.ai",
             "referer": "https://claude.ai/settings/usage",
 
-            // Fetch API 相关（重要：Cloudflare 检测这些字段）
+            // Fetch API fields (important: Cloudflare checks these)
             "sec-fetch-dest": "empty",
             "sec-fetch-mode": "cors",
             "sec-fetch-site": "same-origin",
 
-            // 认证 Cookie
+            // Authentication cookie
             "Cookie": "sessionKey=\(sessionKey)"
         ]
     }
 
-    /// 根据系统语言偏好动态生成 accept-language，而非固定写死 zh-CN
-    /// （固定值会让非中文用户的请求在 Cloudflare 风控中显得不像真实浏览器，关联 Issue #58）
+    /// Build accept-language from the system language preference rather than hardcoding zh-CN
+    /// (a fixed value made requests from non Chinese users look less like a real browser to Cloudflare, see Issue #58)
     private static func acceptLanguageHeader() -> String {
         let languages = Locale.preferredLanguages.prefix(5)
         guard !languages.isEmpty else { return "en-US,en;q=0.9" }
@@ -70,12 +70,12 @@ class ClaudeAPIHeaderBuilder {
         }.joined(separator: ",")
     }
 
-    /// 为 URLRequest 应用标准 Headers
+    /// Apply the standard headers to a URLRequest
     /// - Parameters:
-    ///   - request: 要设置 Headers 的 URLRequest（传入传出参数）
-    ///   - organizationId: 组织 ID（可选，某些 API 不需要）
-    ///   - sessionKey: 会话密钥
-    /// - Note: 直接修改传入的 request 对象
+    ///   - request: the URLRequest to set headers on (inout)
+    ///   - organizationId: organization ID (optional, some APIs do not need it)
+    ///   - sessionKey: session key
+    /// - Note: modifies the request that was passed in
     static func applyHeaders(
         to request: inout URLRequest,
         organizationId: String?,

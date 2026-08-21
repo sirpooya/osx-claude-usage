@@ -9,9 +9,9 @@
 import SwiftUI
 import ServiceManagement
 
-/// 通用设置页面
-/// 使用卡片式布局，包含开机启动、显示设置、刷新设置和语言设置
-/// 各卡片内容按主题拆到 GeneralSettings*Section.swift，保持本文件体量可控
+/// General settings page
+/// A card layout covering launch at login, display settings, refresh settings and language
+/// Each card's content is split by topic into GeneralSettings*Section.swift, to keep this file manageable
 struct GeneralSettingsView: View {
     @ObservedObject private var settings = UserSettings.shared
     @State private var showErrorAlert = false
@@ -23,7 +23,7 @@ struct GeneralSettingsView: View {
                 GeneralSettingsDisplaySection()
                 GeneralSettingsDisplayOptionsSection()
 
-                // 刷新设置卡片
+                // Refresh settings card
                 SettingCard(
                     icon: "clock.arrow.trianglehead.2.counterclockwise.rotate.90",
                     iconColor: .green,
@@ -31,7 +31,7 @@ struct GeneralSettingsView: View {
                     hint: settings.refreshMode == .smart ? L.SettingsGeneral.refreshHintSmart : L.SettingsGeneral.refreshHintFixed
                 ) {
                     VStack(alignment: .leading, spacing: 12) {
-                        // 刷新模式选择
+                        // Refresh mode picker
                         Picker("", selection: $settings.refreshMode) {
                             ForEach(RefreshMode.allCases, id: \.self) { mode in
                                 Text(mode.localizedName).tag(mode)
@@ -41,7 +41,7 @@ struct GeneralSettingsView: View {
                         .labelsHidden()
                         .focusable(false)
 
-                        // 固定频率选择（仅在选择固定模式时显示）
+                        // Fixed interval picker (shown in fixed mode only)
                         if settings.refreshMode == .fixed {
                             HStack {
                                 Text(L.SettingsGeneral.refreshInterval)
@@ -60,7 +60,7 @@ struct GeneralSettingsView: View {
                     }
                 }
 
-                // 通知设置卡片
+                // Notification settings card
                 SettingCard(
                     icon: "bell.badge",
                     iconColor: .red,
@@ -89,7 +89,7 @@ struct GeneralSettingsView: View {
                     }
                 }
 
-                // 外观设置卡片
+                // Appearance settings card
                 SettingCard(
                     icon: "circle.lefthalf.filled",
                     iconColor: .indigo,
@@ -106,7 +106,7 @@ struct GeneralSettingsView: View {
                     .focusable(false)
                 }
 
-                // 时间格式设置卡片
+                // Time format settings card
                 SettingCard(
                     icon: "clock",
                     iconColor: .cyan,
@@ -123,7 +123,7 @@ struct GeneralSettingsView: View {
                         .labelsHidden()
                         .focusable(false)
 
-                        // 当前时间预览
+                        // Current time preview
                         HStack(spacing: 4) {
                             Text(L.SettingsGeneralTimeFormat.preview + ":")
                                 .font(.caption)
@@ -137,7 +137,7 @@ struct GeneralSettingsView: View {
                     }
                 }
 
-                // 语言设置卡片
+                // Language settings card
                 SettingCard(
                     icon: "globe",
                     iconColor: .orange,
@@ -154,7 +154,7 @@ struct GeneralSettingsView: View {
                     .focusable(false)
                 }
 
-                // 开机启动设置卡片
+                // Launch at login settings card
                 SettingCard(
                     icon: "power",
                     iconColor: .orange,
@@ -183,7 +183,7 @@ struct GeneralSettingsView: View {
                     }
                 }
 
-                // 重置按钮
+                // Reset button
                 HStack {
                     Spacer()
                     Button(L.SettingsGeneral.resetButton) {
@@ -200,10 +200,10 @@ struct GeneralSettingsView: View {
             .padding()
         }
         .onAppear {
-            // 设置页面打开时同步状态
+            // Sync the state when the settings page opens
             settings.syncLaunchAtLoginStatus()
 
-            // 监听错误通知
+            // Listen for the error notification
             NotificationCenter.default.addObserver(
                 forName: .launchAtLoginError,
                 object: nil,
@@ -223,13 +223,13 @@ struct GeneralSettingsView: View {
 
     // MARK: - Computed Properties
 
-    /// 时间预览字符串
+    /// Time preview string
     private var timePreviewString: String {
         let now = Date()
         return TimeFormatHelper.formatTimeOnly(now)
     }
 
-    /// 状态图标
+    /// Status icon
     private var statusIcon: String {
         switch settings.launchAtLoginStatus {
         case .enabled:
@@ -241,12 +241,12 @@ struct GeneralSettingsView: View {
         case .notFound:
             return "xmark.circle.fill"
         @unknown default:
-            // 未知状态按未启用处理，会在 onAppear 时同步真实状态
+            // An unknown state is treated as not enabled, and the real state is synced in onAppear
             return "circle"
         }
     }
 
-    /// 状态颜色
+    /// Status color
     private var statusColor: Color {
         switch settings.launchAtLoginStatus {
         case .enabled:
@@ -258,12 +258,12 @@ struct GeneralSettingsView: View {
         case .notFound:
             return .red
         @unknown default:
-            // 未知状态按未启用处理
+            // Treat an unknown state as not enabled
             return .secondary
         }
     }
 
-    /// 状态文本
+    /// Status text
     private var statusText: String {
         switch settings.launchAtLoginStatus {
         case .enabled:
@@ -275,14 +275,14 @@ struct GeneralSettingsView: View {
         case .notFound:
             return L.LaunchAtLogin.statusNotFound
         @unknown default:
-            // 未知状态按未启用处理
+            // Treat an unknown state as not enabled
             return L.LaunchAtLogin.statusDisabled
         }
     }
 
     // MARK: - Error Handling
 
-    /// 处理开机启动错误
+    /// Handle a launch at login error
     private func handleLaunchError(_ notification: Notification) {
         guard let userInfo = notification.userInfo,
               let error = userInfo["error"] as? Error,

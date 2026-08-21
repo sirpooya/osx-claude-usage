@@ -8,7 +8,7 @@
 
 import SwiftUI
 
-/// Codex 用量列视图（双 Provider 模式右列）
+/// Codex usage column (the right column in dual provider mode)
 struct CodexColumnView: View {
     let codexUsageData: CodexUsageData
     @Binding var showRemainingMode: Bool
@@ -27,7 +27,7 @@ struct CodexColumnView: View {
     // MARK: - Body
 
     var body: some View {
-        // 每条限制一行整宽进度条，与 Claude 列同一套布局
+        // One full width bar per limit, the same layout as the Claude column
         VStack(spacing: 12) {
             ForEach(activeCodexTypes, id: \.self) { type in
                 UnifiedLimitRow(

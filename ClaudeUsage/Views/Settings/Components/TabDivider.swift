@@ -8,8 +8,8 @@
 
 import SwiftUI
 
-/// 标签页分隔符
-/// 优雅的渐变短竖线，两头透明渐变
+/// Tab divider
+/// A short vertical gradient line, fading out at both ends
 struct TabDivider: View {
     var body: some View {
         LinearGradient(

@@ -8,11 +8,11 @@
 
 import SwiftUI
 
-/// Codex OAuth 登录进度窗口
+/// Codex OAuth login progress window
 ///
-/// 实际认证在系统默认浏览器中完成，本窗口仅展示进度与结果。
-/// 这样可彻底绕开 WKWebView 对 Google 嵌入式登录的封锁，以及 passkey/WebAuthn 在
-/// 内嵌 WebView 中不可用的问题。
+/// The authentication itself happens in the default browser and this window only shows progress and the result.
+/// That fully sidesteps WKWebView's block on Google's embedded login, and the fact that passkeys and WebAuthn
+/// do not work in an embedded WebView.
 struct CodexOAuthLoginView: View {
     @StateObject private var coordinator = CodexOAuthCoordinator()
     var onAccountCreated: ((Account) -> Void)?

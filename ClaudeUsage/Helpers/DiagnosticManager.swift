@@ -11,8 +11,8 @@ import AppKit
 import Combine
 import UniformTypeIdentifiers
 
-/// 诊断管理器
-/// 根据已配置的账户自动选择对应的 runner 执行诊断测试，汇总结果生成多 provider 报告
+/// Diagnostic manager
+/// Picks the runner matching each configured account, runs the diagnostics and merges the results into a multi provider report
 @MainActor
 class DiagnosticManager: ObservableObject {
 
@@ -28,7 +28,7 @@ class DiagnosticManager: ObservableObject {
 
     // MARK: - Public Methods
 
-    /// 执行完整的诊断测试（自动按已配置账户决定测试范围）
+    /// Run the full diagnostic suite (scope follows the configured accounts)
     func runDiagnosticTest() async {
         isTesting = true
         statusMessage = L.Diagnostic.testingConnection
@@ -65,7 +65,7 @@ class DiagnosticManager: ObservableObject {
         statusMessage = report.overallSuccess ? L.Diagnostic.testSuccess : L.Diagnostic.testFailed
     }
 
-    /// 显示保存对话框并导出报告
+    /// Show the save dialog and export the report
     func saveReportWithDialog() {
         guard let report = latestReport else { return }
 

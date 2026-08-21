@@ -5,7 +5,7 @@
 //  Created by Claude Code on 2025-12-02.
 //  Copyright © 2025 f-is-h. All rights reserved.
 //
-//  说明卡片与诊断卡片，从 AuthSettingsView.swift 拆出
+//  The help card and the diagnostics card, split out of AuthSettingsView.swift
 
 import SwiftUI
 
@@ -65,7 +65,7 @@ extension AuthSettingsView {
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
-                // 诊断组件
+                // Diagnostics component
                 DiagnosticsView()
                     .padding(.top, 4)
             }

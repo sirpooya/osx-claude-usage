@@ -9,14 +9,14 @@
 import Foundation
 import OSLog
 
-/// Codex session token 静默刷新协调器
-/// 通过 URLSession GET chatgpt.com，触发服务端 SSR OAuth refresh，
-/// 从 client-bootstrap JSON 读取服务端新生成的 accessToken。
+/// Codex session token silent refresh coordinator
+/// GETs chatgpt.com through URLSession to trigger the server side SSR OAuth refresh,
+/// then reads the freshly generated accessToken out of the client-bootstrap JSON.
 ///
-/// 为什么用 SSR 而不是 /api/auth/session：
-///   - GET /api/auth/session 只返回 JWE 中缓存的 accessToken，不触发 OAuth refresh
-///   - SSR 渲染时服务端中间件会检测 accessToken 是否过期，并用 JWE 中的 refresh token 刷新
-///   - 成功条件：JWE 中的 OAuth refresh token 尚未过期（通常比 accessToken 有效期更长）
+/// Why SSR rather than /api/auth/session:
+///   - GET /api/auth/session only returns the accessToken cached in the JWE, it triggers no OAuth refresh
+///   - during SSR the server middleware checks whether the accessToken expired and refreshes it with the refresh token inside the JWE
+///   - success condition: the OAuth refresh token inside the JWE has not expired yet (it normally outlives the accessToken)
 @MainActor
 final class CodexTokenRefreshCoordinator: NSObject {
 
@@ -32,7 +32,7 @@ final class CodexTokenRefreshCoordinator: NSObject {
 
     // MARK: - Public
 
-    /// 刷新 accessToken。成功时 Result.success 携带新鲜的 accessToken 字符串。
+    /// Refresh the accessToken. On success Result.success carries the fresh accessToken string.
     func refresh(completion: @escaping (Result<String, Error>) -> Void) {
         guard !isRefreshing else {
             Logger.settings.debug("CodexTokenRefresh: a refresh is already in progress, skipping")
@@ -62,12 +62,12 @@ final class CodexTokenRefreshCoordinator: NSObject {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.assumesHTTP3Capable = false
-        // 使用与 /api/auth/session 端点相同的请求头（已证明能通过 Cloudflare）
+        // Use the same headers as the /api/auth/session endpoint (proven to get past Cloudflare)
         let sessionHeaders = CodexAPIHeaderBuilder.buildSessionHeaders(sessionToken: sessionToken)
         for (key, value) in sessionHeaders {
             request.setValue(value, forHTTPHeaderField: key)
         }
-        // 覆盖为 HTML 页面对应的 Fetch 模式
+        // Override the fetch mode fields for an HTML page
         request.setValue("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", forHTTPHeaderField: "accept")
         request.setValue("navigate", forHTTPHeaderField: "sec-fetch-mode")
         request.setValue("document", forHTTPHeaderField: "sec-fetch-dest")
@@ -85,7 +85,7 @@ final class CodexTokenRefreshCoordinator: NSObject {
 
             if let http = response as? HTTPURLResponse {
                 Logger.settings.debug("CodexTokenRefresh: HTTP \(http.statusCode)")
-                // Phase 0 诊断：记录 Set-Cookie 响应头，确认服务端是否续期 session-token
+                // Phase 0 diagnostics: log the Set-Cookie response header, to confirm whether the server renewed the session-token
                 let setCookieHeaders = http.allHeaderFields
                     .filter { ($0.key as? String)?.lowercased() == "set-cookie" }
                     .compactMap { $0.value as? String }
@@ -104,7 +104,7 @@ final class CodexTokenRefreshCoordinator: NSObject {
                 }
             }
 
-            // Level 1：检查 HTTPCookieStorage 是否收到新的 session-token
+            // Level 1: check whether HTTPCookieStorage received a new session-token
             let chatgptURL = URL(string: "https://chatgpt.com")!
             let storedCookies = HTTPCookieStorage.shared.cookies(for: chatgptURL) ?? []
             if let newToken = CodexWebLoginCoordinator.extractSessionToken(from: storedCookies) {

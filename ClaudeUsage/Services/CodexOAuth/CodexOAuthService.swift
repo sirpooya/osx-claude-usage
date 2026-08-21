@@ -9,23 +9,23 @@
 import Foundation
 import OSLog
 
-/// OAuth token 端点返回的凭据
+/// The credentials the OAuth token endpoint returns
 struct CodexOAuthTokens {
     let idToken: String
     let accessToken: String
-    /// refresh 端点未轮换时可能为空字符串，调用方应保留旧值
+    /// May be an empty string when the refresh endpoint does not rotate it, callers should keep the old value
     let refreshToken: String
     let accountId: String?
 }
 
-/// Codex OAuth token 端点交互
+/// Talking to the Codex OAuth token endpoint
 ///
-/// 两类请求 body 编码不同，与 OpenAI 官方 Codex CLI 一致：
-///   - 授权码交换（authorization_code）：`application/x-www-form-urlencoded`
-///   - refresh_token 续期：`application/json`
+/// The two request kinds encode their body differently, matching OpenAI's official Codex CLI:
+///   - the code exchange (authorization_code): `application/x-www-form-urlencoded`
+///   - the refresh_token renewal: `application/json`
 enum CodexOAuthService {
 
-    // MARK: - 授权码换 token（form-urlencoded）
+    // MARK: - Exchange the code for a token (form-urlencoded)
 
     static func exchangeCode(
         code: String,
@@ -54,7 +54,7 @@ enum CodexOAuthService {
         send(request, completion: completion)
     }
 
-    // MARK: - refresh_token 续期（JSON）
+    // MARK: - refresh_token renewal (JSON)
 
     static func refresh(
         refreshToken: String,
@@ -115,7 +115,7 @@ enum CodexOAuthService {
                 return
             }
             let idToken = json["id_token"] as? String ?? ""
-            // refresh 端点未轮换时可能不返回 refresh_token，置空由调用方保留旧值
+            // The refresh endpoint may return no refresh_token when it does not rotate it, so leave it empty and let the caller keep the old value
             let refreshToken = json["refresh_token"] as? String ?? ""
             let accountId = jwtClaim("chatgpt_account_id", fromAuthClaimOf: accessToken)
                 ?? jwtClaim("chatgpt_account_id", fromAuthClaimOf: idToken)
@@ -128,9 +128,9 @@ enum CodexOAuthService {
         }.resume()
     }
 
-    // MARK: - JWT 解析辅助
+    // MARK: - JWT parsing helpers
 
-    /// 解析 JWT payload 为字典
+    /// Parse a JWT payload into a dictionary
     private static func jwtPayload(_ token: String) -> [String: Any]? {
         let parts = token.split(separator: ".", omittingEmptySubsequences: false)
         guard parts.count == 3 else { return nil }
@@ -143,14 +143,14 @@ enum CodexOAuthService {
         return try? JSONSerialization.jsonObject(with: data) as? [String: Any]
     }
 
-    /// 从 JWT 的 `https://api.openai.com/auth` claim 下取某字段（如 chatgpt_account_id）
+    /// Read a field under a JWT's `https://api.openai.com/auth` claim (chatgpt_account_id, for instance)
     private static func jwtClaim(_ key: String, fromAuthClaimOf token: String) -> String? {
         guard let payload = jwtPayload(token),
               let auth = payload["https://api.openai.com/auth"] as? [String: Any] else { return nil }
         return auth[key] as? String
     }
 
-    /// 从 id_token 解析 email（用于账户显示名）
+    /// Parse the email out of the id_token (for the account display name)
     static func email(fromIDToken token: String) -> String? {
         jwtPayload(token)?["email"] as? String
     }

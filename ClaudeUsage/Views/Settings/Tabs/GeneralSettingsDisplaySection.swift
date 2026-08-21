@@ -8,8 +8,8 @@
 
 import SwiftUI
 
-/// 通用设置页的"显示设置"卡片：菜单栏图标样式 + 显示内容（图标/百分比）开关
-/// 从 GeneralSettingsView 拆出，便于保持单文件体量可控
+/// The "display settings" card on the general settings page: the menu bar icon style plus the icon/percentage switches
+/// Split out of GeneralSettingsView to keep single file size manageable
 struct GeneralSettingsDisplaySection: View {
     @ObservedObject private var settings = UserSettings.shared
 
@@ -21,7 +21,7 @@ struct GeneralSettingsDisplaySection: View {
             hint: L.SettingsGeneral.menubarHint
         ) {
             VStack(alignment: .leading, spacing: 16) {
-                // 图标样式选择
+                // Icon style picker
                 VStack(alignment: .leading, spacing: 8) {
                     Text(L.SettingsGeneral.menubarTheme)
                         .font(.subheadline)
@@ -37,7 +37,7 @@ struct GeneralSettingsDisplaySection: View {
                     .labelsHidden()
                     .focusable(false)
 
-                    // 描述文字
+                    // Description text
                     if !settings.iconStyleMode.description.isEmpty {
                         HStack(alignment: .top, spacing: 4) {
                             Image(systemName: "info.circle.fill")
@@ -54,7 +54,7 @@ struct GeneralSettingsDisplaySection: View {
 
                 Divider()
 
-                // 显示内容选择
+                // Display content picker
                 VStack(alignment: .leading, spacing: 8) {
                     Text(L.SettingsGeneral.displayContent)
                         .font(.subheadline)

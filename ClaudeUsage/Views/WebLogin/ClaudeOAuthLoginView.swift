@@ -8,10 +8,10 @@
 
 import SwiftUI
 
-/// Claude OAuth 登录进度窗口
+/// Claude OAuth login progress window
 ///
-/// 实际认证在系统默认浏览器中完成，本窗口仅展示进度与结果，
-/// 彻底绕开 WKWebView 对 Google / passkey 等登录方式的限制（Issue #49）。
+/// The authentication itself happens in the default browser and this window only shows progress and the result,
+/// which fully sidesteps WKWebView's limits on Google and passkey logins (Issue #49).
 struct ClaudeOAuthLoginView: View {
     @StateObject private var coordinator = ClaudeOAuthCoordinator()
     var onAccountCreated: ((Account) -> Void)?
@@ -93,9 +93,9 @@ struct ClaudeOAuthLoginView: View {
         }
     }
 
-    /// 手动回退区（Issue #68）：部分浏览器/环境下系统浏览器已跳到 localhost 回调页，
-    /// 但本地回调服务器收不到该请求，导致停在 localhost 页面无法自动返回。
-    /// 这里让用户把地址栏那条 http://localhost 链接直接粘回来完成登录。
+    /// The manual fallback area (Issue #68): in some browsers and environments the system browser has already reached the localhost callback page
+    /// while the local callback server never receives that request, leaving the user stuck on the localhost page with no automatic return.
+    /// This lets them paste that http://localhost link straight back to finish the login.
     @ViewBuilder
     private var manualFallback: some View {
         if showManualInput {

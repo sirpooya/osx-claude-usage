@@ -13,8 +13,8 @@ import Foundation
 // MARK: - UsageData.LimitData formatting
 
 extension UsageData.LimitData {
-    /// 格式化的剩余时间字符串（用于5小时限制，显示X小时Y分）
-    /// - Returns: 本地化的剩余时间描述（如 "2小时30分"）
+    /// Formatted time left (for the 5 hour limit, shows X hours Y minutes)
+    /// - Returns: the localized description of the time left (for example "2 hours 30 minutes")
     var formattedResetsInHours: String {
         guard let resetsAt = resetsAt else {
             return L.UsageData.notStartedReset
@@ -26,7 +26,7 @@ extension UsageData.LimitData {
             return L.UsageData.resettingSoon
         }
 
-        // 向上取整到分钟（使用 ceil 函数）
+        // Round up to the minute (with ceil)
         let totalMinutes = Int(ceil(resetsIn / 60))
         let hours = totalMinutes / 60
         let minutes = totalMinutes % 60
@@ -38,8 +38,8 @@ extension UsageData.LimitData {
         }
     }
 
-    /// 格式化的剩余时间字符串（用于7天限制，显示X天Y小时）
-    /// - Returns: 本地化的剩余时间描述（如 "剩余约3天12小时"）
+    /// Formatted time left (for the 7 day limit, shows X days Y hours)
+    /// - Returns: the localized description of the time left (for example "about 3 days 12 hours left")
     var formattedResetsInDays: String {
         guard let resetsAt = resetsAt else {
             return L.UsageData.notStartedReset
@@ -51,7 +51,7 @@ extension UsageData.LimitData {
             return L.UsageData.resettingSoon
         }
 
-        // 向上取整到小时
+        // Round up to the hour
         let totalHours = Int(ceil(resetsIn / 3600))
         let days = totalHours / 24
         let hours = totalHours % 24
@@ -59,13 +59,13 @@ extension UsageData.LimitData {
         if days > 0 {
             return L.UsageData.resetsInDays(days, hours)
         } else {
-            // 不足1天时，显示"约X小时"
+            // Under a day, show "about X hours"
             return L.UsageData.resetsInHours(hours, 0)
         }
     }
 
-    /// 格式化的重置时间字符串（短格式，用于5小时限制）
-    /// - Returns: 本地化的重置时间描述（如 "今天 14:30" 或 "明天 09:00"）
+    /// Formatted reset time (short form, for the 5 hour limit)
+    /// - Returns: the localized reset time (for example "Today 14:30" or "Tomorrow 09:00")
     var formattedResetTimeShort: String {
         guard let resetsAt = resetsAt else {
             return L.UsageData.unknown
@@ -84,8 +84,8 @@ extension UsageData.LimitData {
         }
     }
 
-    /// 格式化的重置时间字符串（长格式，用于7天限制）
-    /// - Returns: 本地化的重置日期描述（如 "11月29日 14时" 或 "Nov 29 2 PM"）
+    /// Formatted reset time (long form, for the 7 day limit)
+    /// - Returns: the localized reset date (for example "11月29日 14时" or "Nov 29 2 PM")
     var formattedResetDateLong: String {
         guard let resetsAt = resetsAt else {
             return L.UsageData.unknown
@@ -94,10 +94,10 @@ extension UsageData.LimitData {
         return TimeFormatHelper.formatDateHour(resetsAt, dateTemplate: "MMMd")
     }
 
-    // MARK: - 极简格式化方法（用于双模式两行显示）
+    // MARK: - Minimal formatting (for the two line dual mode display)
 
-    /// 极简格式化的剩余时间（省略零值单位）
-    /// - 示例: "45m", "1h30m", "3d12h"
+    /// Minimally formatted time left (zero units omitted)
+    /// - Examples: "45m", "1h30m", "3d12h"
     var formattedCompactRemaining: String {
         guard let resetsAt = resetsAt else {
             return "-"
@@ -110,7 +110,7 @@ extension UsageData.LimitData {
 
         let totalMinutes = Int(ceil(resetsIn / 60))
 
-        // 如果不足1小时，只显示分钟
+        // Under an hour, show minutes only
         if totalMinutes < 60 {
             return L.UsageData.compactRemainingMinutes(totalMinutes)
         }
@@ -118,20 +118,20 @@ extension UsageData.LimitData {
         let totalHours = totalMinutes / 60
         let remainingMinutes = totalMinutes % 60
 
-        // 如果不足1天，显示小时+分钟
+        // Under a day, show hours plus minutes
         if totalHours < 24 {
             return L.UsageData.compactRemainingHours(totalHours, remainingMinutes)
         }
 
-        // 超过1天，显示天+小时
+        // Over a day, show days plus hours
         let days = totalHours / 24
         let hours = totalHours % 24
 
         return L.UsageData.compactRemainingDays(days, hours)
     }
 
-    /// 格式化的重置时间（用于5小时限制）
-    /// - 示例: "Today 15:07" / "Today 3:07 PM", "Tomorrow 09:30" / "Tomorrow 9:30 AM"
+    /// Formatted reset time (for the 5 hour limit)
+    /// - Examples: "Today 15:07" / "Today 3:07 PM", "Tomorrow 09:30" / "Tomorrow 9:30 AM"
     var formattedCompactResetTime: String {
         guard let resetsAt = resetsAt else {
             return "-"
@@ -139,25 +139,25 @@ extension UsageData.LimitData {
 
         let calendar = Calendar.current
 
-        // 判断是今天还是明天
+        // Decide between today and tomorrow
         let prefix: String
         if calendar.isDateInToday(resetsAt) {
             prefix = L.UsageData.today
         } else if calendar.isDateInTomorrow(resetsAt) {
             prefix = L.UsageData.tomorrow
         } else {
-            // 其他日期显示月日
+            // Any other date shows month and day
             let formatter = DateFormatter()
             formatter.locale = UserSettings.shared.appLocale
             formatter.timeZone = TimeZone.current
-            // 根据语言使用不同的日期格式
+            // Different date formats per language
             let langCode = UserSettings.shared.appLocale.identifier
             if langCode.hasPrefix("zh") || langCode.hasPrefix("ja") {
-                formatter.dateFormat = "M月d日"  // 中文/日语：12月25日
+                formatter.dateFormat = "M月d日"  // Chinese / Japanese: 12月25日
             } else if langCode.hasPrefix("ko") {
-                formatter.dateFormat = "M월d일"  // 韩语：12월25일
+                formatter.dateFormat = "M월d일"  // Korean: 12월25일
             } else {
-                formatter.dateFormat = "MMM d"   // 英文：Dec 25
+                formatter.dateFormat = "MMM d"   // English: Dec 25
             }
             prefix = formatter.string(from: resetsAt)
         }
@@ -167,8 +167,8 @@ extension UsageData.LimitData {
         return "\(prefix) \(timeString)"
     }
 
-    /// 格式化的重置日期（用于7天限制，精确到小时）
-    /// - 示例: "Dec 16 15:00" / "Dec 16 3 PM" (英文), "12月16日 15时" (中文)
+    /// Formatted reset date (for the 7 day limit, hour precision)
+    /// - Examples: "Dec 16 15:00" / "Dec 16 3 PM" (English), "12月16日 15时" (Chinese)
     var formattedCompactResetDate: String {
         guard let resetsAt = resetsAt else {
             return "-"
@@ -177,8 +177,8 @@ extension UsageData.LimitData {
         return TimeFormatHelper.formatDateHour(resetsAt, dateTemplate: "MMMd")
     }
 
-    /// 格式化的重置日期（精确到分钟，仅用于 Codex secondary_window）
-    /// - 示例: "Dec 16 15:42" / "Dec 16 3:42 PM", "12月16日 15:42"
+    /// Formatted reset date (minute precision, Codex secondary_window only)
+    /// - Examples: "Dec 16 15:42" / "Dec 16 3:42 PM", "12月16日 15:42"
     var formattedCompactResetDateWithMinutes: String {
         guard let resetsAt = resetsAt else {
             return "-"
@@ -187,8 +187,8 @@ extension UsageData.LimitData {
         return TimeFormatHelper.formatDateMinute(resetsAt, dateTemplate: "MMMd")
     }
 
-    /// 极简格式化的剩余时间（精确到分钟，仅用于 Codex secondary_window）
-    /// - 示例: "45m", "1h30m", "3d12h35m"
+    /// Minimally formatted time left (minute precision, Codex secondary_window only)
+    /// - Examples: "45m", "1h30m", "3d12h35m"
     var formattedCompactRemainingWithMinutes: String {
         guard let resetsAt = resetsAt else {
             return "-"
@@ -222,20 +222,20 @@ extension UsageData.LimitData {
 // MARK: - UsageData formatting (backward-compat shims)
 
 extension UsageData {
-    /// 格式化的剩余时间字符串
-    /// - Note: 向后兼容属性
+    /// Formatted time left
+    /// - Note: backward compatible property
     var formattedResetsIn: String {
         return primaryLimit?.formattedResetsInHours ?? L.UsageData.notStartedReset
     }
 
-    /// 格式化的重置时间字符串
-    /// - Note: 向后兼容属性
+    /// Formatted reset time
+    /// - Note: backward compatible property
     var formattedResetTime: String {
         return primaryLimit?.formattedResetTimeShort ?? L.UsageData.unknown
     }
 
-    /// 根据使用百分比返回对应的状态颜色
-    /// - Note: 向后兼容属性
+    /// Status color for a usage percentage
+    /// - Note: backward compatible property
     var statusColor: String {
         let percentage = self.percentage
         if percentage < 50 {
@@ -253,8 +253,8 @@ extension UsageData {
 // MARK: - ExtraUsageData formatting
 
 extension ExtraUsageData {
-    /// 格式化的使用金额/总额度字符串（默认模式）
-    /// - Returns: 如 "$12.50 / $50.00"
+    /// Formatted used amount over total amount (default mode)
+    /// - Returns: for example "$12.50 / $50.00"
     var formattedUsageAmount: String {
         guard enabled, let used = used, let limit = limit else {
             return L.ExtraUsage.notEnabled
@@ -262,8 +262,8 @@ extension ExtraUsageData {
         return L.ExtraUsage.usageAmount(used, limit, symbol: currencySymbol)
     }
 
-    /// 格式化的剩余金额字符串（剩余模式）
-    /// - Returns: 如 "还可使用 $37"
+    /// Formatted remaining amount (remaining mode)
+    /// - Returns: for example "$37 left"
     var formattedRemainingAmount: String {
         guard enabled, let used = used, let limit = limit else {
             return L.ExtraUsage.notEnabled
@@ -272,8 +272,8 @@ extension ExtraUsageData {
         return L.ExtraUsage.remainingAmount(remaining, symbol: currencySymbol)
     }
 
-    /// 极简格式化的使用金额（用于列表显示）
-    /// - Returns: 如 "$10.47/$25"
+    /// Minimally formatted used amount (for list rows)
+    /// - Returns: for example "$10.47/$25"
     var formattedCompactAmount: String {
         guard enabled, let used = used, let limit = limit else {
             return "-"

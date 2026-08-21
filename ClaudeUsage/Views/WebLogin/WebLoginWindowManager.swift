@@ -9,9 +9,9 @@
 import AppKit
 import SwiftUI
 
-/// Web 登录窗口管理单例
-/// 负责创建、显示和关闭登录窗口
-/// 登录 WebView 使用 nonPersistent 数据存储，确保多账号添加时不会因已有 session 而 auto-SSO
+/// Web login window manager singleton
+/// Creates, shows and closes the login window
+/// The login WebView uses nonPersistent storage, so adding several accounts cannot auto SSO through an existing session
 final class WebLoginWindowManager {
     static let shared = WebLoginWindowManager()
 
@@ -29,8 +29,8 @@ final class WebLoginWindowManager {
             return
         }
 
-        // 改用 OAuth（系统浏览器）登录，替代内嵌 WKWebView，
-        // 以支持 Google / 微软 / 企业 SSO / passkey 等在嵌入式 WebView 中受限的登录方式（Issue #49）
+        // Switched to OAuth in the system browser instead of an embedded WKWebView,
+        // which supports Google, Microsoft, enterprise SSO, passkeys and the other methods an embedded WebView limits (Issue #49)
         let loginView = ClaudeOAuthLoginView(onAccountCreated: onAccountCreated)
         let window = makeCompactWindow(title: L.WebLogin.windowTitle, content: loginView, width: 440, height: 380)
         self.loginWindow = window
@@ -59,8 +59,8 @@ final class WebLoginWindowManager {
             return
         }
 
-        // 改用 OAuth（系统浏览器）登录，替代内嵌 WKWebView，
-        // 以支持 Google / 微软 / 企业 SSO / passkey 等在嵌入式 WebView 中受限的登录方式
+        // Switched to OAuth in the system browser instead of an embedded WKWebView,
+        // which supports Google, Microsoft, enterprise SSO, passkeys and the other methods an embedded WebView limits
         let loginView = CodexOAuthLoginView(onAccountCreated: onAccountCreated)
         let window = makeCompactWindow(title: L.WebLogin.codexWindowTitle, content: loginView, width: 440, height: 300)
         self.codexLoginWindow = window
@@ -98,7 +98,7 @@ final class WebLoginWindowManager {
         return window
     }
 
-    /// 固定尺寸的小窗口（用于 OAuth 进度展示，不可缩放）
+    /// A small fixed size window (for showing OAuth progress, not resizable)
     private func makeCompactWindow<V: View>(title: String, content: V, width: CGFloat, height: CGFloat) -> NSWindow {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: width, height: height),

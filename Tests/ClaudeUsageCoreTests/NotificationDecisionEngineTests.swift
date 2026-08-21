@@ -1,8 +1,8 @@
 import XCTest
 @testable import ClaudeUsageCore
 
-/// 覆盖风险：审计报告「六、测试覆盖」指出的重复/漏发通知——
-/// 陈旧标志清理写错、阈值穿越判定写错、重置检测写错都会在这里体现。
+/// Risk covered: the duplicate and missed notifications the audit report's "6. Test coverage" section called out.
+/// A wrong stale flag cleanup, a wrong threshold crossing test or wrong reset detection all show up here.
 final class NotificationDecisionEngineTests: XCTestCase {
 
     private let warningKey = "claude:acc:fiveHour"
@@ -51,7 +51,7 @@ final class NotificationDecisionEngineTests: XCTestCase {
         XCTAssertEqual(warnings, ["x": 1])
     }
 
-    // MARK: - evaluate: 90% 阈值穿越
+    // MARK: - evaluate: crossing the 90% threshold
 
     func testEvaluateFiresWarningWhenCrossing90Percent() {
         let (actions, warnings) = NotificationDecisionEngine.evaluate(
@@ -86,7 +86,7 @@ final class NotificationDecisionEngineTests: XCTestCase {
     }
 
     func testEvaluateDoesNotFireWhenAlreadyAtThresholdWithoutCrossing() {
-        // previous 已经 >= 阈值，说明这不是一次"穿越"，只是同一水平的重复读数
+        // previous is already at or above the threshold, so this is not a crossing, only a repeat reading at the same level
         let (actions, _) = NotificationDecisionEngine.evaluate(
             current: 91, previous: 90,
             currentResetsAt: nil, previousResetsAt: nil,
@@ -97,8 +97,8 @@ final class NotificationDecisionEngineTests: XCTestCase {
     }
 
     func testEvaluateDoesNotFireWhenStayingAboveThresholdWithoutPreviousData() {
-        // previous == nil 时按 0 处理，不应因为"从 0 到 current"的跨越误判——
-        // 只要 current 本身 >= 阈值就该发；这里验证 current < 阈值时确实不发
+        // A nil previous is treated as 0, and the jump "from 0 to current" must not be misread:
+        // as long as current itself is at or above the threshold it should fire; this checks that a current below the threshold does not
         let (actions, _) = NotificationDecisionEngine.evaluate(
             current: 50, previous: nil,
             currentResetsAt: nil, previousResetsAt: nil,
@@ -108,7 +108,7 @@ final class NotificationDecisionEngineTests: XCTestCase {
         XCTAssertTrue(actions.isEmpty)
     }
 
-    // MARK: - evaluate: 75% 早期预警（仅 sevenDay/codexSecondary 类型传 earlyWarningKey）
+    // MARK: - evaluate: the 75% early warning (only the sevenDay and codexSecondary types pass an earlyWarningKey)
 
     func testEvaluateFiresEarlyWarningWhenCrossing75Percent() {
         let (actions, warnings) = NotificationDecisionEngine.evaluate(
@@ -135,7 +135,7 @@ final class NotificationDecisionEngineTests: XCTestCase {
     }
 
     func testEvaluateDoesNotFireEarlyWarningWhenTypeIsIneligible() {
-        // earlyWarningKey == nil 模拟非 sevenDay/codexSecondary 类型：即使跨越 75% 也不发早期预警
+        // earlyWarningKey == nil simulates a type other than sevenDay or codexSecondary: crossing 75% still sends no early warning
         let (actions, _) = NotificationDecisionEngine.evaluate(
             current: 78, previous: 60,
             currentResetsAt: nil, previousResetsAt: nil,
@@ -145,7 +145,7 @@ final class NotificationDecisionEngineTests: XCTestCase {
         XCTAssertTrue(actions.isEmpty)
     }
 
-    // MARK: - evaluate: 重置检测
+    // MARK: - evaluate: reset detection
 
     func testEvaluateFiresResetAndClearsBothKeysOnPercentageDrop() {
         let (actions, warnings) = NotificationDecisionEngine.evaluate(
@@ -161,7 +161,7 @@ final class NotificationDecisionEngineTests: XCTestCase {
     }
 
     func testEvaluateFiresResetAndClearsBothKeysOnResetsAtChange() {
-        // 百分比骤降之外的第二条重置触发路径：resetsAt 变了且百分比下降
+        // The second reset trigger besides a sharp percentage drop: resetsAt changed and the percentage fell
         let previous = Date()
         let current = previous.addingTimeInterval(3600)
         let (actions, warnings) = NotificationDecisionEngine.evaluate(
@@ -185,14 +185,14 @@ final class NotificationDecisionEngineTests: XCTestCase {
         XCTAssertTrue(actions.isEmpty)
     }
 
-    // MARK: - evaluate: 陈旧标志清理（应用未运行期间配额已重置）
+    // MARK: - evaluate: stale flag cleanup (the quota reset while the app was not running)
 
     func testEvaluateClearsStaleFlagFromPreviousCycleAndRefires() {
         let oldCycle = Date(timeIntervalSince1970: 1000)
         let newCycle = Date(timeIntervalSince1970: 5000)
 
-        // 标志属于 oldCycle，但当前 resetsAt 已经是 newCycle——应用未运行期间发生了重置，
-        // isReset 的内存对比（无 previous 或 previous 已经很低）捕获不到，需要靠陈旧标志清理来避免漏发
+        // The flag belongs to oldCycle while the current resetsAt is already newCycle, so a reset happened while the app was not running.
+        // isReset's in memory comparison (no previous, or a previous that is already very low) cannot catch it, and the stale flag cleanup is what keeps it from being missed
         let (actions, warnings) = NotificationDecisionEngine.evaluate(
             current: 92, previous: 10,
             currentResetsAt: newCycle, previousResetsAt: newCycle,
@@ -216,7 +216,7 @@ final class NotificationDecisionEngineTests: XCTestCase {
     }
 
     func testEvaluateTreatsExactlyOneSecondApartCycleAsUnchanged() {
-        // clearIfStale 用 `> 1` 秒判断，恰好相差 1 秒不应被当作陈旧（边界值）
+        // clearIfStale tests with `> 1` second, so a difference of exactly 1 second must not count as stale (the boundary)
         let oldCycle = Date(timeIntervalSince1970: 5000)
         let newCycle = Date(timeIntervalSince1970: 5001)
         let (actions, warnings) = NotificationDecisionEngine.evaluate(
@@ -225,12 +225,12 @@ final class NotificationDecisionEngineTests: XCTestCase {
             warningKey: warningKey, earlyWarningKey: nil,
             notifiedWarnings: [warningKey: oldCycle.timeIntervalSince1970]
         )
-        XCTAssertTrue(actions.isEmpty, "1 秒内的抖动不应被当作新周期而重新触发警告")
+        XCTAssertTrue(actions.isEmpty, "A 1 second jitter must not be read as a new window and re-trigger the warning")
         XCTAssertEqual(warnings[warningKey], oldCycle.timeIntervalSince1970)
     }
 
     func testEvaluateDoesNotClearFlagWhenCurrentResetsAtIsNilLikeExtraUsage() {
-        // Extra Usage 一类没有 resetsAt 的类型：currentCycle == 0 时应跳过陈旧清理，维持原有行为
+        // Types without a resetsAt, such as Extra Usage: a currentCycle of 0 should skip the stale cleanup and keep the existing behavior
         let (actions, warnings) = NotificationDecisionEngine.evaluate(
             current: 95, previous: 92,
             currentResetsAt: nil, previousResetsAt: nil,
@@ -242,8 +242,8 @@ final class NotificationDecisionEngineTests: XCTestCase {
     }
 
     func testEvaluateMigratesLegacyBoolFlagAsAlwaysStale() {
-        // 旧版 [String: Bool] 迁移为 1.0（NotificationManager.init 里做的转换），
-        // 与任何真实 resetsAt epoch 都不同，应被当作陈旧标志清理并允许重新通知
+        // The legacy [String: Bool] migrates to 1.0 (the conversion in NotificationManager.init),
+        // which differs from any real resetsAt epoch, so it should be cleaned up as a stale flag and allow a fresh notification
         let cycle = Date(timeIntervalSince1970: 999_999)
         let (actions, warnings) = NotificationDecisionEngine.evaluate(
             current: 92, previous: 10,

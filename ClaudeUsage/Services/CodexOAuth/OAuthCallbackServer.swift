@@ -10,11 +10,11 @@ import Foundation
 import Network
 import OSLog
 
-/// 本地 OAuth 回调服务器（基于 Network.framework，无第三方依赖）
+/// Local OAuth callback server (built on Network.framework, no third party dependency)
 ///
-/// 监听 localhost 指定端口，捕获系统浏览器重定向回来的
-/// `/auth/callback?code=...&state=...`，向浏览器返回一个成功页面，
-/// 并把 query 参数通过 onCallback 投递给上层。
+/// Listens on a localhost port, catches the
+/// `/auth/callback?code=...&state=...` the system browser redirects back, returns a success page to the browser
+/// and hands the query parameters up through onCallback.
 final class OAuthCallbackServer {
 
     private var listener: NWListener?
@@ -23,12 +23,12 @@ final class OAuthCallbackServer {
     private var onCallback: (([String: String]) -> Void)?
     private var didDeliver = false
 
-    /// 依次尝试端口列表，绑定第一个可用端口
-    /// - Returns: 成功绑定的端口；全部失败返回 nil
+    /// Tries the port list in order, binding the first one available
+    /// - Returns: the port it bound, or nil when they all fail
     func start(ports: [UInt16], onCallback: @escaping ([String: String]) -> Void) -> UInt16? {
         self.onCallback = onCallback
-        // 重置一次性投递标志：coordinator 复用同一个 server 实例做重试登录，
-        // 若不重置，第一次失败后的重试即使浏览器端真实拿到 code，回调也会被静默丢弃。
+        // Reset the deliver once flag: the coordinator reuses the same server instance for a retried login,
+        // and without the reset a retry after a first failure would silently drop the callback even when the browser really did get a code.
         self.didDeliver = false
         for p in ports where startListener(on: p) {
             self.port = p
@@ -46,9 +46,9 @@ final class OAuthCallbackServer {
         guard let nwPort = NWEndpoint.Port(rawValue: port) else { return false }
         let params = NWParameters.tcp
         params.allowLocalEndpointReuse = true
-        // 不强制 requiredLocalEndpoint：同时监听 IPv4/IPv6 回环，
-        // 避免浏览器把 localhost 解析为 ::1 而服务器只绑 127.0.0.1 导致连接空白。
-        // OAuth code 受 PKCE + state 保护且一次性、短时有效，监听回环可接受。
+        // requiredLocalEndpoint is deliberately not forced: listening on both the IPv4 and IPv6 loopback
+        // avoids the blank connection you get when the browser resolves localhost to ::1 while the server only bound 127.0.0.1.
+        // The OAuth code is protected by PKCE and state, single use and short lived, so listening on loopback is acceptable.
 
         let listener: NWListener
         do {
@@ -66,8 +66,8 @@ final class OAuthCallbackServer {
                 ready = true
                 sema.signal()
             case .waiting(let error):
-                // 端口被占用时 NWListener 进入 waiting（持续重试），不会 failed。
-                // 立即 signal 以便快速切换到下一个端口，并记录真实原因。
+                // When the port is taken, NWListener goes to waiting (retrying indefinitely) rather than failed.
+                // Signal immediately so the next port can be tried quickly, and record the real reason.
                 Logger.settings.error("OAuthCallbackServer: port \(port) is unavailable (\(error.localizedDescription, privacy: .public)), trying the next one")
                 sema.signal()
             case .failed(let error):
@@ -84,7 +84,7 @@ final class OAuthCallbackServer {
         }
         listener.start(queue: queue)
 
-        // 等待最多 2 秒确认绑定结果
+        // Wait up to 2 seconds for the bind result
         _ = sema.wait(timeout: .now() + 2)
         if ready {
             self.listener = listener
@@ -107,8 +107,8 @@ final class OAuthCallbackServer {
             }
 
             let query = self.parseQuery(fromRequestLine: request)
-            // 只有携带 code 或 error 的才是真正的 OAuth 回调；其余（比如浏览器误发的
-            // favicon 请求）语义上应该 404，而不是回一个成功/失败页面。
+            // Only a request carrying code or error is a real OAuth callback; anything else (a stray favicon
+            // request from the browser, say) should semantically be a 404 rather than a success or failure page.
             let isOAuthCallback = query["code"] != nil || query["error"] != nil
 
             let response: String
@@ -137,7 +137,7 @@ final class OAuthCallbackServer {
                 connection.cancel()
             })
 
-            // 仅投递第一次有效回调（code 或 error）
+            // Deliver only the first valid callback (code or error)
             if !self.didDeliver, isOAuthCallback {
                 self.didDeliver = true
                 DispatchQueue.main.async { self.onCallback?(query) }
@@ -145,8 +145,8 @@ final class OAuthCallbackServer {
         }
     }
 
-    /// 从 HTTP 请求行解析 query 参数
-    /// 例：`GET /auth/callback?code=...&state=... HTTP/1.1`
+    /// Parse the query parameters out of an HTTP request line
+    /// For example: `GET /auth/callback?code=...&state=... HTTP/1.1`
     private func parseQuery(fromRequestLine request: String) -> [String: String] {
         guard let firstLine = request.split(separator: "\r\n").first else { return [:] }
         let parts = firstLine.split(separator: " ")

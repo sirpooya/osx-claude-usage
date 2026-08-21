@@ -9,18 +9,18 @@
 import SwiftUI
 import AppKit
 
-/// 菜单栏图标渲染器
-/// 负责所有图标的绘制逻辑，支持彩色和单色两种模式
-/// 从 MenuBarUI 中提取以实现职责分离
+/// Menu bar icon renderer
+/// Owns all icon drawing, in both color and monochrome mode
+/// Extracted from MenuBarUI to separate responsibilities
 class MenuBarIconRenderer {
     
     // MARK: - Settings Reference
     
-    /// 用户设置实例
+    /// User settings instance
     private let settings: UserSettings
-    /// 菜单栏品牌图标尺寸
+    /// Menu bar brand icon size
     private let providerBrandIconSize: CGFloat = 16
-    /// 菜单栏指标图标尺寸
+    /// Menu bar metric icon size
     private let metricIconSize: CGFloat = 18
     
     // MARK: - Initialization
@@ -31,20 +31,20 @@ class MenuBarIconRenderer {
     
     // MARK: - Public API
 
-    /// 创建菜单栏图标
+    /// Create the menu bar icon
     /// - Parameters:
-    ///   - usageData: Claude 用量数据
-    ///   - codexUsageData: Codex 用量数据（nil 表示无 Codex 账号）
-    ///   - hasUpdate: 是否有可用更新
-    ///   - button: 状态栏按钮（用于获取外观模式）
-    /// - Returns: 生成的图标图像
+    ///   - usageData: Claude usage data
+    ///   - codexUsageData: Codex usage data (nil means no Codex account)
+    ///   - hasUpdate: whether an update is available
+    ///   - button: status item button (used to read the appearance mode)
+    /// - Returns: the rendered icon image
     func createIcon(
         usageData: UsageData?,
         codexUsageData: CodexUsageData? = nil,
         hasUpdate: Bool,
         button: NSStatusBarButton?
     ) -> NSImage {
-        // 确定单色/彩色模式
+        // Decide between monochrome and color mode
         let isMonochrome: Bool
         if let data = usageData {
             let canUseColor = settings.canUseColoredTheme(usageData: data)
@@ -57,20 +57,20 @@ class MenuBarIconRenderer {
         var icon: NSImage
 
         if let codex = codexUsageData {
-            // 有 Codex 数据路径
+            // Path with Codex data
             let allTypes = settings.getActiveDisplayTypes(usageData: usageData, codexUsageData: codex, forMenuBar: true)
             let codexTypes = allTypes.filter { $0.provider == .codex }
 
             if settings.isMultiProviderActive, let data = usageData {
-                // 双 Provider 模式
+                // Dual provider mode
                 let claudeTypes = allTypes.filter { $0.provider == .claude }
                 icon = createMultiProviderIcon(data: data, codex: codex, claudeTypes: claudeTypes, codexTypes: codexTypes, isMonochrome: isMonochrome, button: button)
             } else {
-                // Codex-only（无 Claude 账号）或降级路径
+                // Codex only (no Claude account) or the degraded path
                 icon = createCodexOnlyIcon(codex: codex, codexTypes: codexTypes, isMonochrome: isMonochrome, button: button)
             }
         } else {
-            // Claude-only 路径（原有逻辑）
+            // Claude only path (the original logic)
             guard let data = usageData else {
                 let size = NSSize(width: 22, height: 22)
                 let defaultIcon: NSImage
@@ -110,7 +110,7 @@ class MenuBarIconRenderer {
 
     // MARK: - Multi-Provider Icon Creation
 
-    /// 双 Provider 模式图标：[Claude 品牌] + [Claude 指标] + [Codex 品牌] + [Codex 指标]
+    /// Dual provider icon: [Claude brand] + [Claude metrics] + [Codex brand] + [Codex metrics]
     private func createMultiProviderIcon(
         data: UsageData,
         codex: CodexUsageData,
@@ -129,7 +129,7 @@ class MenuBarIconRenderer {
             }
 
         case .percentageOnly, .both:
-            // Claude 部分
+            // Claude part
             let claudeIcons = claudeTypes.compactMap { createIconForType($0, data: data, isMonochrome: isMonochrome, button: button) }
             if !claudeIcons.isEmpty {
                 if settings.iconDisplayMode == .both {
@@ -141,7 +141,7 @@ class MenuBarIconRenderer {
                 icons.append(contentsOf: claudeIcons)
             }
 
-            // Codex 部分
+            // Codex part
             let codexIcons = buildCodexIcons(codex: codex, types: codexTypes, isMonochrome: isMonochrome, button: button)
             if !codexIcons.isEmpty {
                 if settings.iconDisplayMode == .percentageOnly, !claudeIcons.isEmpty {
@@ -154,7 +154,7 @@ class MenuBarIconRenderer {
             }
 
         case .none:
-            // 不显示图标：仅显示轻量分隔线，保留可点击的状态栏锚点
+            // No icon shown: draw only a light separator, keeping a clickable status item anchor
             icons.append(createMenuBarDividerIcon(isMonochrome: isMonochrome))
         }
 
@@ -163,7 +163,7 @@ class MenuBarIconRenderer {
         return combined
     }
 
-    /// Codex-only 模式图标（无 Claude 账号时）
+    /// Codex only icon (when there is no Claude account)
     private func createCodexOnlyIcon(
         codex: CodexUsageData,
         codexTypes: [LimitType],
@@ -191,7 +191,7 @@ class MenuBarIconRenderer {
         }
     }
 
-    /// 构建 Codex 指标图标列表
+    /// Build the list of Codex metric icons
     private func buildCodexIcons(codex: CodexUsageData, types: [LimitType], isMonochrome: Bool, button: NSStatusBarButton?) -> [NSImage] {
         let showPlaceholder = settings.displayMode == .custom
         return types.compactMap { type -> NSImage? in
@@ -218,7 +218,7 @@ class MenuBarIconRenderer {
         }
     }
 
-    /// 创建 Provider 品牌图标（用于多 Provider 模式下的视觉分组）
+    /// Create a provider brand icon (visual grouping for multi provider mode)
     private func createProviderBrandIcon(_ provider: ProviderType, isMonochrome: Bool, size: CGFloat = 14) -> NSImage? {
         switch provider {
         case .claude:
@@ -230,7 +230,7 @@ class MenuBarIconRenderer {
         }
     }
 
-    /// 创建仅百分比的组合图标
+    /// Create the percentage only composite icon
     private func createCombinedPercentageIcon(
         data: UsageData,
         types: [LimitType],
@@ -241,12 +241,12 @@ class MenuBarIconRenderer {
             return createSimpleCircleIcon()
         }
 
-        // 为每个类型创建图标
+        // Create an icon for each type
         let icons = types.compactMap { type in
             createIconForType(type, data: data, isMonochrome: isMonochrome, button: button)
         }
 
-        // 组合图标
+        // Combine the icons
         if icons.isEmpty {
             return createSimpleCircleIcon()
         } else if icons.count == 1 {
@@ -258,25 +258,25 @@ class MenuBarIconRenderer {
         }
     }
 
-    /// 创建 App 图标 + 百分比的组合图标
+    /// Create the app icon plus percentage composite icon
     private func createCombinedIconWithAppIcon(
         data: UsageData,
         types: [LimitType],
         isMonochrome: Bool,
         button: NSStatusBarButton?
     ) -> NSImage {
-        // 获取 App 图标（单色模式使用反转图标）
+        // Get the app icon (monochrome mode uses the reversed icon)
         let iconName = isMonochrome ? "AppIconReverse" : "AppIcon"
         guard let appIconCopy = ImageHelper.createSquareIcon(named: iconName, size: providerBrandIconSize, isTemplate: isMonochrome) else {
             return createCombinedPercentageIcon(data: data, types: types, isMonochrome: isMonochrome, button: button)
         }
 
-        // 创建百分比图标
+        // Create the percentage icon
         let percentageIcons = types.compactMap { type in
             createIconForType(type, data: data, isMonochrome: isMonochrome, button: button)
         }
 
-        // 组合 App 图标 + 百分比图标
+        // Combine app icon and percentage icon
         var allIcons = [appIconCopy]
         allIcons.append(contentsOf: percentageIcons)
 
@@ -285,7 +285,7 @@ class MenuBarIconRenderer {
         return combined
     }
     
-    // MARK: - Icon Drawing - Colored Mode (彩色模式)
+    // MARK: - Icon Drawing - Colored Mode
 
     private func createCircleImage(percentage: Double, size: NSSize, useSevenDayColor: Bool = false, colorOverride: NSColor? = nil, useDashedStyle: Bool = false, button: NSStatusBarButton?, removeBackground: Bool = false) -> NSImage {
         let image = NSImage(size: size)
@@ -297,7 +297,7 @@ class MenuBarIconRenderer {
         if !removeBackground {
             let backgroundCircle = NSBezierPath()
             backgroundCircle.appendArc(withCenter: center, radius: radius, startAngle: 0, endAngle: 360, clockwise: false)
-            // 跟随菜单栏外观的极淡底盘。写死半透明白在浅色菜单栏上会发灰发糊。
+            // Very faint backing plate that follows the menu bar appearance. A hardcoded translucent white looks gray and muddy on a light menu bar.
             UsageColorScheme.menuBarForeground(for: button).withAlphaComponent(0.10).setFill()
             backgroundCircle.fill()
         }
@@ -307,7 +307,7 @@ class MenuBarIconRenderer {
         backgroundPath.appendArc(withCenter: center, radius: radius, startAngle: 0, endAngle: 360, clockwise: false)
         backgroundPath.lineWidth = 1.5
 
-        // 7天/Codex secondary 限制使用虚线以区分实线圆
+        // 7 day and Codex secondary limits use a dashed stroke to tell them apart from the solid circle
         if useSevenDayColor || useDashedStyle {
             let dashPattern: [CGFloat] = [3, 1]
             backgroundPath.setLineDash(dashPattern, count: dashPattern.count, phase: 0)
@@ -326,21 +326,21 @@ class MenuBarIconRenderer {
         let progressPath = NSBezierPath()
         let lineWidth: CGFloat = 2.5
 
-        // 计算进度角度
+        // Compute the progress angle
         let baseAngle = CGFloat(percentage) / 100.0 * 360
-        let circumference = 2 * CGFloat.pi * radius  // 圆周长
-        let capAngle = (lineWidth / circumference) * 360  // 圆头延伸对应的角度
+        let circumference = 2 * CGFloat.pi * radius  // Circumference
+        let capAngle = (lineWidth / circumference) * 360  // Angle covered by the round cap overhang
 
         let progressAngle: CGFloat
         let startAngle: CGFloat
 
         if percentage >= 100 {
-            // 100%: 使用完整角度和固定起点，因为 .butt 端点无延伸
+            // 100%: use the full angle and a fixed start point, because .butt caps do not overhang
             progressAngle = baseAngle
             startAngle = 90
         } else {
-            // 5小时/7天限制：使用渐进式减法，保持起点固定，实现平滑增长
-            // 减去的角度随百分比线性增加，在50%时完成完整减法，50%-100%显示完全精确
+            // 5 hour and 7 day limits: progressive subtraction with a fixed start point, for smooth growth
+            // The subtracted angle grows linearly with the percentage, fully applied at 50%, so 50% to 100% is exact
             progressAngle = baseAngle - capAngle * min(1.0, CGFloat(percentage / 50.0))
             startAngle = 90 - capAngle / 2 + 0.5
         }
@@ -349,7 +349,7 @@ class MenuBarIconRenderer {
 
         progressPath.appendArc(withCenter: center, radius: radius, startAngle: startAngle, endAngle: endAngle, clockwise: true)
         progressPath.lineWidth = lineWidth
-        // 100%时使用平头让圆环完美闭合，其他进度使用圆头
+        // At 100% butt caps close the ring perfectly, every other value uses round caps
         progressPath.lineCapStyle = percentage >= 100 ? .butt : .round
         progressPath.stroke()
 
@@ -372,7 +372,7 @@ class MenuBarIconRenderer {
         return image
     }
 
-    // MARK: - Icon Drawing - Template Mode (单色模式)
+    // MARK: - Icon Drawing - Template Mode
 
     private func createCircleTemplateImage(percentage: Double, size: NSSize, useSevenDayStyle: Bool = false, button: NSStatusBarButton? = nil, removeBackground: Bool = false) -> NSImage {
         let image = NSImage(size: size)
@@ -386,7 +386,7 @@ class MenuBarIconRenderer {
         backgroundPath.appendArc(withCenter: center, radius: radius, startAngle: 0, endAngle: 360, clockwise: false)
         backgroundPath.lineWidth = 1.5
 
-        // 7天限制使用虚线以区分5小时限制
+        // The 7 day limit uses a dashed stroke to tell it apart from the 5 hour limit
         if useSevenDayStyle {
             let dashPattern: [CGFloat] = [3, 1]
             backgroundPath.setLineDash(dashPattern, count: dashPattern.count, phase: 0)
@@ -398,21 +398,21 @@ class MenuBarIconRenderer {
         let progressPath = NSBezierPath()
         let lineWidth: CGFloat = 2.5
 
-        // 计算进度角度
+        // Compute the progress angle
         let baseAngle = CGFloat(percentage) / 100.0 * 360
-        let circumference = 2 * CGFloat.pi * radius  // 圆周长
-        let capAngle = (lineWidth / circumference) * 360  // 圆头延伸对应的角度
+        let circumference = 2 * CGFloat.pi * radius  // Circumference
+        let capAngle = (lineWidth / circumference) * 360  // Angle covered by the round cap overhang
 
         let progressAngle: CGFloat
         let startAngle: CGFloat
 
         if percentage >= 100 {
-            // 100%: 使用完整角度和固定起点，因为 .butt 端点无延伸
+            // 100%: use the full angle and a fixed start point, because .butt caps do not overhang
             progressAngle = baseAngle
             startAngle = 90
         } else {
-            // 单色模式：使用渐进式减法，保持起点固定，实现平滑增长
-            // 减去的角度随百分比线性增加，在50%时完成完整减法，50%-100%显示完全精确
+            // Monochrome mode: progressive subtraction with a fixed start point, for smooth growth
+            // The subtracted angle grows linearly with the percentage, fully applied at 50%, so 50% to 100% is exact
             progressAngle = baseAngle - capAngle * min(1.0, CGFloat(percentage / 50.0))
             startAngle = 90 - capAngle / 2 + 0.5
         }
@@ -421,7 +421,7 @@ class MenuBarIconRenderer {
 
         progressPath.appendArc(withCenter: center, radius: radius, startAngle: startAngle, endAngle: endAngle, clockwise: true)
         progressPath.lineWidth = lineWidth
-        // 100%时使用平头让圆环完美闭合，其他进度使用圆头
+        // At 100% butt caps close the ring perfectly, every other value uses round caps
         progressPath.lineCapStyle = percentage >= 100 ? .butt : .round
         progressPath.stroke()
 
@@ -441,7 +441,7 @@ class MenuBarIconRenderer {
 
     // MARK: - Utility Icons
 
-    /// 创建简单圆形图标（备用）
+    /// Create a simple circular icon (fallback)
     private func createSimpleCircleIcon() -> NSImage {
         let size = NSSize(width: 18, height: 18)
         let image = NSImage(size: size)
@@ -459,7 +459,7 @@ class MenuBarIconRenderer {
         return image
     }
 
-    /// 在图标上添加徽章（小红点）
+    /// Add a badge (small red dot) on top of an icon
     private func addBadgeToImage(_ baseImage: NSImage) -> NSImage {
         let size = baseImage.size
         let expandedSize = NSSize(width: size.width + 2.5, height: size.height + 2.5)
@@ -487,18 +487,18 @@ class MenuBarIconRenderer {
 
     // MARK: - Icon Combination Methods (v2.0)
 
-    /// 组合多个图标到单个图像
+    /// Combine several icons into a single image
     /// - Parameters:
-    ///   - icons: 要组合的图标数组
-    ///   - spacing: 图标间距
-    ///   - height: 统一高度（默认18）
-    /// - Returns: 组合后的图标
+    ///   - icons: the icons to combine
+    ///   - spacing: spacing between icons
+    ///   - height: uniform height (18 by default)
+    /// - Returns: the combined icon
     private func combineIcons(_ icons: [NSImage], spacing: CGFloat = 3.0, height: CGFloat = 18) -> NSImage {
         guard !icons.isEmpty else {
             return createSimpleCircleIcon()
         }
 
-        // 计算总宽度
+        // Compute the total width
         let totalWidth = icons.reduce(0) { $0 + $1.size.width } + CGFloat(icons.count - 1) * spacing
         let size = NSSize(width: totalWidth, height: height)
 
@@ -507,7 +507,7 @@ class MenuBarIconRenderer {
 
         var currentX: CGFloat = 0
         for icon in icons {
-            let y = (height - icon.size.height) / 2  // 垂直居中
+            let y = (height - icon.size.height) / 2  // Vertically centered
             icon.draw(at: NSPoint(x: currentX, y: y),
                      from: NSRect(origin: .zero, size: icon.size),
                      operation: .sourceOver,
@@ -519,26 +519,26 @@ class MenuBarIconRenderer {
         return image
     }
 
-    /// 根据限制类型和数据创建单个图标
+    /// Create a single icon from the limit type and its data
     /// - Parameters:
-    ///   - type: 限制类型
-    ///   - data: 用量数据
-    ///   - isMonochrome: 是否为单色模式
-    ///   - button: 状态栏按钮
-    /// - Returns: 图标图像
+    ///   - type: limit type
+    ///   - data: usage data
+    ///   - isMonochrome: whether monochrome mode is active
+    ///   - button: status item button
+    /// - Returns: icon image
     func createIconForType(
         _ type: LimitType,
         data: UsageData,
         isMonochrome: Bool,
         button: NSStatusBarButton?
     ) -> NSImage? {
-        // 根据主题模式决定是否移除背景
-        // colorTranslucent: 移除背景（通透）
-        // colorWithBackground: 保留背景（半透明白色）
+        // The theme mode decides whether the background is removed
+        // colorTranslucent: remove the background (see through)
+        // colorWithBackground: keep the background (translucent white)
         let removeBackground = settings.iconStyleMode == .colorTranslucent
 
-        // 在自定义模式下，即使数据为 nil 也显示占位图标（0%）
-        // 在智能模式下，数据为 nil 时返回 nil
+        // In custom mode show a placeholder icon (0%) even when the data is nil
+        // In smart mode return nil when the data is nil
         let showPlaceholder = settings.displayMode == .custom
 
         switch type {
@@ -583,13 +583,13 @@ class MenuBarIconRenderer {
             return ShapeIconRenderer.createHexagonIcon(percentage: percentage, isMonochrome: isMonochrome, button: button, removeBackground: removeBackground)
 
         case .codexPrimary, .codexSecondary, .codexExtraUsage:
-            // Codex 数据在 Phase 4 通过 createCodexIcon 独立渲染
-            // createIconForType 仅处理 Claude UsageData，此处返回 nil
+            // Codex data is rendered separately by createCodexIcon in Phase 4
+            // createIconForType only handles Claude UsageData, so return nil here
             return nil
         }
     }
 
-    /// 根据 Codex 用量数据创建单个图标（Codex 专用，Phase 4 接入 UI）
+    /// Create a single icon from Codex usage data (Codex only, wired into the UI in Phase 4)
     func createCodexIcon(
         type: LimitType,
         percentage: Double,
@@ -622,7 +622,7 @@ class MenuBarIconRenderer {
         }
     }
 
-    /// 创建轻量分隔线图标（用于"不显示图标"模式）
+    /// Create the light separator icon (used by the "no icon" mode)
     private func createMenuBarDividerIcon(isMonochrome: Bool) -> NSImage {
         let width: CGFloat = 5
         let height: CGFloat = metricIconSize

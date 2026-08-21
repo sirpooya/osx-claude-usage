@@ -11,8 +11,8 @@ import Foundation
 import WebKit
 import os
 
-/// Codex WebView 管理和 Cookie 检测核心逻辑
-/// 负责加载 chatgpt.com 登录页面、监测 __Secure-next-auth.session-token Cookie、验证并创建账户
+/// Codex WebView management and cookie detection
+/// Loads the chatgpt.com login page, watches the __Secure-next-auth.session-token cookie, validates it and creates the account
 final class CodexWebLoginCoordinator: ObservableObject {
 
     // MARK: - Login State
@@ -41,7 +41,7 @@ final class CodexWebLoginCoordinator: ObservableObject {
 
     private let apiService = CodexAPIService()
 
-    /// 允许导航的域名列表（包含 ChatGPT 的 SSO 域名）
+    /// The domains navigation is allowed to (ChatGPT's SSO domains included)
     private let allowedDomains: Set<String> = [
         "chatgpt.com",
         "openai.com",
@@ -69,7 +69,7 @@ final class CodexWebLoginCoordinator: ObservableObject {
 
     private func setupWebView() {
         let config = WKWebViewConfiguration()
-        // nonPersistent：完全空白，任何 OAuth provider 都无已有 session，确保多账号添加时不会 auto-SSO
+        // nonPersistent: completely blank, no OAuth provider has an existing session, which keeps auto SSO from firing when adding multiple accounts
         config.websiteDataStore = .nonPersistent()
         config.preferences.isElementFullscreenEnabled = false
 
@@ -112,8 +112,8 @@ final class CodexWebLoginCoordinator: ObservableObject {
         progressObservation = nil
     }
 
-    /// 将登录 WebView（nonPersistent）中 chatgpt.com / openai.com 的 cookie 复制到 default store
-    /// 用于在成功登录后同步 session，供 Level 2 静默刷新使用
+    /// Copy the chatgpt.com and openai.com cookies from the login WebView (nonPersistent) into the default store
+    /// Syncs the session after a successful login, for use by the Level 2 silent refresh
     private func transferCookiesToDefaultStore() {
         let sourceStore = webView.configuration.websiteDataStore.httpCookieStore
         let destStore = WKWebsiteDataStore.default().httpCookieStore
@@ -154,8 +154,8 @@ final class CodexWebLoginCoordinator: ObservableObject {
         }
     }
 
-    /// 从 chatgpt.com Cookie 列表中提取 session token 值
-    /// 支持标准名称、无 __Secure- 前缀版本，以及 next-auth 分片 Cookie（.0/.1/...）
+    /// Extract the session token value from the chatgpt.com cookie list
+    /// Handles the standard name, the version without the __Secure- prefix, and next-auth's sharded cookies (.0/.1/...)
     static func extractSessionToken(from cookies: [HTTPCookie]) -> String? {
         let baseNames = ["__Secure-next-auth.session-token", "next-auth.session-token"]
 
@@ -212,7 +212,7 @@ final class CodexWebLoginCoordinator: ObservableObject {
                 self.loginState = .failed(message: error.localizedDescription)
                 Logger.settings.error("CodexWebLogin: validation failed - \(error.localizedDescription)")
 
-                // 验证失败后重新开始监听
+                // Start listening again after a failed validation
                 self.startCookieMonitoring()
             }
         }
@@ -244,9 +244,9 @@ extension CodexWebLoginCoordinator {
             if case .success = coordinator.loginState { return }
             coordinator.loginState = .waitingForLogin
 
-            // 仅在跳转到 chatgpt.com 的非认证页面后才开始轮询 Cookie
-            // 这表示用户已完成 OAuth 流程并被重定向回主页
-            // 避免在 auth/login 页面误拾取后台 WebView 写入的旧 session-token
+            // Only start polling for the cookie after a redirect to a non authentication page on chatgpt.com
+            // which means the user finished the OAuth flow and was sent back to the home page
+            // This avoids picking up a stale session-token a background WebView wrote while still on the auth/login page
             if let host = webView.url?.host, host.hasSuffix("chatgpt.com"),
                let path = webView.url?.path, !path.hasPrefix("/auth") {
                 coordinator.startCookieMonitoring()
@@ -289,8 +289,8 @@ extension CodexWebLoginCoordinator {
 
 extension CodexWebLoginCoordinator {
 
-    /// 处理页面通过 window.open() 触发的弹出窗口
-    /// Google OAuth 传统流程会用弹出窗口完成授权，缺少此代理会导致登录静默失败
+    /// Handle popup windows the page opens through window.open()
+    /// The classic Google OAuth flow authorizes in a popup, and without this delegate the login fails silently
     final class UIDelegate: NSObject, WKUIDelegate {
         private weak var coordinator: CodexWebLoginCoordinator?
 

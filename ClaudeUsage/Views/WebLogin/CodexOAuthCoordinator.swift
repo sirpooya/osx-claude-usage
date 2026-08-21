@@ -11,17 +11,17 @@ import Combine
 import Foundation
 import OSLog
 
-/// Codex OAuth 登录协调器
+/// Codex OAuth login coordinator
 ///
-/// 编排完整的 "Sign in with ChatGPT" 流程：
-///   1. 生成 PKCE + state
-///   2. 起本地回调服务器（localhost:1455/1457）
-///   3. 用系统默认浏览器打开授权页（Google / 微软 / 企业 SSO / passkey 在真实浏览器中均可用）
-///   4. 接收回调，校验 state，用授权码换 token
-///   5. 解析账户信息，把 refresh_token 存入账户体系
+/// Orchestrates the whole "Sign in with ChatGPT" flow:
+///   1. Generate PKCE plus state
+///   2. Start the local callback server (localhost:1455/1457)
+///   3. Open the authorization page in the default browser (Google, Microsoft, enterprise SSO and passkeys all work in a real browser)
+///   4. Receive the callback, validate state, exchange the code for a token
+///   5. Parse the account info and store the refresh_token in the account system
 ///
-/// 凭据存储约定：refresh_token 存入 `Account.sessionKey`，`organizationId` 存 email
-/// （与旧 session-token 账户共用同一套多账号体系，零结构改动）。
+/// Credential storage convention: the refresh_token goes into `Account.sessionKey` and `organizationId` holds the email
+/// (sharing the same multi account system as older session-token accounts, with no structural change).
 @MainActor
 final class CodexOAuthCoordinator: ObservableObject {
 
@@ -43,7 +43,7 @@ final class CodexOAuthCoordinator: ObservableObject {
     private var timeoutTask: Task<Void, Never>?
     private var finished = false
 
-    /// 用户未完成登录时的整体超时
+    /// The overall timeout while the user has not finished signing in
     private let loginTimeout: TimeInterval = 5 * 60
 
     // MARK: - Public
@@ -56,7 +56,7 @@ final class CodexOAuthCoordinator: ObservableObject {
         let pkce = PKCECodes()
         self.pkce = pkce
 
-        // 起本地回调服务器（依次尝试 1455 / 1457）
+        // Start the local callback server (trying 1455 then 1457)
         let ports = [CodexOAuthConfig.primaryPort, CodexOAuthConfig.fallbackPort]
         guard let port = server.start(ports: ports, onCallback: { [weak self] query in
             Task { @MainActor in self?.handleCallback(query) }
@@ -82,7 +82,7 @@ final class CodexOAuthCoordinator: ObservableObject {
         }
     }
 
-    /// 用户误关浏览器标签时，重新打开授权页
+    /// Reopen the authorization page when the user closes the browser tab by accident
     func reopenBrowser() {
         guard let url = authorizeURL, !finished else { return }
         NSWorkspace.shared.open(url)
@@ -113,7 +113,7 @@ final class CodexOAuthCoordinator: ObservableObject {
     private func handleCallback(_ query: [String: String]) {
         guard !finished else { return }
 
-        // 校验 state，防 CSRF
+        // Validate state, for CSRF protection
         guard let returnedState = query["state"], returnedState == pkce?.state else {
             Logger.settings.error("CodexOAuth: state validation failed")
             fail(L.WebLogin.codexOAuthFailed)
@@ -151,7 +151,7 @@ final class CodexOAuthCoordinator: ObservableObject {
             }
             let email = CodexOAuthService.email(fromIDToken: tokens.idToken) ?? ""
             let displayName = email.isEmpty ? "Codex" : email
-            // organizationId 用 email 作为去重稳定标识（email 缺失时退回 account_id）
+            // organizationId uses the email as a stable dedupe identity (falling back to account_id when the email is missing)
             let account = Account(
                 sessionKey: tokens.refreshToken,
                 organizationId: email.isEmpty ? (tokens.accountId ?? "") : email,

@@ -10,7 +10,7 @@ import SwiftUI
 import Combine
 import Sparkle
 
-/// ClaudeUsage 应用主入口
+/// ClaudeUsage app entry point
 @main
 struct ClaudeUsageMonitorApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
@@ -22,47 +22,47 @@ struct ClaudeUsageMonitorApp: App {
     }
 }
 
-/// 应用代理类
-/// 负责应用生命周期管理、资源初始化和清理
+/// App delegate
+/// Owns the app lifecycle, resource setup and teardown
 class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Properties
 
-    /// 应用代理共享实例
-    /// SwiftUI 的 NSApplicationDelegateAdaptor 包装了 delegate，导致
-    /// `NSApp.delegate as? AppDelegate` 不能可靠地拿到本类型；MenuBarManager
-    /// 需要通过这个静态引用调用 `updaterController.checkForUpdates(_:)`。
+    /// Shared app delegate instance
+    /// SwiftUI's NSApplicationDelegateAdaptor wraps the delegate, so
+    /// `NSApp.delegate as? AppDelegate` cannot reliably return this type; MenuBarManager
+    /// needs this static reference to call `updaterController.checkForUpdates(_:)`.
     static weak var shared: AppDelegate?
 
     private var statusItem: NSStatusItem!
     private var popover: NSPopover!
 
-    /// 菜单栏管理器，负责所有菜单栏相关功能
+    /// Menu bar manager, owns everything menu bar related
     private var menuBarManager: MenuBarManager!
 
-    /// 欢迎窗口，在首次启动时显示
+    /// Welcome window, shown on first launch
     private var welcomeWindow: NSWindow?
 
-    /// 用户设置实例
+    /// User settings instance
     private let settings = UserSettings.shared
 
-    /// Sparkle 更新控制器
-    /// - `startingUpdater: true` 让 Sparkle 按 Info.plist 中的
-    ///   SUEnableAutomaticChecks / SUScheduledCheckInterval 自动后台检查（默认24小时）
-    /// - `updaterDelegate: self` 让 AppDelegate 作为 SPUUpdaterDelegate，把
-    ///   `didFindValidUpdate` / `updaterDidNotFindUpdate` 转给菜单栏徽章状态机，
-    ///   使彩虹文字 / 红点徽章与 Sparkle 自己的模态对话框并存；EdDSA 签名校验
-    ///   仍通过 Info.plist 的 SUPublicEDKey 完成
-    /// - 暴露为 internal，让 MenuBarManager 通过 `AppDelegate.shared` 调用
+    /// Sparkle updater controller
+    /// - `startingUpdater: true` lets Sparkle check in the background on its own, following
+    ///   SUEnableAutomaticChecks / SUScheduledCheckInterval from Info.plist (24 hours by default)
+    /// - `updaterDelegate: self` makes AppDelegate the SPUUpdaterDelegate, forwarding
+    ///   `didFindValidUpdate` / `updaterDidNotFindUpdate` to the menu bar badge state machine,
+    ///   so the rainbow text / red dot badge coexists with Sparkle's own modal dialog; EdDSA
+    ///   signature checking still goes through SUPublicEDKey in Info.plist
+    /// - Exposed as internal so MenuBarManager can reach it via `AppDelegate.shared`
     ///
-    /// 在 init() 的 super.init() 之后构造：updaterDelegate 需要 self，而 Swift
-    /// 不允许在存储属性初始化器里引用 self（此时仍早于任何后台检查）。
+    /// Built after super.init() inside init(): updaterDelegate needs self, and Swift
+    /// forbids referencing self in a stored property initializer (still well before any background check).
     private(set) var updaterController: SPUStandardUpdaterController!
 
     override init() {
         super.init()
 
-        // 尽可能早地装上崩溃捕获：在这一行之前发生的任何致命错误都是不可见的，
-        // 而启动阶段恰恰是容易死的地方。install() 是幂等的。
+        // Install crash capture as early as possible: any fatal error before this line is invisible,
+        // and launch is exactly where things tend to die. install() is idempotent.
         CrashReporter.install()
 
         AppDelegate.shared = self
@@ -73,36 +73,36 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
     }
 
-    /// Combine 订阅集合，用于自动管理观察者生命周期
+    /// Combine subscriptions, so observer lifetimes are managed automatically
     private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Application Lifecycle
     
-    /// 应用启动完成时调用
-    /// 初始化菜单栏管理器，根据是否首次启动显示欢迎窗口或开始刷新数据
+    /// Called once the app has finished launching
+    /// Sets up the menu bar manager, then either shows the welcome window or starts refreshing data
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
 
-        // 先判定上一次运行是怎么结束的，再做其它任何事。
-        // 这行日志就是“为什么突然退出”的答案所在。
+        // Work out how the previous run ended before doing anything else.
+        // This one log line is the answer to "why did it suddenly quit".
         reportPreviousSessionOutcome()
 
-        // 内存压力是 .accessory 应用被 jetsam 静默杀掉的主要原因，
-        // 而那种情况下系统不会写崩溃报告。这里留下压力事件记录，
-        // 好和 SessionSentinel 判定的 killed 对上时间。
+        // Memory pressure is the main reason an .accessory app gets killed silently by jetsam,
+        // and the system writes no crash report in that case. Record pressure events here
+        // so they line up in time with a killed verdict from SessionSentinel.
         observeMemoryPressure()
 
-        // 请求通知权限
+        // Request notification permission
         NotificationManager.shared.requestPermission()
 
         menuBarManager = MenuBarManager()
 
-        // 登录窗口之前先试着接管 Claude Code CLI 已登录的账号。
-        // 钥匙串里已经有可用凭据时，用户一个窗口都不用看见（也不用粘任何 key）。
+        // Before the login window, try to adopt the account Claude Code CLI already signed in.
+        // When the Keychain already holds usable credentials the user sees no window at all (and pastes no key).
         Task { @MainActor in
             let syncedFromCLI = await ClaudeCodeSyncService.shared.syncOnLaunchIfNeeded()
             if syncedFromCLI {
-                // 已经拿到可用账户，首次启动引导就没有存在的意义了
+                // A usable account is already in hand, so the first launch onboarding has no reason to exist
                 self.settings.isFirstLaunch = false
                 logInfo("CLI account synced from the Claude Code keychain. Skipping the welcome window")
             }
@@ -114,7 +114,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        // 使用 Combine 订阅通知，自动管理生命周期
+        // Subscribe to notifications with Combine so lifetimes are managed automatically
         NotificationCenter.default.publisher(for: .openSettings)
             .sink { [weak self] notification in
                 self?.openSettingsFromNotification(notification)
@@ -130,15 +130,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     // MARK: - Diagnostics
 
-    /// 内存压力源。必须持有强引用，否则会被立刻释放而收不到任何事件。
+    /// Memory pressure source. Must be held strongly, otherwise it is released immediately and no event ever arrives.
     private var memoryPressureSource: DispatchSourceMemoryPressure?
 
-    /// 判定并记录上一次运行的结局。
+    /// Work out and record how the previous run ended.
     ///
-    /// 三种结局对应三种完全不同的排查方向，所以要分开说：
-    /// - crashed：应用自己的 bug，看 backtrace
-    /// - killed：外部原因（内存压力 / 强制退出 / 注销），应用代码可能无辜
-    /// - clean：正常退出，不用查
+    /// The three outcomes point at three completely different investigations, so keep them apart:
+    /// - crashed: a bug in the app itself, read the backtrace
+    /// - killed: an external cause (memory pressure / force quit / logout), the app code may be innocent
+    /// - clean: normal exit, nothing to investigate
     private func reportPreviousSessionOutcome() {
         let outcome = SessionSentinel.shared.begin()
 
@@ -146,7 +146,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         case .firstRun, .clean:
             logInfo("Session start. \(outcome.summary)")
         case .crashed(let report):
-            // error 级别会同步落盘，这条一定要留住
+            // The error level is flushed synchronously, so this line has to survive
             logError("ABNORMAL EXIT. \(outcome.summary)")
             for frame in report.frames.prefix(24) {
                 logError("  frame: \(frame)")
@@ -157,8 +157,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// 记录内存压力事件。
-    /// killed 判定加上一条 critical 压力记录，基本就能确认是 jetsam。
+    /// Record a memory pressure event.
+    /// A killed verdict plus one critical pressure record is close to proof of jetsam.
     private func observeMemoryPressure() {
         let source = DispatchSource.makeMemoryPressureSource(
             eventMask: [.warning, .critical],
@@ -177,8 +177,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Private Methods
 
-    /// 显示欢迎窗口
-    /// 在首次启动或未配置认证信息时调用
+    /// Show the welcome window
+    /// Called on first launch, or when no authentication is configured
     private func showWelcomeWindow() {
         NSApp.setActivationPolicy(.regular)
 
@@ -191,14 +191,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         welcomeWindow?.title = L.Window.loginTitle
         welcomeWindow?.styleMask = [.titled, .closable]
 
-        // 不用 center()：它按调用时的窗口尺寸计算，而 SwiftUI 的固定 frame 要等
-        // Auto Layout 之后才生效，窗口随后从左上角缩小、原点不变，于是偏左偏上。
-        // 这里直接用已知的内容尺寸算出最终 frame，一次性把大小和位置都定下来。
+        // Do not use center(): it computes from the window size at call time, while SwiftUI's fixed frame
+        // only lands after Auto Layout, so the window then shrinks from its top left corner and keeps the wrong origin, sitting too high and too far left.
+        // Instead compute the final frame from the content size we already know, setting size and position in one go.
         if let window = welcomeWindow, let screen = NSScreen.main {
             let contentRect = NSRect(origin: .zero, size: WelcomeView.contentSize)
             let frameSize = window.frameRect(forContentRect: contentRect).size
-            // 水平方向按整个屏幕居中（视觉正中，不受 Dock 停靠边影响），
-            // 垂直方向按可用区域居中（避开菜单栏，否则整体偏上）。
+            // Center horizontally on the whole screen (true optical center, unaffected by which edge the Dock is on),
+            // and vertically on the visible frame (avoids the menu bar, which would otherwise bias it upward).
             let origin = NSPoint(
                 x: screen.frame.midX - frameSize.width / 2,
                 y: screen.visibleFrame.midY - frameSize.height / 2
@@ -206,11 +206,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             window.setFrame(NSRect(origin: origin, size: frameSize), display: false)
         }
 
-        // 使用 Combine 订阅窗口关闭通知
+        // Subscribe to the window close notification with Combine
         NotificationCenter.default.publisher(for: NSWindow.willCloseNotification, object: welcomeWindow)
             .sink { _ in
-                // 窗口里已经没有“完成/跳过”按钮，关掉窗口就等于结束首次配置，
-                // 否则下次启动还会再弹一次。
+                // The window no longer has a Finish or Skip button, so closing it is what ends first time setup,
+                // otherwise it would pop up again on the next launch.
                 UserSettings.shared.isFirstLaunch = false
                 NSApp.setActivationPolicy(.accessory)
             }
@@ -221,8 +221,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
     }
     
-    /// 处理打开设置的通知
-    /// 关闭欢迎窗口并根据认证配置状态启动刷新
+    /// Handle the open settings notification
+    /// Close the welcome window and start refreshing if authentication is configured
     private func openSettingsFromNotification(_ notification: Notification) {
         welcomeWindow?.close()
         welcomeWindow = nil
@@ -232,12 +232,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
     
-    /// 应用即将退出时调用
-    /// 清理定时器和窗口资源
-    /// 注意：Combine 订阅会在 cancellables 被释放时自动清理
+    /// Called just before the app quits
+    /// Tear down timers and window resources
+    /// Note: Combine subscriptions are cleaned up automatically when cancellables is released
     func applicationWillTerminate(_ notification: Notification) {
-        // 标记为正常退出。少了这一步，下次启动会把这次当成被杀，
-        // 于是每次退出都变成一条假的异常记录。
+        // Mark this as a clean exit. Without this step the next launch treats it as a kill,
+        // which turns every quit into a bogus abnormal record.
         logInfo("Session ending cleanly.")
         SessionSentinel.shared.markCleanExit()
 
@@ -249,7 +249,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         welcomeWindow = nil
         cancellables.removeAll()
 
-        // 最后再刷一次盘，保证尾部日志不留在队列里
+        // One last flush, so trailing log lines do not sit in the queue
         DiagnosticLogger.shared.flush()
     }
 }
@@ -257,13 +257,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 // MARK: - SPUUpdaterDelegate
 
 extension AppDelegate: SPUUpdaterDelegate {
-    /// Sparkle 在后台或手动检查中发现可用更新时回调：点亮菜单栏徽章 /
-    /// 彩虹文字状态机，与 Sparkle 自己的“有可用更新”模态对话框并存。
+    /// Called when Sparkle finds an update, in a background or manual check: lights up the menu bar badge /
+    /// rainbow text state machine, alongside Sparkle's own "update available" modal dialog.
     func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
         menuBarManager?.applyUpdateAvailable(version: item.displayVersionString)
     }
 
-    /// Sparkle 检查后未发现更新时回调：清除可能残留的徽章状态。
+    /// Called when a Sparkle check finds no update: clears any leftover badge state.
     func updaterDidNotFindUpdate(_ updater: SPUUpdater) {
         menuBarManager?.applyUpdateNotFound()
     }

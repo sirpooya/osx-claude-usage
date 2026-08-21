@@ -8,8 +8,8 @@
 
 import SwiftUI
 
-/// 诊断视图组件
-/// 显示在认证设置页面底部，提供连接测试和报告导出功能
+/// Diagnostics view
+/// Shown at the bottom of the authentication settings page, offering a connection test and report export
 struct DiagnosticsView: View {
 
     @StateObject private var diagnosticManager = DiagnosticManager()
@@ -18,7 +18,7 @@ struct DiagnosticsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
 
-            // 操作按钮行
+            // Action button row
             HStack {
                 Button(action: {
                     Task { await diagnosticManager.runDiagnosticTest() }
@@ -54,14 +54,14 @@ struct DiagnosticsView: View {
                 }
             }
 
-            // 状态消息
+            // Status message
             if !diagnosticManager.statusMessage.isEmpty {
                 Text(diagnosticManager.statusMessage)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
 
-            // 诊断结果（按 provider 分卡片）
+            // Diagnostic results (one card per provider)
             if let report = diagnosticManager.latestReport {
                 Divider()
 
@@ -77,7 +77,7 @@ struct DiagnosticsView: View {
                 )
             }
 
-            // 隐私说明
+            // Privacy note
             HStack(spacing: 4) {
                 Image(systemName: "lock.shield")
                     .font(.system(size: 10))
@@ -113,7 +113,7 @@ private struct ProviderResultCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            // Provider 标题行
+            // Provider title row
             HStack(spacing: 6) {
                 Image(systemName: result.success ? "checkmark.circle.fill" : "xmark.circle.fill")
                     .foregroundColor(result.success ? .green : .red)
@@ -130,14 +130,14 @@ private struct ProviderResultCard: View {
                     .foregroundColor(result.success ? .green : .red)
             }
 
-            // 步骤摘要
+            // Step summary
             if !result.steps.isEmpty {
                 ForEach(result.steps, id: \.name) { step in
                     StepSummaryRow(step: step)
                 }
             }
 
-            // 失败时显示诊断和建议
+            // Show the diagnosis and suggestions on a failure
             if !result.success {
                 Divider()
                     .padding(.vertical, 2)
@@ -225,7 +225,7 @@ private struct StepSummaryRow: View {
 
 // MARK: - Detailed Report View
 
-/// 详细报告视图（弹窗），展示 Markdown 格式的完整诊断报告
+/// The full report view (a sheet), showing the complete diagnostic report as Markdown
 struct DetailedReportView: View {
 
     let report: DiagnosticReport?
@@ -233,7 +233,7 @@ struct DetailedReportView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // 标题栏
+            // Title bar
             HStack {
                 Text(L.Diagnostic.detailedReportTitle)
                     .font(.headline)
@@ -251,7 +251,7 @@ struct DetailedReportView: View {
 
             Divider()
 
-            // 报告内容
+            // Report content
             if let report = report {
                 ScrollView {
                     Text(report.toMarkdown())
@@ -268,7 +268,7 @@ struct DetailedReportView: View {
 
             Divider()
 
-            // 底部按钮
+            // Bottom buttons
             HStack {
                 Spacer()
 

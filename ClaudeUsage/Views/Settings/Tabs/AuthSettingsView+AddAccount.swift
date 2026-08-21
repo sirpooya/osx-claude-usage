@@ -5,7 +5,7 @@
 //  Created by Claude Code on 2025-12-02.
 //  Copyright © 2025 f-is-h. All rights reserved.
 //
-//  手动添加账户（Session Key 输入 + 校验）流程，从 AuthSettingsView.swift 拆出
+//  The manual add account flow (session key entry plus validation), split out of AuthSettingsView.swift
 
 import SwiftUI
 
@@ -21,7 +21,7 @@ extension AuthSettingsView {
             hint: ""
         ) {
             VStack(alignment: .leading, spacing: 16) {
-                // Session Key 输入
+                // Session key entry
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 6) {
                         Image(systemName: "key.fill")
@@ -36,7 +36,7 @@ extension AuthSettingsView {
                         .textFieldStyle(.roundedBorder)
                         .font(.system(.body, design: .monospaced))
 
-                    // 验证状态提示
+                    // Validation status
                     if !newSessionKey.isEmpty {
                         if settings.isValidSessionKey(newSessionKey) {
                             HStack(spacing: 4) {
@@ -69,7 +69,7 @@ extension AuthSettingsView {
                     }
                 }
 
-                // 别名输入（可选）
+                // Alias entry (optional)
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 6) {
                         Image(systemName: "tag.fill")
@@ -84,7 +84,7 @@ extension AuthSettingsView {
                         .textFieldStyle(.roundedBorder)
                 }
 
-                // 错误提示
+                // Error message
                 if let error = validationError {
                     HStack(spacing: 4) {
                         Image(systemName: "exclamationmark.triangle.fill")
@@ -96,7 +96,7 @@ extension AuthSettingsView {
                     }
                 }
 
-                // 操作按钮
+                // Action buttons
                 HStack {
                     Button(action: {
                         withAnimation {
@@ -129,7 +129,7 @@ extension AuthSettingsView {
 
     // MARK: - Private Methods
 
-    /// 验证并添加账户
+    /// Validate and add the account
     func validateAndAddAccount() {
         isValidating = true
         validationError = nil
@@ -151,16 +151,16 @@ extension AuthSettingsView {
                                 alias: (useAlias && !newAlias.isEmpty) ? newAlias : nil
                             )
                             settings.addAccount(newAccount)
-                            // 切换到第一个新添加的账户
+                            // Switch to the first newly added account
                             if index == 0 {
                                 settings.switchToAccount(newAccount)
                             }
                         }
-                        // 多组织时显示提示
+                        // Show a hint when there is more than one organization
                         if organizations.count > 1 {
                             successMessage = String(format: L.Account.multiOrgAdded, organizations.count)
                         }
-                        // 关闭添加界面
+                        // Close the add UI
                         withAnimation {
                             isAddingAccount = false
                         }

@@ -1,9 +1,9 @@
 import XCTest
 @testable import ClaudeUsageCore
 
-/// 回归测试：JWT payload 使用 base64url 字母表（含 `-`/`_`，无 padding）。
-/// 修复前的实现直接用标准 `Data(base64Encoded:)` 解码，只要 payload 的
-/// base64 形式含 `-`/`_` 就会解码失败 → `jwtExpiry` 返回 nil。
+/// Regression test: a JWT payload uses the base64url alphabet (with `-` and `_`, and no padding).
+/// The implementation before the fix decoded with the standard `Data(base64Encoded:)`, so any payload whose
+/// base64 form contained `-` or `_` failed to decode and `jwtExpiry` returned nil.
 final class JWTTests: XCTestCase {
 
     private func makeToken(payloadJSON: String) -> String {
@@ -21,9 +21,9 @@ final class JWTTests: XCTestCase {
         XCTAssertEqual(jwtExpiry(from: token)?.timeIntervalSince1970, exp)
     }
 
-    /// payload 中的 "??????" 使其标准 base64 编码必然含 `/`（可用
-    /// `Data(payloadJSON.utf8).base64EncodedString()` 验证），从而真正覆盖
-    /// base64url → base64 字母表转换这条修复路径，而不只是走 padding 分支。
+    /// The "??????" in the payload guarantees its standard base64 encoding contains a `/` (verifiable with
+    /// `Data(payloadJSON.utf8).base64EncodedString()`), which really exercises the base64url to base64 alphabet
+    /// conversion this fix added, rather than only the padding branch.
     func testJwtExpiryHandlesPayloadsRequiringURLSafeCharacters() {
         let exp: TimeInterval = 1_893_456_000
         let payloadJSON = #"{"exp":1893456000,"pad":"??????"}"#

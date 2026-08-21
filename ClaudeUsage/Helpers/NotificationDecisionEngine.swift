@@ -4,46 +4,46 @@
 //
 //  Copyright © 2025 f-is-h. All rights reserved.
 //
-//  用量通知阈值判定的纯逻辑核心：不依赖 UserNotifications / UserSettings，
-//  只回答"给定当前状态与已通知记录，该发哪些通知、记录该怎么更新"。拆到独立
-//  文件是为了能塞进 SwiftPM 测试 target——重复/漏发通知的坑基本都出在这层
-//  状态判定（陈旧标志清理、阈值穿越、重置检测），而不是发送通知本身。
+//  Pure threshold logic for usage notifications: it depends on neither UserNotifications nor UserSettings,
+//  and only answers "given the current state and what has already been notified, which notifications go out
+//  and how does the record change". It lives in its own file so it fits in the SwiftPM test target: duplicate
+//  and missed notifications almost always come from this state logic (stale flag cleanup, threshold crossing, reset detection) rather than from sending itself.
 //
 
 import Foundation
 
-/// 通知阈值判定需要执行的动作
+/// Actions the threshold logic asks for
 enum NotificationDecisionAction: Equatable {
-    /// 发送「已重置」通知
+    /// Send the "reset" notification
     case reset
-    /// 发送「已达到阈值」通知，附带触发时的百分比
+    /// Send the "threshold reached" notification, with the percentage that triggered it
     case warning(percentage: Double)
 }
 
 enum NotificationThresholds {
-    /// 用量警告阈值（90%）
+    /// Usage warning threshold (90%)
     static let warning: Double = 90.0
-    /// 7天限制的早期警告阈值（75%）
+    /// Early warning threshold for the 7 day limit (75%)
     static let sevenDayEarlyWarning: Double = 75.0
-    /// 重置检测阈值：百分比骤降超过此值视为重置
+    /// Reset detection threshold: a percentage drop larger than this counts as a reset
     static let resetDrop: Double = 30.0
 }
 
 enum NotificationDecisionEngine {
 
-    /// 判断是否发生了重置
+    /// Decide whether a reset happened
     static func isReset(
         currentPct: Double,
         previousPct: Double,
         currentResetsAt: Date?,
         previousResetsAt: Date?
     ) -> Bool {
-        // 百分比骤降（从较高值降到较低值）
+        // Sharp percentage drop (from a higher value to a lower one)
         if previousPct >= NotificationThresholds.warning && (previousPct - currentPct) > NotificationThresholds.resetDrop {
             return true
         }
 
-        // resetsAt 发生了变化（新的重置周期），且百分比也下降了，确认是重置
+        // resetsAt changed (a new reset window) and the percentage dropped too, so this is a reset
         if let current = currentResetsAt, let previous = previousResetsAt,
            abs(current.timeIntervalSince(previous)) > 1.0,
            currentPct < previousPct {
@@ -53,15 +53,15 @@ enum NotificationDecisionEngine {
         return false
     }
 
-    /// 单个限制类型的通知判定
+    /// Notification logic for a single limit type
     /// - Parameters:
-    ///   - current: 最新百分比，nil 表示尚无数据（调用方应跳过）
-    ///   - previous: 上一次的百分比
-    ///   - currentResetsAt/previousResetsAt: 用于重置检测
-    ///   - warningKey: 90% 阈值的已通知记录 key
-    ///   - earlyWarningKey: 75% 阈值的已通知记录 key；传 nil 表示该类型不做早期预警
-    ///   - notifiedWarnings: 当前已通知记录（key -> 所属周期的 resetsAt epoch，0 表示无周期信息）
-    /// - Returns: 需要执行的动作（顺序即建议的发送顺序）与更新后的已通知记录
+    ///   - current: latest percentage, nil means there is no data yet (the caller should skip)
+    ///   - previous: the previous percentage
+    ///   - currentResetsAt/previousResetsAt: used for reset detection
+    ///   - warningKey: record key for the 90% threshold
+    ///   - earlyWarningKey: record key for the 75% threshold; nil means this type gets no early warning
+    ///   - notifiedWarnings: the current record (key -> resetsAt epoch of its window, 0 when there is no window info)
+    /// - Returns: the actions to run (in the suggested send order) and the updated record
     static func evaluate(
         current: Double?,
         previous: Double?,
@@ -91,8 +91,8 @@ enum NotificationDecisionEngine {
         var actions: [NotificationDecisionAction] = []
         let currentCycle = currentResetsAt?.timeIntervalSince1970 ?? 0
 
-        // 陈旧标志清理：持久化的标志若属于旧周期（resetsAt 已变），直接作废。
-        // 覆盖"应用未运行期间配额已重置"的场景——那种重置不会走上面的 isReset 分支。
+        // Stale flag cleanup: a persisted flag belonging to an old window (resetsAt has changed) is dropped.
+        // This covers "the quota reset while the app was not running", a reset that never reaches the isReset branch above.
         func clearIfStale(_ key: String) {
             guard currentCycle != 0,
                   let firedCycle = warnings[key], firedCycle != 0,

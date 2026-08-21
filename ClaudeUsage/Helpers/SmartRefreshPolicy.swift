@@ -2,29 +2,29 @@
 //  SmartRefreshPolicy.swift
 //  ClaudeUsage
 //
-//  Extracted from UserSettings.swift so the 4 级监控模式状态机 can live as pure,
+//  Extracted from UserSettings.swift so the 4 level monitoring mode state machine can live as pure,
 //  UI/UserDefaults-free logic — cherry-pickable into a SwiftPM test target.
 //  Copyright © 2025 f-is-h. All rights reserved.
 //
 
 import Foundation
 
-/// 智能刷新的 4 级监控模式状态机
-/// 规则：任一 Provider 用量变化 → 立即切回活跃模式；全部无变化才逐级累计静默次数降频。
-/// 纯逻辑，不依赖 Logger/UserDefaults/NotificationCenter —— 副作用（日志、通知）由调用方处理。
+/// The 4 level monitoring mode state machine behind smart refresh
+/// Rule: any provider whose usage changed switches straight back to active mode; only when nothing changed does the quiet count build up and slow the polling down step by step.
+/// Pure logic, independent of Logger, UserDefaults and NotificationCenter. Side effects (logging, notifications) are the caller's job.
 final class SmartRefreshPolicy {
-    /// 当前监控模式
+    /// Current monitoring mode
     var currentMode: MonitoringMode = .active
-    /// 连续无变化次数
+    /// Number of consecutive unchanged polls
     var unchangedCount: Int = 0
-    /// 保留旧字段语义，便于调试观察（等同于 claude 或首个 provider 的值）
+    /// Keeps the old field's meaning, handy while debugging (same as claude, or the first provider)
     var lastUtilization: Double?
 
     private var lastUtilizationByProvider: [ProviderType: Double] = [:]
 
-    /// 处理一轮用量检测结果
-    /// - Parameter providerUtilizations: 本轮成功获取的 Provider 用量百分比
-    /// - Returns: 是否发生了模式切换（调用方据此决定是否需要重启定时器/发通知）
+    /// Handle one round of usage detection
+    /// - Parameter providerUtilizations: provider usage percentages fetched successfully this round
+    /// - Returns: whether the mode changed (the caller uses this to decide whether to restart timers or post a notification)
     @discardableResult
     func update(providerUtilizations: [ProviderType: Double]) -> Bool {
         guard !providerUtilizations.isEmpty else { return false }
@@ -44,7 +44,7 @@ final class SmartRefreshPolicy {
         return modeChanged
     }
 
-    /// 重置状态（切换到固定模式或用户手动刷新时调用）
+    /// Reset the state (called when switching to fixed mode, or on a manual refresh)
     func reset() {
         lastUtilization = nil
         lastUtilizationByProvider.removeAll()
@@ -76,21 +76,21 @@ final class SmartRefreshPolicy {
         return true
     }
 
-    /// 根据当前模式和无变化次数计算新模式
-    /// - Returns: 如果需要切换，返回新模式；否则返回 nil
+    /// Compute the new mode from the current mode and the unchanged count
+    /// - Returns: the new mode when a switch is needed, otherwise nil
     private func calculateNewMode() -> MonitoringMode? {
         switch currentMode {
         case .active:
-            // 活跃模式：连续3次无变化（3分钟） -> 短期静默
+            // Active mode: 3 rounds unchanged (3 minutes) -> short quiet
             return unchangedCount >= 3 ? .idleShort : nil
         case .idleShort:
-            // 短期静默：连续6次无变化（18分钟） -> 中期静默
+            // Short quiet: 6 rounds unchanged (18 minutes) -> medium quiet
             return unchangedCount >= 6 ? .idleMedium : nil
         case .idleMedium:
-            // 中期静默：连续12次无变化（60分钟） -> 长期静默
+            // Medium quiet: 12 rounds unchanged (60 minutes) -> long quiet
             return unchangedCount >= 12 ? .idleLong : nil
         case .idleLong:
-            // 长期静默：保持当前模式
+            // Long quiet: stay in the current mode
             return nil
         }
     }

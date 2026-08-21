@@ -10,24 +10,24 @@ import Foundation
 import Combine
 import OSLog
 
-/// 本地化管理器
-/// 负责监听语言变化并触发视图更新，实现即时语言切换
+/// Localization manager
+/// Watches for language changes and drives view updates, so switching takes effect immediately
 class LocalizationManager: ObservableObject {
-    /// 单例实例
+    /// Shared instance
     static let shared = LocalizationManager()
     
-    /// 更新触发器，当语言变化时递增，用于强制视图重新创建
+    /// Update trigger, incremented on a language change to force views to rebuild
     @Published var updateTrigger: Int = 0
     
-    /// 通知观察者
+    /// Notification observer
     private var cancellable: AnyCancellable?
     
     private init() {
-        // 监听语言变化通知
+        // Listen for language change notifications
         cancellable = NotificationCenter.default
             .publisher(for: .languageChanged)
             .sink { [weak self] _ in
-                // 语言变化时递增触发器，所有使用 .id(updateTrigger) 的视图会重新创建
+                // Bump the trigger on a language change, so every view using .id(updateTrigger) is rebuilt
                 self?.updateTrigger += 1
                 Logger.localization.debug("Language changed, triggering a view update")
             }

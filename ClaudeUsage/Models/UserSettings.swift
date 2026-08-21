@@ -14,15 +14,15 @@ import OSLog
 
 // MARK: - Display Modes
 
-/// 菜单栏图标显示模式
+/// Menu bar icon display mode
 enum IconDisplayMode: String, CaseIterable, Codable {
-    /// 仅显示百分比圆环
+    /// Percentage ring only
     case percentageOnly = "percentage_only"
-    /// 仅显示应用图标
+    /// App icon only
     case iconOnly = "icon_only"
-    /// 同时显示图标和百分比
+    /// Both the icon and the percentage
     case both = "both"
-    /// 不显示图标（双 Provider 时显示尖头分隔线）
+    /// No icon (a pointed separator in dual provider mode)
     case none = "no_display"
 
     var localizedName: String {
@@ -39,13 +39,13 @@ enum IconDisplayMode: String, CaseIterable, Codable {
     }
 }
 
-/// 菜单栏图标样式模式
+/// Menu bar icon style mode
 enum IconStyleMode: String, CaseIterable, Codable {
-    /// 彩色通透（默认，彩色无背景）
+    /// Colored and translucent (default, color with no background)
     case colorTranslucent = "color_translucent"
-    /// 彩色带背景
+    /// Colored with a background
     case colorWithBackground = "color_with_background"
-    /// 单色（Template模式，跟随系统主题）
+    /// Monochrome (template mode, follows the system theme)
     case monochrome = "monochrome"
     
     var localizedName: String {
@@ -73,11 +73,11 @@ enum IconStyleMode: String, CaseIterable, Codable {
 
 // MARK: - Refresh Modes
 
-/// 刷新模式
+/// Refresh mode
 enum RefreshMode: String, CaseIterable, Codable {
-    /// 智能频率（根据使用情况自动调整）
+    /// Smart interval (adjusts automatically to usage)
     case smart = "smart"
-    /// 固定频率（用户手动设置）
+    /// Fixed interval (set by the user)
     case fixed = "fixed"
     
     var localizedName: String {
@@ -90,15 +90,15 @@ enum RefreshMode: String, CaseIterable, Codable {
     }
 }
 
-/// 数据刷新频率
+/// Data refresh interval
 enum RefreshInterval: Int, CaseIterable, Codable {
-    /// 1分钟刷新一次
+    /// Refresh once a minute
     case oneMinute = 60
-    /// 3分钟刷新一次
+    /// Refresh every 3 minutes
     case threeMinutes = 180
-    /// 5分钟刷新一次
+    /// Refresh every 5 minutes
     case fiveMinutes = 300
-    /// 10分钟刷新一次
+    /// Refresh every 10 minutes
     case tenMinutes = 600
     
     var localizedName: String {
@@ -117,26 +117,26 @@ enum RefreshInterval: Int, CaseIterable, Codable {
 
 // MARK: - Limit Types
 
-/// 限制类型
+/// Limit type
 enum LimitType: String, CaseIterable, Codable {
-    /// 5小时限制
+    /// 5 hour limit
     case fiveHour = "five_hour"
-    /// 7天限制
+    /// 7 day limit
     case sevenDay = "seven_day"
-    /// Extra Usage 额外付费额度
+    /// Extra Usage, the extra paid allowance
     case extraUsage = "extra_usage"
-    /// Opus 每周限制
+    /// Opus weekly limit
     case opusWeekly = "seven_day_opus"
-    /// Sonnet 每周限制
+    /// Sonnet weekly limit
     case sonnetWeekly = "seven_day_sonnet"
-    /// Codex 5小时窗口（primary）
+    /// Codex 5 hour window (primary)
     case codexPrimary = "codex_primary"
-    /// Codex 7天窗口（secondary）
+    /// Codex 7 day window (secondary)
     case codexSecondary = "codex_secondary"
     /// Codex Extra Usage / credits
     case codexExtraUsage = "codex_extra_usage"
 
-    /// 所属 Provider
+    /// Owning provider
     var provider: ProviderType {
         switch self {
         case .fiveHour, .sevenDay, .extraUsage, .opusWeekly, .sonnetWeekly:
@@ -146,27 +146,27 @@ enum LimitType: String, CaseIterable, Codable {
         }
     }
 
-    /// 是否为圆形图标（5小时、7天和 Codex 两项）
+    /// Whether the icon is a circle (5 hour, 7 day and both Codex entries)
     var isCircular: Bool {
         return self == .fiveHour || self == .sevenDay || self == .codexPrimary || self == .codexSecondary
     }
 
-    /// 是否为矩形图标（Opus和Sonnet）
+    /// Whether the icon is a rectangle (Opus and Sonnet)
     var isRectangular: Bool {
         return self == .opusWeekly || self == .sonnetWeekly
     }
 
-    /// 是否为六边形图标（Extra Usage）
+    /// Whether the icon is a hexagon (Extra Usage)
     var isHexagonal: Bool {
         return self == .extraUsage || self == .codexExtraUsage
     }
 
-    /// 是否使用虚线样式（7天类型）
+    /// Whether it uses a dashed style (the 7 day type)
     var usesDashedStyle: Bool {
         return self == .sevenDay || self == .codexSecondary
     }
 
-    /// 显示名称
+    /// Display name
     var displayName: String {
         switch self {
         case .fiveHour:
@@ -191,11 +191,11 @@ enum LimitType: String, CaseIterable, Codable {
 
 // MARK: - Display Mode
 
-/// 显示模式（智能显示 vs 自定义显示）
+/// Display mode (smart or custom)
 enum DisplayMode: String, CaseIterable, Codable {
-    /// 智能显示 - 自动显示有数据的限制类型
+    /// Smart display, shows every limit type that has data
     case smart = "smart"
-    /// 自定义显示 - 用户手动选择要显示的限制类型
+    /// Custom display, the user picks which limit types to show
     case custom = "custom"
 
     var localizedName: String {
@@ -208,13 +208,13 @@ enum DisplayMode: String, CaseIterable, Codable {
     }
 }
 
-/// 时间格式偏好
+/// Time format preference
 enum TimeFormatPreference: String, CaseIterable, Codable {
-    /// 跟随系统
+    /// Follow the system
     case system = "system"
-    /// 12 小时制
+    /// 12 hour clock
     case twelveHour = "twelve_hour"
-    /// 24 小时制
+    /// 24 hour clock
     case twentyFourHour = "twenty_four_hour"
 
     var localizedName: String {
@@ -229,13 +229,13 @@ enum TimeFormatPreference: String, CaseIterable, Codable {
     }
 }
 
-/// 应用外观模式
+/// App appearance mode
 enum AppAppearance: String, CaseIterable, Codable {
-    /// 跟随系统
+    /// Follow the system
     case system = "system"
-    /// 浅色
+    /// Light
     case light = "light"
-    /// 深色
+    /// Dark
     case dark = "dark"
 
     var localizedName: String {
@@ -249,7 +249,7 @@ enum AppAppearance: String, CaseIterable, Codable {
         }
     }
 
-    /// 对应的 SwiftUI ColorScheme（system 返回 nil，表示跟随系统）
+    /// The matching SwiftUI ColorScheme (system returns nil, meaning follow the system)
     var colorScheme: ColorScheme? {
         switch self {
         case .system:
@@ -262,19 +262,19 @@ enum AppAppearance: String, CaseIterable, Codable {
     }
 }
 
-/// 应用语言选项
+/// App language options
 enum AppLanguage: String, CaseIterable, Codable {
-    /// 英语
+    /// English
     case english = "en"
-    /// 日语
+    /// Japanese
     case japanese = "ja"
-    /// 简体中文
+    /// Simplified Chinese
     case chinese = "zh-Hans"
-    /// 繁体中文
+    /// Traditional Chinese
     case chineseTraditional = "zh-Hant"
-    /// 韩语
+    /// Korean
     case korean = "ko"
-    /// 法语
+    /// French
     case french = "fr"
     /// German
     case german = "de"
@@ -300,7 +300,7 @@ enum AppLanguage: String, CaseIterable, Codable {
 }
 
 extension AppLanguage {
-    /// 将应用语言转换为对应的 Locale
+    /// Convert the app language to its Locale
     var locale: Locale {
         switch self {
         case .english:
@@ -323,17 +323,17 @@ extension AppLanguage {
 
 // MARK: - User Settings
 
-/// 用户设置管理类
-/// 负责管理应用的所有用户配置，包括认证信息、显示设置、语言等
-/// 敏感信息（Organization ID 和 Session Key）存储在 Keychain 中
-/// 非敏感设置存储在 UserDefaults 中
+/// User settings
+/// Owns every user setting: authentication, display options, language and the rest
+/// Sensitive data (organization ID and session key) is stored in the Keychain
+/// Non sensitive settings are stored in UserDefaults
 class UserSettings: ObservableObject {
     // MARK: - Singleton
 
-    /// 单例实例
+    /// Shared instance
     static let shared = UserSettings()
 
-    /// customDisplayTypes 的默认值，init() 与 resetToDefaults() 共用，避免两处定义漂移不一致
+    /// Default value for customDisplayTypes, shared by init() and resetToDefaults() so the two cannot drift apart
     static let defaultCustomDisplayTypes: Set<LimitType> = [.fiveHour, .sevenDay]
 
     // MARK: - Properties
@@ -341,14 +341,14 @@ class UserSettings: ObservableObject {
     private let defaults = UserDefaults.standard
     private let keychain = KeychainManager.shared
 
-    /// Combine 订阅集合：转发 accountStore 的 objectWillChange，让绑定 UserSettings 的 SwiftUI 视图
-    /// 在账户数据变化时也能收到更新（见 init() 中的订阅）
+    /// Combine subscriptions: forwards accountStore's objectWillChange, so SwiftUI views bound to UserSettings
+    /// also update when account data changes (see the subscription in init())
     private var cancellables = Set<AnyCancellable>()
 
-    // MARK: - 多账户支持（v2.1.0，拆分到 AccountStore，见审计报告 4.1）
+    // MARK: - Multi account support (v2.1.0, split into AccountStore, see audit report 4.1)
 
-    /// 账户 CRUD、持久化、当前账户 ID 均已迁移到 AccountStore，这里只做门面转发，
-    /// 保持外部调用点（settings.accounts、settings.addAccount(...) 等）零改动。
+    /// Account CRUD, persistence and the current account ID all moved to AccountStore, so this is only a facade
+    /// that forwards, keeping every call site (settings.accounts, settings.addAccount(...) and so on) unchanged.
     let accountStore = AccountStore()
 
     var accounts: [Account] { accountStore.accounts }
@@ -365,10 +365,10 @@ class UserSettings: ObservableObject {
         set { accountStore.organizationId = newValue }
     }
 
-    /// Claude 账户列表的语义别名（等同于 accounts，用于 provider-aware 代码中保持对称）
+    /// Semantic alias for the Claude account list (same as accounts, keeps provider aware code symmetric)
     var claudeAccounts: [Account] { accountStore.claudeAccounts }
 
-    // MARK: - Codex 账户支持
+    // MARK: - Codex account support
 
     var codexAccounts: [Account] { accountStore.codexAccounts }
     var currentCodexAccountId: UUID? { accountStore.currentCodexAccountId }
@@ -376,7 +376,7 @@ class UserSettings: ObservableObject {
     var codexSessionToken: String { accountStore.codexSessionToken }
     var hasValidCodexCredentials: Bool { accountStore.hasValidCodexCredentials }
 
-    /// 是否同时存在 Claude 和 Codex 账户（决定 UI 进入 multi-provider 形态）
+    /// Whether both a Claude and a Codex account exist (which puts the UI into multi provider form)
     var isMultiProviderActive: Bool {
         #if DEBUG
         if debugModeEnabled {
@@ -391,9 +391,9 @@ class UserSettings: ObservableObject {
         return !accounts.isEmpty && !codexAccounts.isEmpty
     }
 
-    // MARK: - 非敏感设置（存储在UserDefaults中）
+    // MARK: - Non sensitive settings (stored in UserDefaults)
 
-    /// 菜单栏图标显示模式
+    /// Menu bar icon display mode
     @Published var iconDisplayMode: IconDisplayMode {
         didSet {
             defaults.set(iconDisplayMode.rawValue, forKey: "iconDisplayMode")
@@ -401,7 +401,7 @@ class UserSettings: ObservableObject {
         }
     }
     
-    /// 菜单栏图标样式模式
+    /// Menu bar icon style mode
     @Published var iconStyleMode: IconStyleMode {
         didSet {
             defaults.set(iconStyleMode.rawValue, forKey: "iconStyleMode")
@@ -409,7 +409,7 @@ class UserSettings: ObservableObject {
         }
     }
     
-    /// 刷新模式（智能/固定）
+    /// Refresh mode (smart or fixed)
     @Published var refreshMode: RefreshMode {
         didSet {
             defaults.set(refreshMode.rawValue, forKey: "refreshMode")
@@ -417,7 +417,7 @@ class UserSettings: ObservableObject {
         }
     }
     
-    /// 数据刷新间隔（秒）- 仅在固定模式下使用
+    /// Data refresh interval (seconds), used in fixed mode only
     @Published var refreshInterval: Int {
         didSet {
             defaults.set(refreshInterval, forKey: "refreshInterval")
@@ -425,7 +425,7 @@ class UserSettings: ObservableObject {
         }
     }
     
-    /// 应用界面语言
+    /// App interface language
     @Published var language: AppLanguage {
         didSet {
             defaults.set(language.rawValue, forKey: "language")
@@ -433,8 +433,8 @@ class UserSettings: ObservableObject {
         }
     }
 
-    /// 外观模式的持久化、应用到 NSApp、系统主题监听都在 AppearanceManager 里，这里只做门面转发。
-    /// 计算属性也能形成 ReferenceWritableKeyPath，$settings.appearance 双向绑定不受影响。
+    /// Appearance persistence, applying it to NSApp and watching the system theme all live in AppearanceManager, so this is only a forwarding facade.
+    /// A computed property still forms a ReferenceWritableKeyPath, so the $settings.appearance two way binding is unaffected.
     let appearanceManager = AppearanceManager()
 
     var appearance: AppAppearance {
@@ -442,7 +442,7 @@ class UserSettings: ObservableObject {
         set { appearanceManager.appearance = newValue }
     }
 
-    /// 时间格式偏好
+    /// Time format preference
     @Published var timeFormatPreference: TimeFormatPreference {
         didSet {
             defaults.set(timeFormatPreference.rawValue, forKey: "timeFormatPreference")
@@ -450,7 +450,7 @@ class UserSettings: ObservableObject {
         }
     }
 
-    /// 显示模式（智能显示/自定义显示）
+    /// Display mode (smart or custom)
     @Published var displayMode: DisplayMode {
         didSet {
             defaults.set(displayMode.rawValue, forKey: "displayMode")
@@ -458,7 +458,7 @@ class UserSettings: ObservableObject {
         }
     }
 
-    /// 自定义显示的限制类型集合（仅在自定义模式下使用）
+    /// The custom set of limit types (used in custom mode only)
     @Published var customDisplayTypes: Set<LimitType> {
         didSet {
             let rawValues = customDisplayTypes.map { $0.rawValue }
@@ -467,7 +467,7 @@ class UserSettings: ObservableObject {
         }
     }
 
-    /// 自定义显示是否仅应用于菜单栏（开启时 Popover 走智能显示）
+    /// Whether the custom display applies to the menu bar only (when on, the popover uses the smart display)
     @Published var customDisplayMenuBarOnly: Bool {
         didSet {
             defaults.set(customDisplayMenuBarOnly, forKey: "customDisplayMenuBarOnly")
@@ -475,29 +475,29 @@ class UserSettings: ObservableObject {
         }
     }
 
-    /// Popover 端是否应该显示自定义模式的占位符（0% 空壳）
-    /// 仅当显示模式为 custom 且未开启"仅应用于菜单栏"时为 true
+    /// Whether the popover should show custom mode placeholders (0% shells)
+    /// True only when the display mode is custom and "menu bar only" is off
     var shouldShowCustomPlaceholderInPopover: Bool {
         displayMode == .custom && !customDisplayMenuBarOnly
     }
 
-    /// 是否为首次启动标记
+    /// First launch flag
     @Published var isFirstLaunch: Bool {
         didSet {
             defaults.set(isFirstLaunch, forKey: "isFirstLaunch")
         }
     }
     
-    /// 是否启用用量通知
+    /// Whether usage notifications are enabled
     @Published var notificationsEnabled: Bool {
         didSet {
             defaults.set(notificationsEnabled, forKey: "notificationsEnabled")
         }
     }
 
-    /// 开机启动的注册/注销/状态同步都在 LaunchAtLoginManager 里，这里只做门面转发。
-    /// isEnabled 直接派生自 SMAppService.mainApp.status（唯一事实来源），
-    /// 不再需要存储 Bool + 标志位防递归，失败时 Toggle 会随 status 不变而自动弹回。
+    /// Registering, unregistering and status syncing for launch at login all live in LaunchAtLoginManager, so this is only a forwarding facade.
+    /// isEnabled is derived straight from SMAppService.mainApp.status (the single source of truth),
+    /// so there is no stored Bool plus flag to prevent recursion, and on failure the Toggle snaps back as status stays put.
     let launchAtLoginManager = LaunchAtLoginManager()
 
     var launchAtLogin: Bool {
@@ -505,13 +505,13 @@ class UserSettings: ObservableObject {
         set { launchAtLoginManager.isEnabled = newValue }
     }
 
-    /// 开机启动状态（用于UI显示）
+    /// Launch at login state (for the UI)
     var launchAtLoginStatus: SMAppService.Status { launchAtLoginManager.status }
 
-    // MARK: - Debug Mode (仅Debug编译时可用)
+    // MARK: - Debug Mode (Debug builds only)
 
     #if DEBUG
-    /// 是否启用调试模式（模拟不同数据场景）
+    /// Whether debug mode is on (simulating different data scenarios)
     @Published var debugModeEnabled: Bool {
         didSet {
             defaults.set(debugModeEnabled, forKey: "debugModeEnabled")
@@ -519,7 +519,7 @@ class UserSettings: ObservableObject {
         }
     }
 
-    /// 调试场景类型
+    /// Debug scenario type
     @Published var debugScenario: DebugScenario {
         didSet {
             defaults.set(debugScenario.rawValue, forKey: "debugScenario")
@@ -527,7 +527,7 @@ class UserSettings: ObservableObject {
         }
     }
 
-    /// 调试用的5小时限制百分比（0-100）
+    /// Debug 5 hour limit percentage (0-100)
     @Published var debugFiveHourPercentage: Double {
         didSet {
             defaults.set(debugFiveHourPercentage, forKey: "debugFiveHourPercentage")
@@ -535,7 +535,7 @@ class UserSettings: ObservableObject {
         }
     }
 
-    /// 调试用的7天限制百分比（0-100）
+    /// Debug 7 day limit percentage (0-100)
     @Published var debugSevenDayPercentage: Double {
         didSet {
             defaults.set(debugSevenDayPercentage, forKey: "debugSevenDayPercentage")
@@ -543,7 +543,7 @@ class UserSettings: ObservableObject {
         }
     }
 
-    /// 调试用的 Opus 限制百分比（0-100）
+    /// Debug Opus limit percentage (0-100)
     @Published var debugOpusPercentage: Double {
         didSet {
             defaults.set(debugOpusPercentage, forKey: "debugOpusPercentage")
@@ -551,7 +551,7 @@ class UserSettings: ObservableObject {
         }
     }
 
-    /// 调试用的 Sonnet 限制百分比（0-100）
+    /// Debug Sonnet limit percentage (0-100)
     @Published var debugSonnetPercentage: Double {
         didSet {
             defaults.set(debugSonnetPercentage, forKey: "debugSonnetPercentage")
@@ -559,7 +559,7 @@ class UserSettings: ObservableObject {
         }
     }
 
-    /// 调试用的 Codex 5小时窗口百分比（0-100）
+    /// Debug Codex 5 hour window percentage (0-100)
     @Published var debugCodexPrimaryPercentage: Double {
         didSet {
             defaults.set(debugCodexPrimaryPercentage, forKey: "debugCodexPrimaryPercentage")
@@ -567,7 +567,7 @@ class UserSettings: ObservableObject {
         }
     }
 
-    /// 调试用的 Codex 7天窗口百分比（0-100）
+    /// Debug Codex 7 day window percentage (0-100)
     @Published var debugCodexSecondaryPercentage: Double {
         didSet {
             defaults.set(debugCodexSecondaryPercentage, forKey: "debugCodexSecondaryPercentage")
@@ -575,7 +575,7 @@ class UserSettings: ObservableObject {
         }
     }
 
-    /// 调试用的 Codex Extra Usage 百分比（0-100）
+    /// Debug Codex Extra Usage percentage (0-100)
     @Published var debugCodexExtraUsagePercentage: Double {
         didSet {
             defaults.set(debugCodexExtraUsagePercentage, forKey: "debugCodexExtraUsagePercentage")
@@ -583,47 +583,47 @@ class UserSettings: ObservableObject {
         }
     }
 
-    /// 调试用的 Extra Usage 是否启用
+    /// Debug flag for whether Extra Usage is enabled
     @Published var debugExtraUsageEnabled: Bool {
         didSet {
             defaults.set(debugExtraUsageEnabled, forKey: "debugExtraUsageEnabled")
         }
     }
 
-    /// 调试用的 Extra Usage 已使用金额（美分），与真实 API used_credits 单位一致
+    /// Debug Extra Usage amount used (cents), the same unit as the real API's used_credits
     @Published var debugExtraUsageUsed: Double {
         didSet {
             defaults.set(debugExtraUsageUsed, forKey: "debugExtraUsageUsed")
         }
     }
 
-    /// 调试用的 Extra Usage 总限额（美分），与真实 API monthly_limit 单位一致，只能为整数
+    /// Debug Extra Usage total limit (cents), the same unit as the real API's monthly_limit, integers only
     @Published var debugExtraUsageLimit: Int {
         didSet {
             defaults.set(debugExtraUsageLimit, forKey: "debugExtraUsageLimit")
         }
     }
 
-    /// 调试用的 Extra Usage 百分比（0-100），会同步更新 used 值
+    /// Debug Extra Usage percentage (0-100), which also updates the used value
     @Published var debugExtraUsagePercentage: Double {
         didSet {
             defaults.set(debugExtraUsagePercentage, forKey: "debugExtraUsagePercentage")
-            // 同步更新 used 值（美分）
+            // Also update the used value (cents)
             debugExtraUsageUsed = Double(debugExtraUsageLimit) * (debugExtraUsagePercentage / 100.0)
             NotificationCenter.default.post(name: .settingsChanged, object: nil)
         }
     }
 
-    /// 是否模拟有可用更新（调试用）
+    /// Whether to simulate an available update (for debugging)
     @Published var simulateUpdateAvailable: Bool {
         didSet {
             defaults.set(simulateUpdateAvailable, forKey: "simulateUpdateAvailable")
-            // 发送通知让 MenuBarManager 重新检查更新状态
+            // Post a notification so MenuBarManager rechecks the update state
             NotificationCenter.default.post(name: .settingsChanged, object: nil)
         }
     }
 
-    /// 是否在菜单栏单独显示所有形状图标（调试用，方便截图）
+    /// Whether to show every shape icon separately in the menu bar (for debugging, handy for screenshots)
     @Published var debugShowAllShapesIndividually: Bool {
         didSet {
             defaults.set(debugShowAllShapesIndividually, forKey: "debugShowAllShapesIndividually")
@@ -631,20 +631,20 @@ class UserSettings: ObservableObject {
         }
     }
 
-    /// 是否保持详情窗口始终打开（调试用，方便录制动画）
+    /// Whether to keep the detail window open at all times (for debugging, handy for recording animations)
     @Published var debugKeepDetailWindowOpen: Bool {
         didSet {
             defaults.set(debugKeepDetailWindowOpen, forKey: "debugKeepDetailWindowOpen")
         }
     }
 
-    /// 调试场景枚举
+    /// Debug scenarios
     enum DebugScenario: String, CaseIterable {
-        case realData = "real"              // 真实API数据
-        case fiveHourOnly = "five_hour"     // 仅5小时限制
-        case sevenDayOnly = "seven_day"     // 仅7天限制
-        case both = "both"                  // 同时有两种限制
-        case allFive = "all_five"           // 全部5种限制（v2.0测试）
+        case realData = "real"              // Real API data
+        case fiveHourOnly = "five_hour"     // 5 hour limit only
+        case sevenDayOnly = "seven_day"     // 7 day limit only
+        case both = "both"                  // Both kinds of limit
+        case allFive = "all_five"           // All 5 limits (v2.0 test)
 
         var displayName: String {
             switch self {
@@ -663,24 +663,24 @@ class UserSettings: ObservableObject {
     }
     #endif
 
-    // MARK: - 智能模式内部状态（不持久化，委托给 SmartRefreshPolicy 纯逻辑状态机）
+    // MARK: - Smart mode internal state (not persisted, delegated to the pure SmartRefreshPolicy state machine)
 
-    /// 智能刷新的 4 级监控模式状态机（纯逻辑，可独立单测，见 Helpers/SmartRefreshPolicy.swift）
+    /// The 4 level monitoring mode state machine behind smart refresh (pure logic, unit testable on its own, see Helpers/SmartRefreshPolicy.swift)
     private let smartRefreshPolicy = SmartRefreshPolicy()
 
-    /// 上次检测的百分比（用于检测变化）
+    /// The percentage from the last check (used to detect changes)
     var lastUtilization: Double? {
         get { smartRefreshPolicy.lastUtilization }
         set { smartRefreshPolicy.lastUtilization = newValue }
     }
 
-    /// 连续无变化次数
+    /// Number of consecutive unchanged polls
     var unchangedCount: Int {
         get { smartRefreshPolicy.unchangedCount }
         set { smartRefreshPolicy.unchangedCount = newValue }
     }
 
-    /// 当前监控模式（智能模式下使用）
+    /// Current monitoring mode (used in smart mode)
     var currentMonitoringMode: MonitoringMode {
         get { smartRefreshPolicy.currentMode }
         set { smartRefreshPolicy.currentMode = newValue }
@@ -688,12 +688,12 @@ class UserSettings: ObservableObject {
 
     // MARK: - Initialization
     
-    /// 检测系统语言并映射到应用支持的语言
-    /// - Returns: 与系统语言最匹配的 AppLanguage
+    /// Detect the system language and map it onto a language the app supports
+    /// - Returns: the AppLanguage closest to the system language
     private static func detectSystemLanguage() -> AppLanguage {
         let systemLanguage = Locale.preferredLanguages.first ?? "en"
 
-        // 根据系统语言前缀匹配应用支持的语言
+        // Match the system language prefix against the languages the app supports
         if systemLanguage.hasPrefix("zh-Hans") {
             return .chinese
         } else if systemLanguage.hasPrefix("zh-Hant") || systemLanguage.hasPrefix("zh-HK") || systemLanguage.hasPrefix("zh-TW") {
@@ -707,14 +707,14 @@ class UserSettings: ObservableObject {
         } else if systemLanguage.hasPrefix("de") {
             return .german
         } else {
-            return .english  // 默认英语
+            return .english  // English by default
         }
     }
     
-    /// 私有初始化方法（单例模式）
-    /// 从 Keychain 加载敏感信息，从 UserDefaults 加载其他设置
+    /// Private initializer (singleton)
+    /// Loads sensitive data from the Keychain and everything else from UserDefaults
     private init() {
-        // MARK: - 从UserDefaults加载非敏感设置
+        // MARK: - Load non sensitive settings from UserDefaults
 
         if let modeString = defaults.string(forKey: "iconDisplayMode"),
            let mode = IconDisplayMode(rawValue: modeString) {
@@ -727,10 +727,10 @@ class UserSettings: ObservableObject {
            let style = IconStyleMode(rawValue: styleString) {
             self.iconStyleMode = style
         } else {
-            self.iconStyleMode = .monochrome  // 默认单色
+            self.iconStyleMode = .monochrome  // Monochrome by default
         }
         
-        // 加载刷新模式，默认为智能模式
+        // Load the refresh mode, smart by default
         if let modeString = defaults.string(forKey: "refreshMode"),
            let mode = RefreshMode(rawValue: modeString) {
             self.refreshMode = mode
@@ -739,19 +739,19 @@ class UserSettings: ObservableObject {
         }
         
         let savedRefreshInterval = defaults.integer(forKey: "refreshInterval")
-        self.refreshInterval = savedRefreshInterval > 0 ? savedRefreshInterval : 180 // 默认3分钟
+        self.refreshInterval = savedRefreshInterval > 0 ? savedRefreshInterval : 180 // 3 minutes by default
         
         if let langString = defaults.string(forKey: "language"),
            let lang = AppLanguage(rawValue: langString) {
             self.language = lang
         } else {
-            // 首次启动时使用系统语言
+            // Use the system language on first launch
             self.language = Self.detectSystemLanguage()
         }
 
-        // 外观模式的加载已搬进 AppearanceManager.init()
+        // Appearance loading moved into AppearanceManager.init()
 
-        // 加载时间格式偏好，默认跟随系统
+        // Load the time format preference, following the system by default
         if let timeFormatString = defaults.string(forKey: "timeFormatPreference"),
            let timeFormat = TimeFormatPreference(rawValue: timeFormatString) {
             self.timeFormatPreference = timeFormat
@@ -759,7 +759,7 @@ class UserSettings: ObservableObject {
             self.timeFormatPreference = .system
         }
 
-        // 加载显示模式，默认为智能模式
+        // Load the display mode, smart by default
         if let modeString = defaults.string(forKey: "displayMode"),
            let mode = DisplayMode(rawValue: modeString) {
             self.displayMode = mode
@@ -767,17 +767,17 @@ class UserSettings: ObservableObject {
             self.displayMode = .smart
         }
 
-        // 加载自定义显示类型，默认为 5 小时和 7 天限制
+        // Load the custom display types, the 5 hour and 7 day limits by default
         if let rawValues = defaults.array(forKey: "customDisplayTypes") as? [String] {
             self.customDisplayTypes = Set(rawValues.compactMap { LimitType(rawValue: $0) })
         } else {
             self.customDisplayTypes = Self.defaultCustomDisplayTypes
         }
 
-        // 加载"自定义显示仅应用于菜单栏"开关，默认关闭（保持向后兼容）
+        // Load the "custom display applies to the menu bar only" switch, off by default (backward compatible)
         self.customDisplayMenuBarOnly = defaults.bool(forKey: "customDisplayMenuBarOnly")
 
-        // 检查是否首次启动（如果没有保存过认证信息，就是首次启动）
+        // Check for a first launch (no saved authentication means this is the first launch)
         if !defaults.bool(forKey: "hasLaunched") {
             self.isFirstLaunch = true
             defaults.set(true, forKey: "hasLaunched")
@@ -785,12 +785,12 @@ class UserSettings: ObservableObject {
             self.isFirstLaunch = false
         }
         
-        // 加载通知设置，默认开启
+        // Load the notification setting, on by default
         self.notificationsEnabled = defaults.object(forKey: "notificationsEnabled") as? Bool ?? true
 
-        // 开机启动状态的加载已搬进 LaunchAtLoginManager.init()
+        // Launch at login loading moved into LaunchAtLoginManager.init()
 
-        // MARK: - 初始化调试模式设置
+        // MARK: - Initialize the debug mode settings
 
         #if DEBUG
         self.debugModeEnabled = defaults.bool(forKey: "debugModeEnabled")
@@ -813,63 +813,63 @@ class UserSettings: ObservableObject {
         self.debugKeepDetailWindowOpen = defaults.bool(forKey: "debugKeepDetailWindowOpen")
         #endif
 
-        // 账户加载/迁移、开机启动注册状态、外观应用与系统主题监听都已分别搬进
-        // AccountStore / LaunchAtLoginManager / AppearanceManager 各自的 init()；
-        // 这里只需转发它们的 objectWillChange，让 @ObservedObject var settings =
-        // UserSettings.shared 的 SwiftUI 视图在这些子对象变化时也能收到刷新。
+        // Account loading and migration, launch at login registration state, applying the appearance and watching the system theme
+        // each moved into the init() of AccountStore / LaunchAtLoginManager / AppearanceManager;
+        // all that is left here is forwarding their objectWillChange, so the SwiftUI views using
+        // @ObservedObject var settings = UserSettings.shared refresh when those child objects change.
         for publisher in [accountStore.objectWillChange, launchAtLoginManager.objectWillChange, appearanceManager.objectWillChange] {
             publisher
                 .sink { [weak self] _ in self?.objectWillChange.send() }
                 .store(in: &cancellables)
         }
 
-        // 同步系统实际的开机启动状态（LaunchAtLoginManager.init 只读了一次快照，
-        // 这里主动刷新一次以防应用启动前用户在系统设置里手动改过）
+        // Sync the system's real launch at login state (LaunchAtLoginManager.init only read one snapshot,
+        // so refresh once here in case the user changed it in System Settings before the app started)
         syncLaunchAtLoginStatus()
     }
     
     // MARK: - Computed Properties
 
-    /// 当前应用使用的 Locale（基于用户选择的语言）
+    /// The Locale the app currently uses (from the language the user chose)
     var appLocale: Locale {
         return language.locale
     }
 
-    /// 检查认证信息是否已配置
-    /// OAuth 账户仅凭 refresh_token（sk-ant-ort01- 前缀）即可认为有效；
-    /// session-cookie 账户仍需 organizationId + sessionKey 双非空。
+    /// Check whether authentication is configured
+    /// An OAuth account counts as valid on its refresh_token alone (the sk-ant-ort01- prefix);
+    /// a session cookie account still needs both organizationId and sessionKey to be non empty.
     var hasValidCredentials: Bool {
         guard !sessionKey.isEmpty else { return false }
         if sessionKey.hasPrefix("sk-ant-ort01-") { return true }
         return !organizationId.isEmpty
     }
 
-    /// 检查任一 Provider 的认证信息是否已配置
+    /// Check whether authentication is configured for either provider
     var hasAnyValidCredentials: Bool {
         return hasValidCredentials || hasValidCodexCredentials
     }
 
-    /// 验证 Organization ID 格式
-    /// - Parameter id: 要验证的 Organization ID
-    /// - Returns: 如果格式有效（UUID 格式）返回 true
+    /// Validate the organization ID format
+    /// - Parameter id: the organization ID to validate
+    /// - Returns: true when the format is valid (a UUID)
     func isValidOrganizationId(_ id: String) -> Bool {
-        // Organization ID 应该是 UUID 格式
+        // An organization ID should be a UUID
         let uuidRegex = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
         let predicate = NSPredicate(format: "SELF MATCHES %@", uuidRegex)
         return predicate.evaluate(with: id)
     }
 
-    /// 验证 Session Key 格式
-    /// - Parameter key: 要验证的 Session Key
-    /// - Returns: 如果格式有效返回 true
+    /// Validate the session key format
+    /// - Parameter key: the session key to validate
+    /// - Returns: true when the format is valid
     func isValidSessionKey(_ key: String) -> Bool {
-        // Session Key 应该是非空的，并且有合理的长度
-        // 典型的 session key 长度在 20-200 字符之间
+        // A session key should be non empty and of a plausible length
+        // A typical session key is 20 to 200 characters
         return !key.isEmpty && key.count >= 20 && key.count <= 500
     }
     
-    /// 获取当前生效的刷新间隔（秒）
-    /// - Returns: 智能模式返回当前监控模式的间隔，固定模式返回用户设置的间隔
+    /// Get the refresh interval currently in effect (seconds)
+    /// - Returns: in smart mode the current monitoring mode's interval, in fixed mode the interval the user set
     var effectiveRefreshInterval: Int {
         switch refreshMode {
         case .smart:
@@ -881,14 +881,14 @@ class UserSettings: ObservableObject {
     
     // MARK: - Public Methods
 
-    /// 重置为默认设置
-    /// 只重置非敏感设置，不影响认证信息
+    /// Reset to the default settings
+    /// Resets only the non sensitive settings, authentication is untouched
     func resetToDefaults() {
         appearance = .system
         iconDisplayMode = .percentageOnly
         iconStyleMode = .monochrome
         refreshMode = .smart
-        refreshInterval = 180  // 固定模式默认3分钟
+        refreshInterval = 180  // 3 minutes by default in fixed mode
         language = Self.detectSystemLanguage()
         timeFormatPreference = .system
         displayMode = .smart
@@ -896,14 +896,14 @@ class UserSettings: ObservableObject {
         customDisplayMenuBarOnly = false
         notificationsEnabled = true
 
-        // 重置智能模式状态
+        // Reset the smart mode state
         lastUtilization = nil
         unchangedCount = 0
         currentMonitoringMode = .active
     }
     
-    /// 清除所有认证信息
-    /// 从 Keychain 中删除 Organization ID 和 Session Key
+    /// Clear all authentication data
+    /// Deletes the organization ID and session key from the Keychain
     func clearCredentials() {
         keychain.deleteCredentials()
         organizationId = ""
@@ -911,19 +911,19 @@ class UserSettings: ObservableObject {
         Logger.settings.notice("Cleared all credentials")
     }
     
-    /// 更新智能监控模式
-    /// 根据用量百分比变化智能调整刷新频率
-    /// - Parameter currentUtilization: 当前用量百分比
+    /// Update the smart monitoring mode
+    /// Adjust the refresh interval from how the usage percentage moves
+    /// - Parameter currentUtilization: the current usage percentage
     func updateSmartMonitoringMode(currentUtilization: Double) {
         updateSmartMonitoringMode(providerUtilizations: [.claude: currentUtilization])
     }
 
-    /// 更新智能监控模式
-    /// 任一 Provider 用量变化会切回活跃模式；全部无变化才累计静默次数。
-    /// 状态机本身在 SmartRefreshPolicy 中（纯逻辑、可单测），这里只处理日志和通知这两个副作用。
-    /// - Parameter providerUtilizations: 本轮成功获取的 Provider 用量百分比
+    /// Update the smart monitoring mode
+    /// Any provider whose usage changed switches back to active mode; only when nothing changed does the quiet count build up.
+    /// The state machine itself lives in SmartRefreshPolicy (pure logic, unit testable); this only handles the two side effects, logging and notifications.
+    /// - Parameter providerUtilizations: provider usage percentages fetched successfully this round
     func updateSmartMonitoringMode(providerUtilizations: [ProviderType: Double]) {
-        // 只在智能模式下工作
+        // Only does anything in smart mode
         guard refreshMode == .smart else { return }
 
         let previousMode = smartRefreshPolicy.currentMode
@@ -935,10 +935,10 @@ class UserSettings: ObservableObject {
         }
     }
 
-    /// 记录模式切换日志
+    /// Log a mode switch
     /// - Parameters:
-    ///   - from: 原模式
-    ///   - to: 新模式
+    ///   - from: the old mode
+    ///   - to: the new mode
     private func logModeTransition(from: MonitoringMode, to: MonitoringMode) {
         let modeNames: [MonitoringMode: String] = [
             .active: "active (1 min)",
@@ -949,47 +949,47 @@ class UserSettings: ObservableObject {
         Logger.settings.debug("Monitoring mode change: \(modeNames[from] ?? "") -> \(modeNames[to] ?? "")")
     }
 
-    /// 重置智能监控模式状态
-    /// 在切换到固定模式或用户手动刷新时调用
+    /// Reset the smart monitoring mode state
+    /// Called when switching to fixed mode, or on a manual refresh
     func resetSmartMonitoringState() {
         smartRefreshPolicy.reset()
     }
 
     // MARK: - Account Management (v2.1.0)
-    // 实际存取/持久化都在 AccountStore（Models/AccountStore.swift），这里只是门面转发，
-    // 保持外部调用点不变。addCodexAccount 额外处理"首次接入 Codex"的展示类型初始化，
-    // 因为那部分要读 displayMode/customDisplayTypes，属于 UserSettings 自己的地盘。
+    // The real storage and persistence lives in AccountStore (Models/AccountStore.swift), this is only a forwarding facade
+    // that keeps the call sites unchanged. addCodexAccount also initializes the display types for a "first Codex account",
+    // because that part reads displayMode and customDisplayTypes, which are UserSettings' own business.
 
-    /// 添加新账户
-    /// - Parameter account: 要添加的账户
+    /// Add a new account
+    /// - Parameter account: the account to add
     func addAccount(_ account: Account) {
         accountStore.addAccount(account)
     }
 
-    /// 删除账户
-    /// - Parameter account: 要删除的账户
+    /// Delete an account
+    /// - Parameter account: the account to delete
     func removeAccount(_ account: Account) {
         accountStore.removeAccount(account)
     }
 
-    /// 切换到指定账户
-    /// - Parameter account: 要切换到的账户
+    /// Switch to the given account
+    /// - Parameter account: the account to switch to
     func switchToAccount(_ account: Account) {
         accountStore.switchToAccount(account)
     }
 
-    /// 更新账户信息
+    /// Update account information
     /// - Parameters:
-    ///   - account: 要更新的账户
-    ///   - alias: 新的别名（可选）
+    ///   - account: the account to update
+    ///   - alias: new alias (optional)
     func updateAccount(_ account: Account, alias: String?) {
         accountStore.updateAccount(account, alias: alias)
     }
 
-    /// 用于显示的账户列表
+    /// Account list used for display
     var displayAccounts: [Account] { accountStore.displayAccounts }
 
-    /// 当前账户的显示名称
+    /// Display name of the current account
     var currentAccountName: String? { accountStore.currentAccountName }
 
     // MARK: - Codex Account Management
@@ -1015,14 +1015,14 @@ class UserSettings: ObservableObject {
         accountStore.updateCodexAccount(account, alias: alias)
     }
 
-    /// 静默更新当前 Codex 账户的 session-token（不触发 accountChanged 通知）
-    /// 用于自动续期场景——只更新持久化数据，不触发重新拉取循环
+    /// Silently update the current Codex account's session token (does not post accountChanged)
+    /// For the auto renewal case: only the persisted data changes, no refetch loop is triggered
     func silentlyUpdateCurrentCodexSessionToken(_ token: String) {
         accountStore.silentlyUpdateCurrentCodexSessionToken(token)
     }
 
-    /// 静默更新当前 Claude 账户的 session-token（不触发 accountChanged 通知）
-    /// 用于 OAuth refresh_token 轮换场景——只更新持久化数据，不触发重新拉取循环
+    /// Silently update the current Claude account's session token (does not post accountChanged)
+    /// For the OAuth refresh_token rotation case: only the persisted data changes, no refetch loop is triggered
     func silentlyUpdateCurrentClaudeSessionToken(_ token: String) {
         accountStore.silentlyUpdateCurrentClaudeSessionToken(token)
     }
@@ -1035,25 +1035,25 @@ class UserSettings: ObservableObject {
     }
 
     // MARK: - Launch at Login Management
-    // 注册/注销/状态同步都在 LaunchAtLoginManager 里，这里只保留一个转发方法，
-    // 供 ClaudeUsageMonitorApp（didBecomeActive）和设置页（onAppear）调用。
+    // Registering, unregistering and status syncing all live in LaunchAtLoginManager, so only one forwarding method is left here,
+    // for ClaudeUsageMonitorApp (didBecomeActive) and the settings page (onAppear).
 
-    /// 从系统读取实际的开机启动状态并更新UI
+    /// Read the real launch at login state from the system and update the UI
     func syncLaunchAtLoginStatus() {
         launchAtLoginManager.refreshStatus()
     }
 
     // MARK: - Display Logic Helper Methods (v2.0)
 
-    /// 获取当前应该显示的限制类型列表
+    /// Get the list of limit types to show right now
     /// - Parameters:
-    ///   - usageData: Claude 用量数据
-    ///   - codexUsageData: Codex 用量数据（可选，有 Codex 账号时传入）
-    ///   - forMenuBar: 是否用于菜单栏渲染。当 customDisplayMenuBarOnly 开启时，
-    ///                 仅菜单栏走 custom 分支，Popover 自动 fallback 到 smart 分支
-    /// - Returns: 要显示的限制类型数组，按显示顺序排列
+    ///   - usageData: Claude usage data
+    ///   - codexUsageData: Codex usage data (optional, passed in when there is a Codex account)
+    ///   - forMenuBar: whether this is for menu bar rendering. When customDisplayMenuBarOnly is on,
+    ///                 only the menu bar takes the custom branch and the popover falls back to the smart branch
+    /// - Returns: the limit types to show, in display order
     func getActiveDisplayTypes(usageData: UsageData?, codexUsageData: CodexUsageData? = nil, forMenuBar: Bool = false) -> [LimitType] {
-        // 当"仅应用于菜单栏"开启且当前是为 Popover 渲染时，强制走智能分支
+        // When "menu bar only" is on and this render is for the popover, force the smart branch
         let effectiveMode: DisplayMode = {
             if displayMode == .custom && customDisplayMenuBarOnly && !forMenuBar {
                 return .smart
@@ -1062,12 +1062,12 @@ class UserSettings: ObservableObject {
         }()
         switch effectiveMode {
         case .smart:
-            // 智能模式：显示所有有数据的类型
+            // Smart mode: show every type that has data
             var types: [LimitType] = []
 
-            // Claude 类型：按规范顺序 fiveHour → sevenDay → extraUsage → opus → sonnet
+            // Claude types, in the canonical order fiveHour, sevenDay, extraUsage, opus, sonnet
             if let data = usageData {
-                // 5小时和7天限制始终显示，因为所有账号均受这两项限制约束
+                // The 5 hour and 7 day limits always show, because every account is bound by those two
                 types.append(.fiveHour)
                 types.append(.sevenDay)
                 if data.extraUsage?.enabled == true {
@@ -1081,9 +1081,9 @@ class UserSettings: ObservableObject {
                 }
             }
 
-            // Codex 类型：仅在对应窗口确有数据时追加
-            // （Codex 曾临时取消5小时窗口，此时 API 只返回7天窗口，
-            //  不能像 Claude 的 fiveHour/sevenDay 那样假定 primary 必然存在）
+            // Codex types are appended only when their window actually has data
+            // (Codex once dropped the 5 hour window temporarily, leaving the API returning only the 7 day window,
+            //  so unlike Claude's fiveHour/sevenDay we cannot assume primary always exists)
             if let codex = codexUsageData {
                 if codex.primary != nil {
                     types.append(.codexPrimary)
@@ -1099,8 +1099,8 @@ class UserSettings: ObservableObject {
             return types
 
         case .custom:
-            // 自定义模式：按用户选择排序，无论数据是否存在都显示
-            // Codex 类型仅在有 Codex 账号时纳入候选；Debug mock 模式例外
+            // Custom mode: the user's order, shown whether the data exists or not
+            // Codex types are candidates only when a Codex account exists; the debug mock mode is the exception
             var orderedTypes: [LimitType] = [.fiveHour, .sevenDay, .extraUsage, .opusWeekly, .sonnetWeekly]
             var shouldIncludeCodexTypes = !codexAccounts.isEmpty
             #if DEBUG
@@ -1115,19 +1115,19 @@ class UserSettings: ObservableObject {
         }
     }
 
-    /// 判断当前配置是否可以使用彩色主题
-    /// - Returns: true 表示可以使用彩色主题
+    /// Decide whether the current configuration can use a color theme
+    /// - Returns: true when a color theme is available
     func canUseColoredTheme(usageData: UsageData?) -> Bool {
         let activeTypes = getActiveDisplayTypes(usageData: usageData)
 
-        // 现在所有限制类型都支持彩色显示
-        // 只要有图标就可以使用彩色主题
+        // Every limit type supports colored display now
+        // A color theme works as long as there is an icon
         return !activeTypes.isEmpty
     }
 }
 
 // MARK: - Notification Names
 
-/// 设置相关通知名称扩展
-// 注意：通知名称现已迁移到 NotificationNames.swift
-// 保持向后兼容性的导入
+/// Settings notification name extensions
+// Note: the notification names now live in NotificationNames.swift
+// Imported here for backward compatibility

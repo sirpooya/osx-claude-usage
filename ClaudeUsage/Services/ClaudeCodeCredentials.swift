@@ -2,48 +2,48 @@
 //  ClaudeCodeCredentials.swift
 //  ClaudeUsage
 //
-//  读取 Claude Code CLI 自己存在 macOS 钥匙串里的 OAuth 凭据，
-//  从而免去用户手动粘贴 sessionKey / 走一遍浏览器登录（"CLI Account Sync"）。
+//  Reads the OAuth credentials Claude Code CLI stores in the macOS Keychain,
+//  so the user never has to paste a sessionKey or go through a browser login ("CLI Account Sync").
 //
-//  钥匙串条目形如：
-//    service = "Claude Code-credentials"（多 CLAUDE_CONFIG_DIR 时带后缀，
-//              例如 "Claude Code-credentials-1100457a"）
-//    account = macOS 用户名
+//  The Keychain entry looks like:
+//    service = "Claude Code-credentials" (suffixed when CLAUDE_CONFIG_DIR is set,
+//              "Claude Code-credentials-1100457a" for instance)
+//    account = the macOS username
 //    data    = {"claudeAiOauth":{"accessToken":…,"refreshToken":…,
-//               "expiresAt":<毫秒时间戳>,"scopes":[…],"subscriptionType":"team"}}
+//               "expiresAt":<milliseconds timestamp>,"scopes":[...],"subscriptionType":"team"}}
 //
-//  注意：读取别的 App 创建的钥匙串条目要求本 App **不开** App Sandbox
-//  （沙箱内只能访问自己 access group 里的条目）。见 Config/ClaudeUsage.entitlements。
+//  Note: reading a Keychain entry another app created requires that this app run with App Sandbox **off**
+//  (inside the sandbox only entries in our own access group are reachable). See Config/ClaudeUsage.entitlements.
 //
 
 import Foundation
 import OSLog
 import Security
 
-/// Claude Code 钥匙串条目里的 OAuth 凭据
+/// The OAuth credentials inside Claude Code's Keychain entry
 struct ClaudeCodeCredentials: Equatable {
-    /// 钥匙串 service 名（"Claude Code-credentials" 或带 config-dir 后缀的变体）
+    /// Keychain service name ("Claude Code-credentials", or a variant with a config dir suffix)
     let serviceName: String
-    /// 钥匙串 account 名（通常是 macOS 用户名）
+    /// Keychain account name (usually the macOS username)
     let accountName: String
 
     let accessToken: String
     let refreshToken: String
-    /// access_token 过期时间；条目里缺失时为 nil
+    /// access_token expiry; nil when the entry does not carry one
     let expiresAt: Date?
     let scopes: [String]
-    /// 订阅类型（"team" / "max" / "pro" …），缺失时为空串
+    /// Subscription type ("team" / "max" / "pro" and so on), an empty string when absent
     let subscriptionType: String
 
-    /// 该 access_token 是否还能用（留 2 分钟余量，避免临界值）
+    /// Whether this access_token is still usable (with a 2 minute margin, to avoid the boundary)
     var isAccessTokenUsable: Bool {
         guard !accessToken.isEmpty else { return false }
-        guard let expiresAt else { return true }  // 没给过期时间就先当作可用
+        guard let expiresAt else { return true }  // With no expiry given, assume it is usable
         return expiresAt > Date().addingTimeInterval(2 * 60)
     }
 
-    /// 打码后的 token，仅用于界面展示（前 12 位 + 后 4 位，中间省略）
-    /// 完整 token 永不落盘、不写日志。
+    /// The masked token, for display only (first 12 characters plus the last 4, middle elided)
+    /// The full token never touches disk and is never logged.
     var maskedAccessToken: String {
         Self.mask(accessToken)
     }
@@ -54,37 +54,37 @@ struct ClaudeCodeCredentials: Equatable {
     }
 }
 
-/// Claude Code 钥匙串条目的读写
+/// Reading and writing Claude Code's Keychain entry
 ///
-/// 只用 Security 框架，不 spawn `security(1)`：后者会把明文 token 放进另一个进程的
-/// 输出管道，也拿不到"是否被用户拒绝"这类具体错误码。
+/// Security framework only, never a spawned `security(1)`: that would put the plaintext token into another
+/// process's output pipe, and it cannot report a specific error code such as "the user denied it".
 enum ClaudeCodeKeychain {
 
-    /// Claude Code 钥匙串 service 名前缀（带后缀的变体对应非默认 CLAUDE_CONFIG_DIR）
+    /// Service name prefix of Claude Code's Keychain entries (a suffixed variant means a non default CLAUDE_CONFIG_DIR)
     static let servicePrefix = "Claude Code-credentials"
 
-    /// 默认（无后缀）service 名
+    /// The default (unsuffixed) service name
     static let defaultService = "Claude Code-credentials"
 
-    /// 一个可用的钥匙串条目（只含属性，不含机密数据）
+    /// One usable Keychain entry (attributes only, no secret data)
     struct Entry: Identifiable, Hashable {
         var id: String { "\(service)\u{1F}\(account)" }
         let service: String
         let account: String
 
-        /// 是否为默认 config dir 对应的条目
+        /// Whether this is the entry of the default config dir
         var isDefault: Bool { service == ClaudeCodeKeychain.defaultService }
 
-        /// 供选择器展示：默认条目显示为 service 名，带后缀的把后缀标出来
+        /// For the picker: the default entry shows its service name, a suffixed one calls its suffix out
         var displayName: String {
             guard !isDefault else { return service }
             return service
         }
     }
 
-    // MARK: - 枚举条目（不读机密数据，因此不会触发钥匙串授权弹窗）
+    // MARK: - Enumerate entries (no secret data is read, so no Keychain authorization prompt appears)
 
-    /// 列出所有 Claude Code 凭据条目，默认条目排在最前
+    /// List every Claude Code credential entry, with the default one first
     static func listEntries() -> [Entry] {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
@@ -114,10 +114,10 @@ enum ClaudeCodeKeychain {
         }
     }
 
-    // MARK: - 读取凭据
+    // MARK: - Read the credentials
 
-    /// 读取指定条目的凭据。`service` 为 nil 时按 listEntries 的顺序取第一个可用条目。
-    /// - Note: 这一步会读机密数据，未授权时 macOS 会弹一次钥匙串授权框（用户点"总是允许"后不再弹）。
+    /// Read the credentials of one entry. When `service` is nil, take the first usable entry in listEntries order.
+    /// - Note: this step reads secret data, so without prior authorization macOS raises one Keychain prompt (which stops appearing once the user clicks "Always Allow").
     static func readCredentials(service: String? = nil) -> ClaudeCodeCredentials? {
         let candidates: [Entry]
         if let service {
@@ -134,7 +134,7 @@ enum ClaudeCodeKeychain {
         return nil
     }
 
-    /// 读取某个具体条目
+    /// Read one specific entry
     static func readCredentials(entry: Entry) -> ClaudeCodeCredentials? {
         var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
@@ -156,7 +156,7 @@ enum ClaudeCodeKeychain {
         return parse(data: data, service: entry.service, account: entry.account)
     }
 
-    /// 解析钥匙串条目里的 JSON
+    /// Parse the JSON inside a Keychain entry
     static func parse(data: Data, service: String, account: String) -> ClaudeCodeCredentials? {
         guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let oauth = root["claudeAiOauth"] as? [String: Any] else {
@@ -182,8 +182,8 @@ enum ClaudeCodeKeychain {
         )
     }
 
-    /// Claude Code 写的 expiresAt 是毫秒时间戳；这里对秒/毫秒都做兼容
-    /// （阈值 1e11 秒 ≈ 公元 5138 年，任何真实的秒级时间戳都在其下）
+    /// Claude Code writes expiresAt as a milliseconds timestamp; both seconds and milliseconds are accepted here
+    /// (the 1e11 second threshold is about the year 5138, so every real seconds timestamp falls below it)
     private static func expiryDate(from raw: Any?) -> Date? {
         guard let number = raw as? NSNumber else { return nil }
         let value = number.doubleValue
@@ -191,14 +191,14 @@ enum ClaudeCodeKeychain {
         return Date(timeIntervalSince1970: value > 1e11 ? value / 1000 : value)
     }
 
-    // MARK: - 写回轮换后的 token
+    // MARK: - Write the rotated token back
 
-    /// 把刷新后的 token 写回 Claude Code 的钥匙串条目。
+    /// Write the refreshed token back into Claude Code's Keychain entry.
     ///
-    /// 为什么必须写回：refresh_token 在服务端是**一次性**的。我们用它换了新 token 之后，
-    /// Claude Code 手里那份就失效了；不写回，用户的 CLI 会在下次刷新时被登出。
-    /// 写回时保留条目里其余未知字段，避免抹掉 Claude Code 后续新增的键。
-    /// - Returns: 是否写入成功（失败不致命，调用方只记日志）
+    /// Why this is mandatory: a refresh_token is **single use** on the server. Once we trade it for a new pair,
+    /// the copy Claude Code holds is dead; skip the write back and the user's CLI gets logged out on its next refresh.
+    /// The write preserves the entry's other fields, so keys Claude Code adds later are not wiped.
+    /// - Returns: whether the write succeeded (a failure is not fatal, the caller only logs it)
     @discardableResult
     static func writeBack(
         accessToken: String,
@@ -216,7 +216,7 @@ enum ClaudeCodeKeychain {
             query[kSecAttrAccount as String] = credentials.accountName
         }
 
-        // 先取当前内容，保留 claudeAiOauth 之外/之内的其它字段
+        // Read the current content first, keeping the other fields inside and outside claudeAiOauth
         var result: CFTypeRef?
         let readStatus = SecItemCopyMatching(query as CFDictionary, &result)
         guard readStatus == errSecSuccess, let data = result as? Data,
@@ -229,7 +229,7 @@ enum ClaudeCodeKeychain {
         oauth["accessToken"] = accessToken
         oauth["refreshToken"] = refreshToken
         if let expiresAt {
-            // Claude Code 用毫秒时间戳，写回要保持同一单位
+            // Claude Code uses a milliseconds timestamp, so the write back keeps the same unit
             oauth["expiresAt"] = Int(expiresAt.timeIntervalSince1970 * 1000)
         }
         root["claudeAiOauth"] = oauth

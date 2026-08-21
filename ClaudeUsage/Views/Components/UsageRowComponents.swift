@@ -22,7 +22,7 @@ enum UsagePercentDisplay {
 
 // MARK: - Provider Divider
 
-/// 双 Provider 主窗口中央的柔和竖线，视觉与设置页标签分隔线一致
+/// The soft vertical line down the middle of the dual provider window, matching the settings page tab divider
 struct ProviderDivider: View {
     let height: CGFloat
 
@@ -43,14 +43,14 @@ struct ProviderDivider: View {
 
 // MARK: - Usage Limit Bar
 
-/// 单条限制的横向进度条。整宽铺满，用胶囊形状，替代原来的大圆环。
+/// The horizontal bar for one limit. Full width, capsule shaped, replacing the old large ring.
 struct UsageLimitBar: View {
     let fraction: CGFloat
     let color: Color
     var isRefreshing: Bool = false
     var height: CGFloat = 5
 
-    /// 刷新中让整条轻微呼吸，代替原圆环的旋转加载动画
+    /// While refreshing, the whole bar breathes gently in place of the old ring's spinner
     @State private var isPulsing = false
 
     var body: some View {
@@ -74,7 +74,7 @@ struct UsageLimitBar: View {
         .onChange(of: isRefreshing) { newValue in updatePulse(newValue) }
     }
 
-    /// 填充宽度。百分比极小时也要留一个圆点的宽度，否则用户看不出有没有用量
+    /// Fill width. A very small percentage still keeps one dot of width, otherwise the user cannot tell whether there is any usage at all
     private func fillWidth(in totalWidth: CGFloat) -> CGFloat {
         guard fraction > 0 else { return 0 }
         return min(totalWidth, max(height, totalWidth * fraction))
@@ -95,15 +95,15 @@ struct UsageLimitBar: View {
 
 // MARK: - Usage Limit Bar Row
 
-/// 一行限制：左上标题，右上「百分比 · 重置时间」，下方整宽进度条
+/// One limit row: title on the upper left, "percentage, reset time" on the upper right, full width bar underneath
 struct UsageLimitBarRow: View {
     let title: String
     let percentage: Double?
     let color: Color
     var isRefreshing: Bool = false
-    /// 右侧尾部文案（重置时间或剩余时间）。
-    /// 用闭包而不是快照值，好让 TimelineView 每分钟自己重算一次，
-    /// 不必依赖外层每秒 objectWillChange 重建整个 popover。
+    /// The trailing text (reset time or time left).
+    /// A closure rather than a snapshot value, so TimelineView can recompute it once a minute itself
+    /// instead of relying on the outer objectWillChange rebuilding the whole popover every second.
     let trailing: () -> String
 
     var body: some View {
@@ -116,7 +116,7 @@ struct UsageLimitBarRow: View {
 
                 Spacer(minLength: 8)
 
-                // TimelineView 让这行文字自己按分钟粒度刷新（精度只到分钟，60s 足够）
+                // TimelineView refreshes this line at minute granularity itself (minute precision is all it needs, so 60s is enough)
                 TimelineView(.periodic(from: .now, by: 60)) { _ in
                     Text(trailingText)
                         .font(.system(size: 11))
@@ -143,17 +143,17 @@ struct UsageLimitBarRow: View {
 
 // MARK: - Unified Limit Row Component
 
-/// 统一的限制行组件（支持所有 Claude 和 Codex 限制类型）
+/// The shared limit row (covers every Claude and Codex limit type)
 struct UnifiedLimitRow: View {
     let type: LimitType
     var data: UsageData? = nil
     var codexData: CodexUsageData? = nil
     let showRemainingMode: Bool
-    /// 该 Provider 正在刷新，进度条呼吸提示
+    /// This provider is refreshing, so the bar breathes to say so
     var isRefreshing: Bool = false
-    /// 溢出模型行覆盖：提供时，行的百分比/标签/重置时间直接取自这个模型条目，
-    /// `type` 仅用于决定配色槽位。用于 popover 展示超出前两个槽位的第三个
-    /// 及以后的模型（如同时出现 Fable / Opus / Sonnet）。
+    /// Overflow model row override: when it is given, the row's percentage, label and reset time come straight from this model entry
+    /// and `type` only picks the color slot. Used by the popover to show the third and later models
+    /// beyond the first two slots (when Fable, Opus and Sonnet all appear at once).
     var weeklyModelOverride: UsageData.WeeklyModelLimit? = nil
 
     var body: some View {
@@ -178,8 +178,8 @@ struct UnifiedLimitRow: View {
         case .sevenDay, .codexSecondary:
             return L.DetailRow.sevenDay
         case .opusWeekly:
-            // Claude 5 时代：此槽位可能承载来自 limits 数组的具体模型每周限制（如 Fable）。
-            // 有真实模型名则优先展示，否则回退到默认的 “Opus Weekly” 文案。
+            // The Claude 5 era: this slot may carry a per model weekly limit from the limits array (Fable, for instance).
+            // A real model name wins, otherwise it falls back to the default "Opus Weekly".
             return data?.opusModelName ?? L.DetailRow.opusWeekly
         case .sonnetWeekly:
             return data?.sonnetModelName ?? L.DetailRow.sonnetWeekly
@@ -188,8 +188,8 @@ struct UnifiedLimitRow: View {
         }
     }
 
-    /// 进度条颜色。沿用各限制类型自己的配色，并跟随百分比升级到警告色，
-    /// 所以颜色既标明是哪条限制，也标明离触顶还有多远。
+    /// Bar color. Each limit type keeps its own palette and escalates to the warning color with the percentage,
+    /// so the color says both which limit this is and how close it is to the cap.
     private var barColor: Color {
         let percentage = percentageValue ?? 0
         switch type {
@@ -282,7 +282,7 @@ struct UnifiedLimitRow: View {
 
         case .codexSecondary:
             guard let limitData = codexData?.secondary?.asUsageLimitData() else { return "-" }
-            // 和其他行统一到「天+小时」两级，多日倒计时带着分钟只是噪音
+            // Two units, days plus hours, like every other row: minutes on a multi day countdown are just noise
             return showRemainingMode ? limitData.formattedCompactRemaining : limitData.formattedCompactResetDateWithMinutes
 
         case .codexExtraUsage:

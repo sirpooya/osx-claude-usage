@@ -9,18 +9,18 @@
 import SwiftUI
 
 // MARK: - Setup Step (Authentication)
-// 从 WelcomeView.swift 拆出，便于保持单文件体量可控
-// 首次配置只保留一条路径：用 claude.ai 账户通过浏览器登录。
-// 版式为标准的欢迎窗：图标 / 标题 / 一句话卖点 / 单个主操作 / 一行说明。
-// 手动粘贴 Session Key 的入口已移除，需要多账户可在设置里添加。
+// Split out of WelcomeView.swift to keep single file size manageable
+// First time setup has one path only: sign in with a claude.ai account through the browser.
+// The layout is the standard welcome window: icon / title / one line pitch / one primary action / one note.
+// The manual session key entry point is gone; anyone who needs several accounts can add them in Settings.
 
 struct SetupStepView: View {
-    /// 登录成功后的回调。账户已由 ClaudeOAuthCoordinator 写入设置，这里只负责收尾。
+    /// Called after a successful login. The account is already written to settings by ClaudeOAuthCoordinator, so this only wraps up.
     let onSignedIn: () -> Void
-    /// 进入手动填 Session Key 的第二页
+    /// Go to the second page for entering a session key by hand
     let onManualEntry: () -> Void
 
-    /// 标题取 App 自身的名字，改名后不用再同步文案
+    /// The title comes from the app's own name, so a rename needs no copy change here
     private var appName: String {
         let info = Bundle.main.infoDictionary
         return (info?["CFBundleDisplayName"] as? String)
@@ -30,8 +30,8 @@ struct SetupStepView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // 只留中间一个可伸缩的 Spacer，上下用固定间距：
-            // 标题区贴近顶部，操作区贴近底部，富余空间集中在中间。
+            // Only one flexible Spacer in the middle, with fixed spacing above and below:
+            // the title sits near the top, the action near the bottom, and the slack collects in the middle.
             Spacer().frame(height: 26)
 
             appMark
@@ -74,7 +74,7 @@ struct SetupStepView: View {
 
     // MARK: - Sections
 
-    /// App 图标。AppIcon 的兜底逻辑收敛在 ImageHelper.namedImage 里。
+    /// The app icon. The AppIcon fallback logic is contained in ImageHelper.namedImage.
     @ViewBuilder
     private var appMark: some View {
         if let icon = ImageHelper.createAppIcon(size: 72) {
@@ -84,7 +84,7 @@ struct SetupStepView: View {
         }
     }
 
-    /// 浏览器登录按钮（唯一入口，占满整行）
+    /// The browser login button (the only entry point, full width)
     private var browserSignIn: some View {
         Button(action: {
             WebLoginWindowManager.shared.showLoginWindow { _ in
@@ -99,7 +99,7 @@ struct SetupStepView: View {
         .tint(UsageColorScheme.brand)
     }
 
-    /// 次要入口：进阶用户手动粘贴 Session Key，内容在第二页
+    /// Secondary entry point: advanced users pasting a session key by hand, whose content is on the second page
     private var manualEntryButton: some View {
         Button(action: onManualEntry) {
             Text(L.Welcome.manualSessionKey)

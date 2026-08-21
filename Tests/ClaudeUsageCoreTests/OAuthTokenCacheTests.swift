@@ -186,7 +186,7 @@ final class OAuthTokenCacheTests: XCTestCase {
         XCTAssertEqual(third, "access-2")
     }
 
-    // MARK: - validCachedToken（刷新失败时的回退查询）
+    // MARK: - validCachedToken (the fallback query for a failed refresh)
 
     func testValidCachedTokenReturnsUnexpiredTokenEvenInsideRefreshMargin() async throws {
         let cache = OAuthTokenCache()

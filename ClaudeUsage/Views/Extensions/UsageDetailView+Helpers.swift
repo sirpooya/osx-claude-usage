@@ -14,18 +14,18 @@ extension UsageDetailView {
 
     // MARK: - Animation Methods
 
-    /// 启动旋转动画
+    /// Start the spinner animation
     func startRotationAnimation() {
-        // 清除旧的定时器
+        // Clear the old timer
         stopRotationAnimation()
 
-        // 重置角度
+        // Reset the angle
         rotationAngle = 0
 
-        // 创建新的定时器，每 0.016 秒更新一次（约 60fps）
+        // Create the new timer, updating every 0.016 seconds (about 60fps)
         animationTimer = Timer.scheduledTimer(withTimeInterval: 0.016, repeats: true) { _ in
             withAnimation(.linear(duration: 0.016)) {
-                rotationAngle += 6  // 每帧旋转 6 度，1秒完成一圈
+                rotationAngle += 6  // 6 degrees per frame, one full turn a second
                 if rotationAngle >= 360 {
                     rotationAngle -= 360
                 }
@@ -33,7 +33,7 @@ extension UsageDetailView {
         }
     }
 
-    /// 停止旋转动画
+    /// Stop the spinner animation
     func stopRotationAnimation() {
         animationTimer?.invalidate()
         animationTimer = nil
@@ -44,9 +44,9 @@ extension UsageDetailView {
 
     // MARK: - Text Helper Methods
 
-    /// 创建彩虹文字
-    /// - Parameter text: 要显示的文本
-    /// - Returns: 带彩虹效果的文本视图
+    /// Build the rainbow text
+    /// - Parameter text: the text to show
+    /// - Returns: the text view with the rainbow effect
     @ViewBuilder
     func rainbowText(_ text: String) -> some View {
         Text(text)
@@ -59,8 +59,8 @@ extension UsageDetailView {
             )
     }
 
-    /// 创建菜单更新文本（部分文字带颜色）
-    /// - Returns: 带颜色的AttributedString
+    /// Build the menu update text (part of it colored)
+    /// - Returns: the colored AttributedString
     func createUpdateMenuText() -> AttributedString {
         let baseText = L.Menu.checkUpdates
         let badgeText = L.Update.Notification.badgeShort
@@ -68,7 +68,7 @@ extension UsageDetailView {
 
         var attributedString = AttributedString(fullText)
 
-        // 找到徽章文本的范围并设置颜色
+        // Find the badge text range and color it
         if let range = attributedString.range(of: badgeText) {
             attributedString[range].foregroundColor = .orange
         }

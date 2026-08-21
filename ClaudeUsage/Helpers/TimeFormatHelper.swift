@@ -8,27 +8,27 @@
 
 import Foundation
 
-/// 统一时间格式化帮助器
-/// 根据用户的时间格式偏好提供一致的时间格式化方法
+/// Shared time formatting helper
+/// Consistent time formatting that follows the user's time format preference
 enum TimeFormatHelper {
 
     // MARK: - Format Strings
 
-    /// 获取时间格式字符串（小时:分钟）
-    /// - Returns: "HH:mm" 或 "h:mm a" 格式字符串
+    /// Get the time format string (hour:minute)
+    /// - Returns: the "HH:mm" or "h:mm a" format string
     static var timeOnlyFormat: String {
         return uses24HourFormat ? "HH:mm" : "h:mm a"
     }
 
-    /// 获取小时格式字符串（仅小时）
-    /// - Returns: "HH" 或 "h a" 格式字符串
+    /// Get the hour format string (hour only)
+    /// - Returns: the "HH" or "h a" format string
     static var hourOnlyFormat: String {
         return uses24HourFormat ? "HH" : "h a"
     }
 
-    /// 获取日期+时间模板
-    /// - Parameter dateTemplate: 日期部分的模板（如 "MMMd"）
-    /// - Returns: 完整的日期时间模板
+    /// Get the date plus time template
+    /// - Parameter dateTemplate: template for the date part (for example "MMMd")
+    /// - Returns: the full date and time template
     static func dateTimeTemplate(dateTemplate: String) -> String {
         if uses24HourFormat {
             return "\(dateTemplate) HH:mm"
@@ -37,9 +37,9 @@ enum TimeFormatHelper {
         }
     }
 
-    /// 获取日期+小时模板
-    /// - Parameter dateTemplate: 日期部分的模板（如 "MMMd"）
-    /// - Returns: 完整的日期+小时模板
+    /// Get the date plus hour template
+    /// - Parameter dateTemplate: template for the date part (for example "MMMd")
+    /// - Returns: the full date and hour template
     static func dateHourTemplate(dateTemplate: String) -> String {
         if uses24HourFormat {
             return "\(dateTemplate) HH"
@@ -50,9 +50,9 @@ enum TimeFormatHelper {
 
     // MARK: - Formatting Methods
 
-    /// 格式化时间（小时:分钟）
-    /// - Parameter date: 要格式化的日期
-    /// - Returns: 格式化后的时间字符串
+    /// Format a time (hour:minute)
+    /// - Parameter date: the date to format
+    /// - Returns: the formatted time string
     static func formatTimeOnly(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.locale = UserSettings.shared.appLocale
@@ -61,9 +61,9 @@ enum TimeFormatHelper {
         return formatter.string(from: date)
     }
 
-    /// 格式化小时
-    /// - Parameter date: 要格式化的日期
-    /// - Returns: 格式化后的小时字符串
+    /// Format an hour
+    /// - Parameter date: the date to format
+    /// - Returns: the formatted hour string
     static func formatHourOnly(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.locale = UserSettings.shared.appLocale
@@ -72,11 +72,11 @@ enum TimeFormatHelper {
         return formatter.string(from: date)
     }
 
-    /// 格式化日期和时间
+    /// Format a date and time
     /// - Parameters:
-    ///   - date: 要格式化的日期
-    ///   - dateTemplate: 日期部分的模板
-    /// - Returns: 格式化后的日期时间字符串
+    ///   - date: the date to format
+    ///   - dateTemplate: template for the date part
+    /// - Returns: the formatted date and time string
     static func formatDateTime(_ date: Date, dateTemplate: String) -> String {
         let formatter = DateFormatter()
         formatter.locale = UserSettings.shared.appLocale
@@ -85,22 +85,22 @@ enum TimeFormatHelper {
         return formatter.string(from: date)
     }
 
-    /// 格式化日期和小时
+    /// Format a date and hour
     /// - Parameters:
-    ///   - date: 要格式化的日期
-    ///   - dateTemplate: 日期部分的模板
-    /// - Returns: 格式化后的日期+小时字符串
+    ///   - date: the date to format
+    ///   - dateTemplate: template for the date part
+    /// - Returns: the formatted date and hour string
     static func formatDateHour(_ date: Date, dateTemplate: String) -> String {
         let formatter = DateFormatter()
         formatter.locale = UserSettings.shared.appLocale
         formatter.timeZone = TimeZone.current
 
-        // 根据语言和时间格式构建格式字符串
+        // Build the format string from the language and the time format
         let langCode = UserSettings.shared.appLocale.identifier
         let dateString: String
         let timeString: String
 
-        // 日期格式
+        // Date format
         let dateFormatter = DateFormatter()
         dateFormatter.locale = UserSettings.shared.appLocale
         dateFormatter.timeZone = TimeZone.current
@@ -113,12 +113,12 @@ enum TimeFormatHelper {
         }
         dateString = dateFormatter.string(from: date)
 
-        // 时间格式（仅小时）
+        // Time format (hour only)
         let timeFormatter = DateFormatter()
         timeFormatter.locale = UserSettings.shared.appLocale
         timeFormatter.timeZone = TimeZone.current
         if uses24HourFormat {
-            // 24小时制：显示"15时"/"15時"或"15"
+            // 24 hour clock: show "15时" / "15時" or "15"
             if langCode.hasPrefix("zh") {
                 timeFormatter.dateFormat = "H时"
             } else if langCode.hasPrefix("ja") {
@@ -129,7 +129,7 @@ enum TimeFormatHelper {
                 timeFormatter.dateFormat = "HH':00'"
             }
         } else {
-            // 12小时制：使用本地化模板
+            // 12 hour clock: use the localized template
             timeFormatter.setLocalizedDateFormatFromTemplate("j")
         }
         timeString = timeFormatter.string(from: date)
@@ -137,11 +137,11 @@ enum TimeFormatHelper {
         return "\(dateString) \(timeString)"
     }
 
-    /// 格式化日期和分钟（精度到分钟）
+    /// Format a date and minute (minute precision)
     /// - Parameters:
-    ///   - date: 要格式化的日期
-    ///   - dateTemplate: 日期部分的模板
-    /// - Returns: 格式化后的日期+小时分钟字符串（如 "12月16日 15:42"）
+    ///   - date: the date to format
+    ///   - dateTemplate: template for the date part
+    /// - Returns: the formatted date plus hour and minute string (for example "12月16日 15:42")
     static func formatDateMinute(_ date: Date, dateTemplate: String) -> String {
         let langCode = UserSettings.shared.appLocale.identifier
 
@@ -160,7 +160,7 @@ enum TimeFormatHelper {
         let timeFormatter = DateFormatter()
         timeFormatter.locale = UserSettings.shared.appLocale
         timeFormatter.timeZone = TimeZone.current
-        timeFormatter.dateFormat = timeOnlyFormat  // "HH:mm" 或 "h:mm a"
+        timeFormatter.dateFormat = timeOnlyFormat  // "HH:mm" or "h:mm a"
         let timeString = timeFormatter.string(from: date)
 
         return "\(dateString) \(timeString)"
@@ -168,8 +168,8 @@ enum TimeFormatHelper {
 
     // MARK: - Detection
 
-    /// 检测当前是否应该使用 24 小时格式
-    /// - Returns: true 表示使用 24 小时制，false 表示使用 12 小时制
+    /// Detect whether the 24 hour format should be used
+    /// - Returns: true for the 24 hour clock, false for the 12 hour clock
     static var uses24HourFormat: Bool {
         let preference = UserSettings.shared.timeFormatPreference
 
@@ -183,8 +183,8 @@ enum TimeFormatHelper {
         }
     }
 
-    /// 检测系统是否使用 24 小时制
-    /// - Returns: true 表示系统使用 24 小时制
+    /// Detect whether the system uses the 24 hour clock
+    /// - Returns: true when the system uses the 24 hour clock
     static func detectSystem24HourFormat() -> Bool {
         let formatter = DateFormatter()
         formatter.locale = UserSettings.shared.appLocale
@@ -193,8 +193,8 @@ enum TimeFormatHelper {
 
         let timeString = formatter.string(from: Date())
 
-        // 如果包含 AM/PM 标记，则是 12 小时制
-        // 检查常见的 AM/PM 变体
+        // An AM/PM marker means the 12 hour clock
+        // Check the common AM/PM variants
         let ampmIndicators = ["AM", "PM", "am", "pm", "上午", "下午", "午前", "午後", "오전", "오후"]
         for indicator in ampmIndicators {
             if timeString.contains(indicator) {

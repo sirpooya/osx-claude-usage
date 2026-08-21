@@ -10,9 +10,9 @@ import Foundation
 import UserNotifications
 import OSLog
 
-/// 用量通知管理器
-/// 负责在用量达到阈值或重置时发送 macOS 系统通知
-/// 继承 NSObject 是 UNUserNotificationCenterDelegate 的协议要求
+/// Usage notification manager
+/// Posts macOS notifications when usage crosses a threshold or resets
+/// Subclassing NSObject is required by the UNUserNotificationCenterDelegate protocol
 final class NotificationManager: NSObject {
     // MARK: - Singleton
 
@@ -20,14 +20,14 @@ final class NotificationManager: NSObject {
 
     // MARK: - State
 
-    /// 已通知记录持久化的 UserDefaults key
+    /// UserDefaults key for the persisted notification record
     private static let notifiedWarningsKey = "notifiedWarnings"
 
-    /// 已通知记录（防止同一账号同一周期内重复通知）
-    /// key = provider + accountId + limitType，value = 发送警告时所属周期的 resetsAt epoch（未知时为 0）
-    /// 持久化到 UserDefaults：否则应用重启后同一周期内会重复发送已经发过的 90%/75% 警告。
-    /// 值记录周期标识而非 Bool：应用未运行期间发生的重置无法被 isReset 的内存对比捕获，
-    /// 若不带周期标识，旧周期的标志会永久抑制新周期的警告（见 checkLimit 的陈旧标志清理）。
+    /// The notification record (keeps one account from being notified twice in the same window)
+    /// key = provider + accountId + limitType, value = the resetsAt epoch of the window the warning was sent in (0 when unknown)
+    /// Persisted to UserDefaults: otherwise a restart would resend the 90% and 75% warnings already sent in this window.
+    /// The value records the window rather than a Bool: a reset while the app was not running cannot be caught by isReset's in memory comparison,
+    /// and without a window identity an old flag would suppress the new window's warning forever (see the stale flag cleanup in checkLimit).
     private var notifiedWarnings: [String: Double] = [:] {
         didSet {
             UserDefaults.standard.set(notifiedWarnings, forKey: Self.notifiedWarningsKey)
@@ -37,18 +37,18 @@ final class NotificationManager: NSObject {
     private override init() {
         super.init()
         if let saved = UserDefaults.standard.dictionary(forKey: Self.notifiedWarningsKey) {
-            // 兼容旧的 [String: Bool] 格式：Bool 转成 1.0，与任何真实 resetsAt 都不同，
-            // 会在首次检查时被当作陈旧标志清理，行为等同于重新开始记录
+            // Accept the old [String: Bool] format: a Bool becomes 1.0, which differs from any real resetsAt and so
+            // is cleaned up as a stale flag on the first check, behaving as if the record started over
             notifiedWarnings = saved.compactMapValues { ($0 as? NSNumber)?.doubleValue }
         }
-        // 不设置 delegate 时，macOS 会静默丢弃前台应用的通知（add 成功、无任何报错）。
-        // 本应用打开设置窗口/弹窗时恰好处于前台激活状态——用量警告最常在这时触发。
+        // Without a delegate, macOS silently drops notifications from a foreground app (add succeeds and reports nothing).
+        // This app is foreground and active exactly while its settings window or popover is open, which is when usage warnings most often fire.
         UNUserNotificationCenter.current().delegate = self
     }
 
     // MARK: - Permission
 
-    /// 请求通知权限
+    /// Request notification permission
     func requestPermission() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, error in
             if let error = error {
@@ -60,12 +60,12 @@ final class NotificationManager: NSObject {
 
     // MARK: - Check & Notify
 
-    /// 检查用量数据并在需要时发送通知
+    /// Check the usage data and post notifications when needed
     /// - Parameters:
-    ///   - usageData: 最新的用量数据
-    ///   - previousData: 上一次的用量数据（用于对比变化）
+    ///   - usageData: the latest usage data
+    ///   - previousData: the previous usage data (used to spot changes)
     func checkAndNotify(usageData: UsageData, previousData: UsageData?) {
-        // 逐个限制类型检查
+        // Check each limit type in turn
         checkLimit(
             type: .fiveHour,
             current: usageData.fiveHour?.percentage,
@@ -95,7 +95,7 @@ final class NotificationManager: NSObject {
             previousResetsAt: previousData?.sonnet?.resetsAt
         )
 
-        // Extra Usage 单独处理
+        // Extra Usage is handled separately
         checkLimit(
             type: .extraUsage,
             current: usageData.extraUsage?.percentage,
@@ -105,10 +105,10 @@ final class NotificationManager: NSObject {
         )
     }
 
-    /// 检查 Codex 用量数据并在需要时发送通知
+    /// Check the Codex usage data and post notifications when needed
     /// - Parameters:
-    ///   - codexUsageData: 最新的 Codex 用量数据
-    ///   - previousData: 上一次的 Codex 用量数据（用于对比变化）
+    ///   - codexUsageData: the latest Codex usage data
+    ///   - previousData: the previous Codex usage data (used to spot changes)
     func checkAndNotify(codexUsageData: CodexUsageData, previousData: CodexUsageData?) {
         checkLimit(
             type: .codexPrimary,
@@ -135,9 +135,9 @@ final class NotificationManager: NSObject {
 
     // MARK: - Private Methods
 
-    /// 检查单个限制类型的用量变化
-    /// 状态判定交给纯函数 `NotificationDecisionEngine.evaluate`（见该文件），
-    /// 这里只负责拼 key、把返回的 actions 落地成真实的系统通知
+    /// Check how one limit type's usage changed
+    /// The state logic lives in the pure `NotificationDecisionEngine.evaluate` (see that file),
+    /// and this only assembles the keys and turns the returned actions into real system notifications
     private func checkLimit(
         type: LimitType,
         current: Double?,
@@ -146,7 +146,7 @@ final class NotificationManager: NSObject {
         previousResetsAt: Date?
     ) {
         let warningKey = notificationKey(for: type)
-        // 7天限制额外检查 75% 阈值，其余类型不做早期预警
+        // The 7 day limit also checks the 75% threshold; no other type gets an early warning
         let earlyWarningKey = (type == .sevenDay || type == .codexSecondary)
             ? notificationKey(for: type, suffix: "75")
             : nil
@@ -160,8 +160,8 @@ final class NotificationManager: NSObject {
             earlyWarningKey: earlyWarningKey,
             notifiedWarnings: notifiedWarnings
         )
-        // 只在真正变化时赋值：notifiedWarnings 的 didSet 会写 UserDefaults，
-        // 无条件赋值会导致每次 checkLimit 调用都触发一次磁盘写入
+        // Assign only on a real change: notifiedWarnings' didSet writes UserDefaults,
+        // so an unconditional assignment would mean a disk write on every checkLimit call
         if updatedWarnings != notifiedWarnings {
             notifiedWarnings = updatedWarnings
         }
@@ -209,7 +209,7 @@ final class NotificationManager: NSObject {
         "\(provider.rawValue):\(accountId?.uuidString ?? "none"):"
     }
 
-    /// 发送用量警告通知
+    /// Post the usage warning notification
     private func sendUsageWarning(limitType: LimitType, percentage: Double) {
         let content = UNMutableNotificationContent()
         content.title = L.UsageNotification.warningTitle
@@ -231,7 +231,7 @@ final class NotificationManager: NSObject {
         Logger.menuBar.info("Sent usage warning: \(limitType.displayName) \(Int(percentage))%")
     }
 
-    /// 发送用量重置通知
+    /// Post the usage reset notification
     private func sendResetNotification(limitType: LimitType) {
         let content = UNMutableNotificationContent()
         content.title = L.UsageNotification.resetTitle
@@ -253,8 +253,8 @@ final class NotificationManager: NSObject {
         Logger.menuBar.info("Sent reset notification: \(limitType.displayName)")
     }
 
-    /// 发送 Codex 登录已过期系统通知（仅发送一次，不重复打扰）
-    /// 由调用方负责去重控制（DataRefreshManager.codexSessionExpiredNotified）
+    /// Post the "Codex login expired" system notification (once only, so it does not nag)
+    /// The caller owns the deduplication (DataRefreshManager.codexSessionExpiredNotified)
     func sendCodexSessionExpiredNotification() {
         let content = UNMutableNotificationContent()
         content.title = L.UsageNotification.codexSessionExpiredTitle
@@ -276,12 +276,12 @@ final class NotificationManager: NSObject {
         Logger.menuBar.info("Sent the Codex sign in expiry notification")
     }
 
-    /// 重置所有已通知记录
+    /// Reset the entire notification record
     func resetAllNotificationStates() {
         notifiedWarnings.removeAll()
     }
 
-    /// 重置指定账号的已通知记录
+    /// Reset the notification record for one account
     func resetNotificationStates(for provider: ProviderType, accountId: UUID?) {
         let prefix = Self.makeAccountNotificationKeyPrefix(provider: provider, accountId: accountId)
         notifiedWarnings = notifiedWarnings.filter { key, _ in
@@ -294,8 +294,8 @@ final class NotificationManager: NSObject {
 // MARK: - UNUserNotificationCenterDelegate
 
 extension NotificationManager: UNUserNotificationCenterDelegate {
-    /// 应用处于前台时也照常显示横幅和声音
-    /// （系统默认行为是前台静默丢弃；菜单栏应用打开设置窗口或弹窗时即为前台）
+    /// Show the banner and play the sound even while the app is in the foreground
+    /// (the system default is to drop it silently, and a menu bar app is foreground whenever its settings window or popover is open)
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,

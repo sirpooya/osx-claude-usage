@@ -5,14 +5,14 @@
 //  Created by Claude Code on 2025-12-02.
 //  Copyright © 2025 f-is-h. All rights reserved.
 //
-//  小型可复用组件，从 WelcomeView.swift 拆出以保持单文件体量可控：
+//  Small reusable components, split out of WelcomeView.swift to keep single file size manageable:
 //  HorizontalRadioGroup / MenuBarIconPreview / NavigationButtons
 
 import SwiftUI
 
 // MARK: - Horizontal Radio Group Component
 
-/// 横向单选按钮组
+/// Horizontal radio button group
 struct HorizontalRadioGroup<T: Hashable>: View {
     let selection: Binding<T>
     let options: [(value: T, label: String)]
@@ -40,7 +40,7 @@ struct HorizontalRadioGroup<T: Hashable>: View {
                     }
                 }
                 .buttonStyle(.plain)
-                .focusable(false)  // 禁用键盘焦点
+                .focusable(false)  // Disable keyboard focus
             }
         }
     }
@@ -48,13 +48,13 @@ struct HorizontalRadioGroup<T: Hashable>: View {
 
 // MARK: - Menu Bar Icon Preview
 
-/// 菜单栏图标预览组件
-/// 使用假数据模拟真实的菜单栏图标显示效果
+/// Menu bar icon preview
+/// Uses fake data to show what the real menu bar icon looks like
 struct MenuBarIconPreview: View {
     @ObservedObject private var settings = UserSettings.shared
 
     var body: some View {
-        // 模拟菜单栏背景
+        // Simulated menu bar background
         HStack(spacing: 3) {
             Image(nsImage: getPreviewIcon())
                 .resizable()
@@ -67,16 +67,16 @@ struct MenuBarIconPreview: View {
         .cornerRadius(4)
     }
 
-    /// 获取预览图标（使用createIcon方法）
+    /// Get the preview icon (through createIcon)
     private func getPreviewIcon() -> NSImage {
         let renderer = MenuBarIconRenderer(settings: settings)
         let mockData = createMockUsageData()
 
-        // 使用 createIcon 方法，这样会正确响应 iconDisplayMode
+        // Go through createIcon, so it responds to iconDisplayMode correctly
         return renderer.createIcon(usageData: mockData, hasUpdate: false, button: nil)
     }
 
-    /// 创建模拟用量数据（66% 使用率）
+    /// Build mock usage data (66% used)
     private func createMockUsageData() -> UsageData {
         let mockPercentage = 66.0
 
@@ -106,21 +106,21 @@ struct MenuBarIconPreview: View {
         )
     }
 
-    /// 预览背景色（模拟菜单栏）
+    /// Preview background color (simulating the menu bar)
     private var previewBackgroundColor: Color {
-        // 根据系统外观返回菜单栏颜色
+        // Return the menu bar color for the system appearance
         if UsageColorScheme.isDarkMode {
-            return Color(white: 0.2)  // 深色模式菜单栏
+            return Color(white: 0.2)  // Dark mode menu bar
         } else {
-            return Color(white: 0.95)  // 浅色模式菜单栏
+            return Color(white: 0.95)  // Light mode menu bar
         }
     }
 }
 
 // MARK: - Navigation Buttons
 
-/// 底部完成按钮。
-/// 登录成功会自动收尾，这个按钮同时充当“稍后再说”的出口，所以始终可点。
+/// The bottom done button.
+/// A successful login wraps up on its own, and this button doubles as the "later" exit, so it is always clickable.
 struct NavigationButtons: View {
     let onComplete: () -> Void
 

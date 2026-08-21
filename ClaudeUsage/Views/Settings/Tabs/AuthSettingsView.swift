@@ -5,17 +5,17 @@
 //  Created by Claude Code on 2025-12-02.
 //  Copyright © 2025 f-is-h. All rights reserved.
 //
-//  账户详情卡片、添加账户流程、说明/诊断卡片分别拆到
-//  AuthSettingsView+AccountDetail.swift / +AddAccount.swift / +Help.swift，
-//  保持本文件体量可控。跨文件共享的 @State 因此不能标 private（extension 无法跨文件访问）。
+//  The account detail card, the add account flow and the help and diagnostics cards were split into
+//  AuthSettingsView+AccountDetail.swift / +AddAccount.swift / +Help.swift
+//  to keep this file manageable. The @State shared across those files therefore cannot be private (an extension cannot reach it across files).
 
 import SwiftUI
 
-/// 认证设置页面
-/// 使用卡片式布局，用于管理多账户
+/// Authentication settings page
+/// A card layout for managing multiple accounts
 struct AuthSettingsView: View {
     @ObservedObject var settings = UserSettings.shared
-    /// CLI 账户同步服务（单例，卡片实现见 AuthSettingsView+CLIAccount.swift）
+    /// CLI account sync service (a singleton, the card itself is in AuthSettingsView+CLIAccount.swift)
     @ObservedObject var cliSync = ClaudeCodeSyncService.shared
     @State var isAddingAccount = false
     @State var newSessionKey = ""
@@ -33,10 +33,10 @@ struct AuthSettingsView: View {
         ScrollView {
             VStack(spacing: 16) {
                 if isAddingAccount {
-                    // 添加账户视图
+                    // Add account view
                     addAccountView
                 } else {
-                    // 多组织添加成功提示
+                    // Success message when several organizations were added
                     if let message = successMessage {
                         HStack(spacing: 8) {
                             Image(systemName: "info.circle.fill")
@@ -56,26 +56,26 @@ struct AuthSettingsView: View {
                         .cornerRadius(8)
                     }
 
-                    // 账户列表视图
+                    // Account list view
                     accountListView
 
-                    // CLI 账户同步（Claude Code 已登录的账号，零粘贴）
+                    // CLI account sync (the account Claude Code already signed in, zero paste)
                     cliAccountCard
 
-                    // 当前 Claude 账户详情
+                    // Current Claude account detail
                     if let currentAccount = settings.currentAccount {
                         currentAccountDetailView(account: currentAccount)
                     }
 
-                    // 当前 Codex 账户详情
+                    // Current Codex account detail
                     if let currentCodexAccount = settings.currentCodexAccount {
                         currentCodexAccountDetailView(account: currentCodexAccount)
                     }
 
-                    // 说明卡片
+                    // Help card
                     howToCard
 
-                    // 诊断卡片
+                    // Diagnostics card
                     diagnosticsCard
                 }
             }
@@ -117,7 +117,7 @@ struct AuthSettingsView: View {
         ) {
             VStack(alignment: .leading, spacing: 12) {
                 if settings.accounts.isEmpty && settings.codexAccounts.isEmpty {
-                    // 无账户时的提示
+                    // The message shown when there is no account
                     VStack(spacing: 12) {
                         Image(systemName: "person.crop.circle.badge.plus")
                             .font(.system(size: 40))
@@ -129,7 +129,7 @@ struct AuthSettingsView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 20)
                 } else {
-                    // Claude 账户组
+                    // Claude account group
                     if !settings.accounts.isEmpty {
                         if hasBothProviders {
                             providerSectionHeader(provider: .claude, label: L.Account.claudeAccounts)
@@ -139,7 +139,7 @@ struct AuthSettingsView: View {
                         }
                     }
 
-                    // Codex 账户组
+                    // Codex account group
                     if hasCodex {
                         if hasBothProviders {
                             providerSectionHeader(provider: .codex, label: L.Account.codexAccounts)
@@ -151,7 +151,7 @@ struct AuthSettingsView: View {
                     }
                 }
 
-                // 添加账户入口
+                // Add account entry point
                 addAccountActionsView
             }
         }
@@ -279,7 +279,7 @@ struct AuthSettingsView: View {
             }
         }) {
             HStack(spacing: 12) {
-                // 选中状态指示器
+                // Selection indicator
                 Circle()
                     .fill(isSelected ? accentColor : Color.clear)
                     .frame(width: 8, height: 8)
@@ -288,7 +288,7 @@ struct AuthSettingsView: View {
                             .stroke(Color.secondary.opacity(0.5), lineWidth: 1)
                     )
 
-                // 账户信息
+                // Account info
                 VStack(alignment: .leading, spacing: 2) {
                     HStack {
                         Text(account.displayName)

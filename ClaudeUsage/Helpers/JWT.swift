@@ -7,9 +7,9 @@
 
 import Foundation
 
-/// 从 JWT 中解析 payload 的 `exp` 字段
-/// - Note: JWT payload 使用 base64url 编码（字母表含 `-`/`_`，无 padding），
-///   必须先转换为标准 base64 字母表再解码，否则含 `-`/`_` 的 payload 会解码失败。
+/// Read the `exp` field out of a JWT payload
+/// - Note: a JWT payload is base64url encoded (its alphabet includes `-` and `_`, with no padding),
+///   so it has to be mapped to the standard base64 alphabet before decoding, otherwise any payload containing `-` or `_` fails.
 func jwtExpiry(from token: String) -> Date? {
     let parts = token.split(separator: ".", omittingEmptySubsequences: false)
     guard parts.count == 3 else { return nil }

@@ -8,46 +8,46 @@
 
 import SwiftUI
 
-/// Popover 的固定排版尺寸。高度要手算，因为 body 上挂了显式 frame
-/// （NSHostingController 的 preferredContentSize 只跟随这个 frame）。
+/// The popover's fixed layout metrics. The height has to be computed by hand, because body carries an explicit frame
+/// (and NSHostingController's preferredContentSize follows only that frame).
 private enum PopoverMetrics {
-    /// 一行限制的高度：标题行 15 + 间距 5 + 进度条 5，再留 1 的余量
+    /// Height of one limit row: title row 15 + spacing 5 + bar 5, plus 1 of slack
     static let rowHeight: CGFloat = 26
-    /// 限制行之间的间距
+    /// Spacing between limit rows
     static let rowSpacing: CGFloat = 12
-    /// 限制列表左右边距
+    /// Horizontal padding of the limit list
     static let horizontalPadding: CGFloat = 16
-    /// 标题栏上方留白 + 标题行 + 底部留白
+    /// Padding above the title bar + the title row + the bottom padding
     static let chromeHeight: CGFloat = 18 + 20 + 20
-    /// 空状态（未登录 / 出错 / 加载中）用固定高度：图标 + 文案 + 按钮比进度条列表高
+    /// Empty states (signed out / error / loading) use a fixed height: an icon, copy and a button are taller than the bar list
     static let stateHeight: CGFloat = 210
 
-    /// n 行限制占的高度
+    /// Height taken by n limit rows
     static func rowsHeight(_ rowCount: Int) -> CGFloat {
         guard rowCount > 0 else { return 0 }
         return CGFloat(rowCount) * rowHeight + CGFloat(rowCount - 1) * rowSpacing
     }
 }
 
-/// 用量详情视图
-/// 显示 Claude 的当前使用情况，包括百分比进度条、倒计时和重置时间
+/// Usage detail view
+/// Shows Claude's current usage: percentage bars, countdowns and reset times
 struct UsageDetailView: View {
     @Binding var usageData: UsageData?
     @Binding var codexUsageData: CodexUsageData?
     @Binding var errorMessage: String?
     @Binding var codexErrorMessage: String?
-    /// Codex 三级刷新均失败，需要用户手动重新登录
+    /// All three Codex refresh levels failed, the user has to sign in again manually
     @Binding var codexNeedsRelogin: Bool
     @ObservedObject var refreshState: RefreshState
-    /// 菜单操作回调
+    /// Menu action callback
     var onMenuAction: ((MenuAction) -> Void)? = nil
     @StateObject private var localization = LocalizationManager.shared
-    /// 是否有可用更新（用于显示文字和徽章）
+    /// Whether an update is available (drives the text and the badge)
     @Binding var hasAvailableUpdate: Bool
-    /// 是否应显示更新徽章（用户未确认时才显示徽章）
+    /// Whether the update badge should show (only while the user has not acknowledged it)
     @Binding var shouldShowUpdateBadge: Bool
 
-    /// 菜单操作类型
+    /// Menu action types
     enum MenuAction {
         case generalSettings
         case authSettings
@@ -64,15 +64,15 @@ struct UsageDetailView: View {
         case codexRelogin
     }
     
-    // 用于动画的状态（改为从外部传入，避免每次重建视图时重置）
+    // Animation state (now passed in from outside, so it is not reset every time the view is rebuilt)
     @State var rotationAngle: Double = 0
     @State var animationTimer: Timer?
-    // 显示更新通知
+    // Show the update notification
     @State private var showUpdateNotification = false
-    // 显示模式切换（false: 重置时间, true: 剩余时间）
-    // 默认走剩余时间：倒计时（"3d 12h left"）比绝对时间戳（"Aug 24 2 AM"）更直接，
-    // 用户不用自己算差值。注意不能用 UserDefaults.bool(forKey:)，键不存在时它返回
-    // false，会把这个默认值又翻回重置时间。
+    // Display mode toggle (false: reset time, true: time left)
+    // Time left is the default: a countdown ("3d 12h left") is more direct than an absolute timestamp ("Aug 24 2 AM"),
+    // because the user does not have to work out the difference. Note that UserDefaults.bool(forKey:) cannot be used here: it returns
+    // false for a missing key, which would flip this default back to reset time.
     @AppStorage("showRemainingMode") private var savedRemainingMode = true
     @State private var showRemainingMode =
         (UserDefaults.standard.object(forKey: "showRemainingMode") as? Bool) ?? true
@@ -94,34 +94,34 @@ struct UsageDetailView: View {
         refreshState.isRefreshingProvider(.claude)
     }
 
-    /// 获取当前 Claude 活动的显示类型
+    /// Get the Claude display types currently active
     private var activeDisplayTypes: [LimitType] {
         guard let data = usageData else { return [] }
         return UserSettings.shared.getActiveDisplayTypes(usageData: data)
             .filter { $0.provider == .claude }
     }
 
-    /// 获取当前 Codex 活动的显示类型
+    /// Get the Codex display types currently active
     private var activeCodexDisplayTypes: [LimitType] {
         guard let codex = codexUsageData else { return [] }
         return UserSettings.shared.getActiveDisplayTypes(usageData: nil, codexUsageData: codex)
             .filter { $0.provider == .codex }
     }
 
-    /// Claude 列实际渲染的限制行数（含超出前两个槽位的模型行）
+    /// The number of limit rows the Claude column really renders (including model rows past the first two slots)
     private func claudeRowCount(for data: UsageData?) -> Int {
         guard let data else { return 2 }
         let types = UserSettings.shared.getActiveDisplayTypes(usageData: data)
             .filter { $0.provider == .claude }
         var count = types.count
-        // 智能模式会把第三个及以后的模型也补成行，高度得算上，否则会被裁掉
+        // Smart mode also turns the third and later models into rows, and the height has to count them or the last one is clipped
         if UserSettings.shared.displayMode == .smart {
             count += max(0, data.weeklyModels.count - 2)
         }
         return max(count, 1)
     }
 
-    /// Codex 列实际渲染的限制行数
+    /// The number of limit rows the Codex column really renders
     private func codexRowCount(for codex: CodexUsageData?) -> Int {
         guard let codex else { return 2 }
         let types = UserSettings.shared.getActiveDisplayTypes(usageData: nil, codexUsageData: codex)
@@ -129,7 +129,7 @@ struct UsageDetailView: View {
         return max(types.count, 1)
     }
 
-    /// 单 Provider（Claude）模式高度
+    /// Height in single provider (Claude) mode
     private var dynamicHeight: CGFloat {
         if errorMessage != nil || usageData == nil {
             return PopoverMetrics.stateHeight
@@ -139,7 +139,7 @@ struct UsageDetailView: View {
             + PopoverMetrics.rowsHeight(claudeRowCount(for: usageData))
     }
 
-    /// Codex-only 模式高度
+    /// Height in Codex only mode
     private var codexOnlyHeight: CGFloat {
         if codexUsageData == nil {
             return PopoverMetrics.stateHeight
@@ -149,7 +149,7 @@ struct UsageDetailView: View {
             + PopoverMetrics.rowsHeight(codexRowCount(for: codexUsageData))
     }
 
-    /// 双 Provider 模式高度（取两列的较高者）
+    /// Height in dual provider mode (the taller of the two columns)
     private var multiProviderHeight: CGFloat {
         let claudeHeight: CGFloat = (errorMessage != nil || usageData == nil)
             ? PopoverMetrics.stateHeight
@@ -187,7 +187,7 @@ struct UsageDetailView: View {
         return dynamicHeight
     }
 
-    /// 未登录状态。不是错误，所以不用警告图标，只给一个动作：登录。
+    /// The signed out state. It is not an error, so there is no warning icon and only one action: sign in.
     private var signedOutState: some View {
         VStack(spacing: 12) {
             Image(systemName: "key.fill")
@@ -202,7 +202,7 @@ struct UsageDetailView: View {
 
             Button(action: {
                 WebLoginWindowManager.shared.showLoginWindow { _ in
-                    // 登录完直接拉一次数据，省得用户再点刷新
+                    // Fetch data right after the login, so the user does not have to hit refresh
                     onMenuAction?(.refresh)
                 }
             }) {
@@ -214,8 +214,8 @@ struct UsageDetailView: View {
         .padding()
     }
 
-    /// 真正的错误状态。按钮写什么就做什么，不再拿"运行诊断"当设置入口。
-    /// 文案允许换行，之前固定单行会把消息截断成 "...information in..."。
+    /// A genuine error state. A button does what its label says, and "run diagnostics" is no longer a disguised settings entry.
+    /// The copy is allowed to wrap; a fixed single line used to truncate the message to "...information in...".
     private func errorState(_ error: String) -> some View {
         VStack(spacing: 12) {
             Image(systemName: "exclamationmark.triangle.fill")
@@ -240,17 +240,17 @@ struct UsageDetailView: View {
     @ViewBuilder
     private var claudeMainContent: some View {
         if let error = errorMessage {
-            // 没登录不算错误，按空状态处理；只有真出错才摆警告图标。
-            // 原来这里靠 error.contains("Authentication"/"configured") 猜是哪种情况，
-            // 而实际文案是 "Please configure authentication information..."，
-            // 两个判断都不成立，于是只剩下那个名不副实的"运行诊断"按钮。
+            // Not being signed in is not an error, so it is treated as an empty state; only a genuine error gets the warning icon.
+            // This used to guess between the two cases with error.contains("Authentication"/"configured"),
+            // while the real copy is "Please configure authentication information...",
+            // so neither test held and all that was left was that misnamed "run diagnostics" button.
             if !UserSettings.shared.hasValidCredentials {
                 signedOutState
             } else {
                 errorState(error)
             }
         } else if let data = usageData {
-            // 使用数据：每条限制一行整宽进度条。点一下在「重置时间 / 剩余时间」间切换
+            // Usage data: one full width bar per limit. A click toggles between reset time and time left
             VStack(spacing: PopoverMetrics.rowSpacing) {
                 ForEach(activeDisplayTypes, id: \.self) { type in
                     UnifiedLimitRow(
@@ -260,10 +260,10 @@ struct UsageDetailView: View {
                         isRefreshing: isClaudeRefreshing
                     )
                 }
-                // 前两个模型走上面的 opus / sonnet 槽位；第三个及以后的模型
-                // （如同时出现 Fable + Opus + Sonnet）在此按 Claude API 顺序补齐，
-                // 配色在两个槽位之间轮换，标签用 API 返回的模型名。
-                // 仅智能模式展开全部；自定义模式尊重用户勾选的固定槽位。
+                // The first two models take the opus and sonnet slots above; the third and later ones
+                // (when Fable, Opus and Sonnet all appear) are filled in here in Claude API order,
+                // with the colors alternating between the two slots and the labels taken from the API's model names.
+                // Only smart mode expands them all; custom mode respects the fixed slots the user checked.
                 if UserSettings.shared.displayMode == .smart {
                     let overflow = Array(data.weeklyModels.enumerated()).dropFirst(2)
                     ForEach(overflow, id: \.offset) { entry in
@@ -283,7 +283,7 @@ struct UsageDetailView: View {
                 toggleRemainingMode()
             }
         } else {
-            // 加载中
+            // Loading
             VStack(spacing: 12) {
                 ProgressView()
                     .scaleEffect(1.2)
@@ -297,7 +297,7 @@ struct UsageDetailView: View {
 
     // MARK: - Header Buttons
 
-    /// 刷新按钮 + 三点菜单按钮（共用于单列和双列头部）
+    /// Refresh button plus three dot menu button (shared by the single and dual column headers)
     @ViewBuilder
     private var refreshAndMenuButtons: some View {
         Button(action: { onMenuAction?(.refresh) }) {
@@ -355,7 +355,7 @@ struct UsageDetailView: View {
                 Button(action: { onMenuAction?(.generalSettings) }) {
                     Text(L.Menu.settings)
                 }
-                // Sparkle 的 appcast 地址仍指向上游的死链，所以先禁用这一项
+                // Sparkle's appcast URL still points at upstream's dead link, so keep this item disabled
                 if hasAvailableUpdate {
                     Button(action: { onMenuAction?(.checkForUpdates) }) {
                         Text(createUpdateMenuText())
@@ -470,7 +470,7 @@ struct UsageDetailView: View {
                     .foregroundColor(.secondary)
 
                 if codexNeedsRelogin {
-                    // 三级刷新均失败：提供一键重新登录入口
+                    // All three refresh levels failed: offer a one click sign in again
                     Button(action: {
                         onMenuAction?(.codexRelogin)
                     }) {
@@ -483,7 +483,7 @@ struct UsageDetailView: View {
                     }
                     .buttonStyle(.plain)
                 } else {
-                    // 同上：两个按钮原本都指向设置，其中一个却写着"运行诊断"
+                    // As above: both buttons used to point at settings, yet one of them read "run diagnostics"
                     HStack(spacing: 10) {
                         Button(L.Usage.refresh) { onMenuAction?(.refreshCodex) }
                         Button(L.Usage.goToSettings) { onMenuAction?(.authSettings) }
@@ -560,23 +560,23 @@ struct UsageDetailView: View {
         .frame(width: contentWidth, height: contentHeight)
         .animation(.easeInOut(duration: 0.25), value: isMultiProviderActive)
         .animation(.easeInOut(duration: 0.25), value: isCodexOnlyActive)
-        .id(localization.updateTrigger)  // 语言变化时重新创建视图
+        .id(localization.updateTrigger)  // Rebuild the view when the language changes
         .onAppear {
             var transaction = Transaction(animation: nil)
             transaction.disablesAnimations = true
             withTransaction(transaction) {
                 showRemainingMode = savedRemainingMode
             }
-            // 如果打开时已经在刷新，启动旋转动画
+            // Start the spinner animation when a refresh is already running as this opens
             if refreshState.isRefreshing {
                 startRotationAnimation()
             }
-            // 如果有更新通知消息，显示通知
+            // Show the notification when there is an update message
             if refreshState.notificationMessage != nil {
                 withAnimation {
                     showUpdateNotification = true
                 }
-                // 3秒后隐藏通知
+                // Hide the notification after 3 seconds
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                     withAnimation {
                         showUpdateNotification = false
@@ -588,12 +588,12 @@ struct UsageDetailView: View {
             if newValue { startRotationAnimation() } else { stopRotationAnimation() }
         }
         .onChange(of: refreshState.notificationMessage) { message in
-            // 监听通知消息变化
+            // Watch for changes to the notification message
             if message != nil {
                 withAnimation {
                     showUpdateNotification = true
                 }
-                // 3秒后隐藏通知
+                // Hide the notification after 3 seconds
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                     withAnimation {
                         showUpdateNotification = false
@@ -606,7 +606,7 @@ struct UsageDetailView: View {
             }
         }
         .onDisappear {
-            // 视图消失时清理定时器
+            // Tear down the timer when the view disappears
             stopRotationAnimation()
         }
         #if DEBUG
@@ -624,7 +624,7 @@ struct UsageDetailView: View {
     }
 }
 
-// 预览
+// Preview
 struct UsageDetailView_Previews: PreviewProvider {
     @State static var sampleData: UsageData? = UsageData(
         fiveHour: UsageData.LimitData(

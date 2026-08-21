@@ -9,41 +9,41 @@
 import Foundation
 import OSLog
 
-/// 定时器统一管理器
-/// 负责应用内所有定时器的创建、调度和清理，防止内存泄漏
-/// 提供类型安全的定时器标识符管理
+/// Central timer manager
+/// Creates, schedules and tears down every timer in the app, so none leak
+/// Type safe timer identifiers
 class TimerManager {
     // MARK: - Properties
 
-    /// 定时器存储字典，键为标识符，值为 Timer 实例
+    /// Timer storage, keyed by identifier with the Timer as the value
     private var timers: [String: Timer] = [:]
 
-    /// 线程安全队列
+    /// Thread safe queue
     private let queue = DispatchQueue(label: "com.claudeusage.timer", attributes: .concurrent)
 
     // MARK: - Public Methods
 
-    /// 调度定时器
+    /// Schedule a timer
     /// - Parameters:
-    ///   - identifier: 定时器唯一标识符
-    ///   - interval: 时间间隔（秒）
-    ///   - repeats: 是否重复执行
-    ///   - block: 定时器触发时执行的闭包
-    /// - Note: 如果相同标识符的定时器已存在，会先取消旧定时器
+    ///   - identifier: unique timer identifier
+    ///   - interval: interval in seconds
+    ///   - repeats: whether it repeats
+    ///   - block: the closure run when the timer fires
+    /// - Note: an existing timer with the same identifier is cancelled first
     func schedule(
         _ identifier: String,
         interval: TimeInterval,
         repeats: Bool = true,
         block: @escaping () -> Void
     ) {
-        // Timer.scheduledTimer 注册到调用线程的 RunLoop；若 schedule 从没有运行 RunLoop
-        // 的后台线程调用（例如未指定 receive(on:) 的 Combine 订阅），定时器会永不触发。
-        // 保证在主线程创建。已在主线程时同步执行——若异步推迟一个 runloop turn，
-        // 「schedule(X) 后同一 turn 内 invalidate(X)」会让 X 在 invalidate 之后才被创建（定时器复活）。
+        // Timer.scheduledTimer registers on the calling thread's RunLoop; when schedule is called from a background
+        // thread with no running RunLoop (a Combine subscription without receive(on:), say), the timer never fires.
+        // Guarantee creation on the main thread. Run synchronously when already there, because deferring by one
+        // runloop turn would make "invalidate(X) in the same turn as schedule(X)" create X after the invalidate (a resurrected timer).
         runOnMain { [weak self] in
             guard let self else { return }
 
-            // 同步取消旧定时器并创建新定时器，避免竞态条件
+            // Cancel the old timer and create the new one synchronously, to avoid a race
             self.queue.sync(flags: .barrier) {
                 if let oldTimer = self.timers[identifier] {
                     oldTimer.invalidate()
@@ -58,7 +58,7 @@ class TimerManager {
                 block()
             }
 
-            // 保存新定时器
+            // Store the new timer
             self.queue.async(flags: .barrier) {
                 self.timers[identifier] = timer
             }
@@ -67,7 +67,7 @@ class TimerManager {
         }
     }
 
-    /// 已在主线程则同步执行，否则派发到主线程
+    /// Run synchronously when already on the main thread, otherwise dispatch to it
     private func runOnMain(_ body: @escaping () -> Void) {
         if Thread.isMainThread {
             body()
@@ -76,8 +76,8 @@ class TimerManager {
         }
     }
 
-    /// 取消指定定时器
-    /// - Parameter identifier: 定时器标识符
+    /// Cancel one timer
+    /// - Parameter identifier: timer identifier
     func invalidate(_ identifier: String) {
         queue.sync(flags: .barrier) {
             if let timer = self.timers[identifier] {
@@ -88,8 +88,8 @@ class TimerManager {
         }
     }
 
-    /// 取消所有定时器
-    /// - Note: 通常在应用退出或重大状态变更时调用
+    /// Cancel every timer
+    /// - Note: normally called when the app quits or on a major state change
     func invalidateAll() {
         queue.sync(flags: .barrier) {
             let count = self.timers.count
@@ -99,18 +99,18 @@ class TimerManager {
         }
     }
 
-    /// 检查指定定时器是否活跃
-    /// - Parameter identifier: 定时器标识符
-    /// - Returns: 如果定时器存在且有效返回 true
+    /// Check whether a timer is active
+    /// - Parameter identifier: timer identifier
+    /// - Returns: true when the timer exists and is valid
     func isActive(_ identifier: String) -> Bool {
         return queue.sync {
             return timers[identifier]?.isValid ?? false
         }
     }
 
-    /// 获取当前活跃的定时器列表
-    /// - Returns: 活跃定时器的标识符数组
-    /// - Note: 主要用于调试和诊断
+    /// Get the list of currently active timers
+    /// - Returns: identifiers of the active timers
+    /// - Note: mainly for debugging and diagnostics
     func activeTimers() -> [String] {
         return queue.sync {
             return timers.keys.filter { timers[$0]?.isValid == true }
@@ -126,28 +126,28 @@ class TimerManager {
 
 // MARK: - Timer Identifiers
 
-/// 定时器标识符命名空间
-/// 提供类型安全的定时器标识符常量
+/// Timer identifier namespace
+/// Type safe timer identifier constants
 extension TimerManager {
-    /// 定时器标识符枚举
+    /// Timer identifiers
     enum Identifier {
-        /// 主数据刷新定时器
+        /// Main data refresh timer
         static let mainRefresh = "mainRefresh"
-        /// 弹出窗口实时刷新定时器（1秒间隔）
+        /// Popover live refresh timer (1 second interval)
         static let popoverRefresh = "popoverRefresh"
-        /// 重置验证定时器 - 重置后1秒
+        /// Reset validation timer, 1 second after the reset
         static let resetVerify1 = "resetVerify1"
-        /// 重置验证定时器 - 重置后10秒
+        /// Reset validation timer, 10 seconds after the reset
         static let resetVerify2 = "resetVerify2"
-        /// 重置验证定时器 - 重置后30秒
+        /// Reset validation timer, 30 seconds after the reset
         static let resetVerify3 = "resetVerify3"
-        /// Codex 重置验证定时器 - 重置后1秒
+        /// Codex reset validation timer, 1 second after the reset
         static let codexResetVerify1 = "codexResetVerify1"
-        /// Codex 重置验证定时器 - 重置后10秒
+        /// Codex reset validation timer, 10 seconds after the reset
         static let codexResetVerify2 = "codexResetVerify2"
-        /// Codex 重置验证定时器 - 重置后30秒
+        /// Codex reset validation timer, 30 seconds after the reset
         static let codexResetVerify3 = "codexResetVerify3"
-        /// Codex accessToken 主动续期定时器（独立于用量拉取计时器）
+        /// Codex accessToken renewal timer (separate from the usage fetch timer)
         static let codexTokenRefresh = "codexTokenRefresh"
     }
 }

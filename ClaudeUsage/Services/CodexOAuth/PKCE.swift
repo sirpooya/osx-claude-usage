@@ -9,8 +9,8 @@
 import Foundation
 import CryptoKit
 
-/// PKCE（RFC 7636）参数，外加 OAuth state（防 CSRF）
-/// code_challenge 使用 S256（SHA-256 + base64url）
+/// PKCE (RFC 7636) parameters, plus the OAuth state (CSRF protection)
+/// code_challenge uses S256 (SHA-256 plus base64url)
 struct PKCECodes {
     let codeVerifier: String
     let codeChallenge: String
@@ -23,17 +23,17 @@ struct PKCECodes {
         codeChallenge = Self.base64URL(Data(digest))
     }
 
-    /// 生成 URL-safe 随机串（base64url，无填充）
+    /// Generate a URL safe random string (base64url, no padding)
     private static func randomURLSafe(byteCount: Int) -> String {
         var bytes = [UInt8](repeating: 0, count: byteCount)
         let status = SecRandomCopyBytes(kSecRandomDefault, byteCount, &bytes)
-        // SecRandomCopyBytes 失败（极罕见）时 bytes 会保持全零，
-        // code_verifier/state 变得可预测，PKCE/CSRF 防护形同虚设——宁可崩溃也不能静默使用不安全的值。
+        // If SecRandomCopyBytes fails (very rare) bytes stays all zeros, which makes
+        // code_verifier and state predictable and the PKCE and CSRF protection worthless. Crashing beats silently using an unsafe value.
         precondition(status == errSecSuccess, "SecRandomCopyBytes failed: \(status)")
         return base64URL(Data(bytes))
     }
 
-    /// base64url 编码（无填充）
+    /// base64url encoding (no padding)
     private static func base64URL(_ data: Data) -> String {
         data.base64EncodedString()
             .replacingOccurrences(of: "+", with: "-")

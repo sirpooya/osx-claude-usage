@@ -8,7 +8,7 @@
 
 import SwiftUI
 
-/// Toolbar 风格的按钮组件
+/// Toolbar style button
 struct ToolbarButton: View {
     let icon: String
     let title: String
@@ -30,9 +30,9 @@ struct ToolbarButton: View {
             .padding(.vertical, 8)
             .background(isSelected ? Color.secondary.opacity(0.1) : Color.clear)
             .cornerRadius(8)
-            .contentShape(Rectangle())  // 扩大点击区域到整个背景
+            .contentShape(Rectangle())  // Grow the click target to the whole background
         }
         .buttonStyle(.plain)
-        .focusable(false)  // 移除Focus效果
+        .focusable(false)  // Remove the focus effect
     }
 }

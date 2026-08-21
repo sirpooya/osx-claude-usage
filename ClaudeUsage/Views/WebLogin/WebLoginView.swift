@@ -9,15 +9,15 @@
 import SwiftUI
 import WebKit
 
-/// WebView 登录界面
-/// 包含状态栏、WKWebView 和加载进度条
+/// WebView login UI
+/// Holds the status bar, the WKWebView and the loading progress bar
 struct WebLoginView: View {
     @StateObject private var coordinator = WebLoginCoordinator()
     var onAccountCreated: ((Account) -> Void)?
 
     var body: some View {
         VStack(spacing: 0) {
-            // 顶部状态栏
+            // Top status bar
             statusBar
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
@@ -25,11 +25,11 @@ struct WebLoginView: View {
 
             Divider()
 
-            // WKWebView 区域
+            // The WKWebView area
             WebViewRepresentable(coordinator: coordinator)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            // 底部加载进度条
+            // Bottom loading progress bar
             if coordinator.loadProgress < 1.0 && coordinator.loadProgress > 0 {
                 ProgressView(value: coordinator.loadProgress)
                     .progressViewStyle(.linear)
@@ -46,7 +46,7 @@ struct WebLoginView: View {
         }
         .onChange(of: coordinator.loginState) { newState in
             if case .success = newState {
-                // 登录成功后延迟 1.5s 自动关闭
+                // Close automatically 1.5s after a successful login
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                     WebLoginWindowManager.shared.closeLoginWindow()
                 }
@@ -139,7 +139,7 @@ struct WebLoginView: View {
 
 // MARK: - NSViewRepresentable
 
-/// 将 WKWebView 包装为 SwiftUI 视图
+/// Wraps a WKWebView as a SwiftUI view
 struct WebViewRepresentable: NSViewRepresentable {
     let coordinator: WebLoginCoordinator
 

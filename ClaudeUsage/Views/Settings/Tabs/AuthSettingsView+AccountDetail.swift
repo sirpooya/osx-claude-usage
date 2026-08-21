@@ -5,7 +5,7 @@
 //  Created by Claude Code on 2025-12-02.
 //  Copyright © 2025 f-is-h. All rights reserved.
 //
-//  当前 Claude / Codex 账户详情卡片，从 AuthSettingsView.swift 拆出
+//  The current Claude / Codex account detail card, split out of AuthSettingsView.swift
 
 import SwiftUI
 
@@ -21,7 +21,7 @@ extension AuthSettingsView {
             hint: ""
         ) {
             VStack(alignment: .leading, spacing: 16) {
-                // 别名编辑
+                // Alias editing
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 6) {
                         Image(systemName: "tag.fill")
@@ -54,7 +54,7 @@ extension AuthSettingsView {
                     }
                 }
 
-                // Session Key 显示
+                // Session key display
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 6) {
                         Image(systemName: "key.fill")
@@ -91,7 +91,7 @@ extension AuthSettingsView {
                     }
                 }
 
-                // Organization ID 显示
+                // Organization ID display
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 6) {
                         Image(systemName: "building.2.fill")
@@ -123,7 +123,7 @@ extension AuthSettingsView {
                     }
                 }
 
-                // 删除按钮
+                // Delete button
                 if settings.accounts.count > 0 {
                     Divider()
 
@@ -153,7 +153,7 @@ extension AuthSettingsView {
             hint: ""
         ) {
             VStack(alignment: .leading, spacing: 16) {
-                // 别名编辑
+                // Alias editing
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 6) {
                         Image(systemName: "tag.fill")
@@ -186,7 +186,7 @@ extension AuthSettingsView {
                     }
                 }
 
-                // Session Token 显示
+                // Session token display
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 6) {
                         Image(systemName: "key.fill")
@@ -206,7 +206,7 @@ extension AuthSettingsView {
                     }
                 }
 
-                // 删除按钮
+                // Delete button
                 Divider()
 
                 Button(action: {

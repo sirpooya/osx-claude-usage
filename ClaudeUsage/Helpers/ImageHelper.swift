@@ -8,16 +8,16 @@
 
 import AppKit
 
-/// 图像处理辅助工具
-/// 提供应用图标创建、缓存等功能
+/// Image helpers
+/// App icon creation, caching and similar utilities
 enum ImageHelper {
     // MARK: - Named Image Lookup
 
-    /// 按名字取资源图片。
-    /// 注意 "AppIcon" 是 appiconset：actool 只把它编译成图标数据，不会生成同名图片资源，
-    /// 所以 NSImage(named: "AppIcon") 恒为 nil（弹窗标题、关于页、账户行、彩色菜单栏
-    /// 图标都因此拿不到图，只能退到占位图形）。这里兜底读 Bundle 自身的图标，
-    /// 拿到的就是 Finder 里显示的那一张。
+    /// Load a resource image by name.
+    /// Note that "AppIcon" is an appiconset: actool compiles it into icon data only and never produces an image
+    /// resource of the same name, so NSImage(named: "AppIcon") is always nil (which is why the popover header,
+    /// About page, account rows and the color menu bar icon all got nothing and fell back to placeholder shapes).
+    /// The fallback here reads the bundle's own icon, which is the exact image Finder shows.
     static func namedImage(_ name: String) -> NSImage? {
         if let image = NSImage(named: name) { return image }
         guard name == "AppIcon" else { return nil }
@@ -26,9 +26,9 @@ enum ImageHelper {
 
     // MARK: - App Icon
 
-    /// 创建应用图标（非模板模式）
-    /// - Parameter size: 图标大小
-    /// - Returns: 指定大小的应用图标，如果无法加载则返回 nil
+    /// Create the app icon (non template mode)
+    /// - Parameter size: icon size
+    /// - Returns: the app icon at the requested size, or nil when it cannot be loaded
     static func createAppIcon(size: CGFloat) -> NSImage? {
         guard let appIcon = namedImage("AppIcon") else { return nil }
         guard let iconCopy = appIcon.copy() as? NSImage else { return nil }
@@ -37,11 +37,11 @@ enum ImageHelper {
         return iconCopy
     }
 
-    /// 创建应用图标（非模板模式，指定宽高）
+    /// Create the app icon (non template mode, explicit width and height)
     /// - Parameters:
-    ///   - width: 图标宽度
-    ///   - height: 图标高度
-    /// - Returns: 指定尺寸的应用图标，如果无法加载则返回 nil
+    ///   - width: icon width
+    ///   - height: icon height
+    /// - Returns: the app icon at the requested size, or nil when it cannot be loaded
     static func createAppIcon(width: CGFloat, height: CGFloat) -> NSImage? {
         guard let appIcon = namedImage("AppIcon") else { return nil }
         guard let iconCopy = appIcon.copy() as? NSImage else { return nil }
@@ -56,8 +56,8 @@ enum ImageHelper {
         createSquareIcon(named: "CodexIcon", size: size, isTemplate: false, sourceInset: 2)
     }
 
-    /// 从资源中创建正方形图标。部分透明 PNG 的边缘 RGB 不是透明白，
-    /// 直接缩放时会被 AppKit 采样成细暗线，因此这里先居中裁方并略微内收。
+    /// Create a square icon from a resource. Some transparent PNGs have non transparent RGB at the edges,
+    /// which AppKit samples into a thin dark line when scaled directly, so crop to a centered square and inset slightly first.
     static func createSquareIcon(named name: String, size: CGFloat, isTemplate: Bool, sourceInset: CGFloat = 0) -> NSImage? {
         guard let source = namedImage(name) else { return nil }
         let targetSize = NSSize(width: size, height: size)
@@ -92,12 +92,12 @@ enum ImageHelper {
 
     // MARK: - System Images
 
-    /// 创建系统符号图像
+    /// Create a system symbol image
     /// - Parameters:
-    ///   - systemName: SF Symbols 名称
-    ///   - size: 图像大小
-    ///   - weight: 符号粗细
-    /// - Returns: 创建的系统图像，如果无法加载则返回 nil
+    ///   - systemName: SF Symbols name
+    ///   - size: image size
+    ///   - weight: symbol weight
+    /// - Returns: the system image, or nil when it cannot be loaded
     static func createSystemImage(
         systemName: String,
         size: CGFloat,

@@ -8,17 +8,17 @@
 
 import SwiftUI
 
-/// 关于页面
-/// 显示应用信息、版本号和相关链接
+/// About page
+/// Shows the app info, version and related links
 struct AboutView: View {
-    /// 从 Bundle 中读取应用版本号
+    /// Read the app version from the bundle
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
     }
     
     var body: some View {
         VStack(spacing: 20) {
-            // 应用图标（不使用template模式）
+            // App icon (not in template mode)
             if let icon = ImageHelper.createAppIcon(size: 100) {
                 Image(nsImage: icon)
                     .resizable()
@@ -27,7 +27,7 @@ struct AboutView: View {
                     .shadow(radius: 5)
             }
             
-            // 应用名称和版本
+            // App name and version
             VStack(spacing: 4) {
                 Text("ClaudeUsage")
                     .font(.title)
@@ -38,7 +38,7 @@ struct AboutView: View {
                     .foregroundColor(.secondary)
             }
             
-            // 描述
+            // Description
             Text(L.SettingsAbout.description)
                 .font(.body)
                 .foregroundColor(.secondary)
@@ -48,7 +48,7 @@ struct AboutView: View {
             Divider()
                 .padding(.horizontal, 60)
             
-            // 信息列表
+            // Info list
             VStack(alignment: .leading, spacing: 12) {
                 AboutInfoRow(icon: "person.fill", title: L.SettingsAbout.developer, value: "f-is-h")
                 AboutInfoRow(icon: "doc.text", title: L.SettingsAbout.license, value: L.SettingsAbout.licenseValue)
@@ -56,7 +56,7 @@ struct AboutView: View {
             
             Spacer()
             
-            // 链接按钮
+            // Link buttons
             VStack(spacing: 8) {
                 Button(action: {
                     if let url = URL(string: "https://github.com/sirpooya/osx-claude-usage") {
@@ -98,7 +98,7 @@ struct AboutView: View {
                 .focusable(false)
             }
             
-            // 版权信息
+            // Copyright
             Text(L.SettingsAbout.copyright)
                 .font(.caption)
                 .foregroundColor(.secondary)

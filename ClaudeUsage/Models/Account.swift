@@ -8,13 +8,13 @@
 
 import Foundation
 
-/// 凭据来源
-/// 决定刷新时从哪里取 token：手动粘贴 / 浏览器 OAuth 的凭据存在账户里，
-/// CLI 同步的账户则每次轮询都重新读 Claude Code 的钥匙串条目（CLI 会在我们背后轮换它）。
+/// Credential source
+/// Decides where the token comes from on a refresh: manually pasted credentials and browser OAuth credentials live on the account,
+/// while a CLI synced account re-reads Claude Code's Keychain entry on every poll (the CLI rotates it behind our back).
 enum CredentialSource: String, Codable {
-    /// 手动粘贴的 sessionKey，或应用自己走浏览器 OAuth 拿到的 refresh_token
+    /// A manually pasted sessionKey, or a refresh_token the app got through browser OAuth itself
     case manual
-    /// 从 Claude Code CLI 的钥匙串条目同步而来
+    /// Synced from Claude Code CLI's Keychain entry
     case claudeCodeCLI
 
     var isCLISynced: Bool { self == .claudeCodeCLI }
@@ -28,9 +28,9 @@ struct Account: Codable, Identifiable, Equatable {
     var alias: String?
     let createdAt: Date
     var provider: ProviderType
-    /// 凭据来源（旧数据无此字段，解码时默认 .manual）
+    /// Credential source (absent in older data, which decodes as .manual)
     var credentialSource: CredentialSource
-    /// CLI 同步账户对应的钥匙串 service 名（其余来源为 nil）
+    /// Keychain service name for a CLI synced account (nil for every other source)
     var keychainService: String?
 
     var displayName: String {
@@ -49,7 +49,7 @@ struct Account: Codable, Identifiable, Equatable {
 
     // MARK: - Codable
 
-    // 自定义解码：旧版 JSON 不含 provider 字段时默认为 .claude，确保旧账号数据零迁移
+    // Custom decoding: older JSON has no provider field and defaults to .claude, so stored accounts need zero migration
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)

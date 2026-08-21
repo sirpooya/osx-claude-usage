@@ -8,8 +8,8 @@
 
 import SwiftUI
 
-/// 通用设置页的调试模式卡片（仅 Debug 编译可见）
-/// 从 GeneralSettingsView 拆出，便于保持单文件体量可控
+/// The debug mode card on the general settings page (visible in Debug builds only)
+/// Split out of GeneralSettingsView to keep single file size manageable
 #if DEBUG
 struct GeneralSettingsDebugSection: View {
     @ObservedObject private var settings = UserSettings.shared
@@ -26,7 +26,7 @@ struct GeneralSettingsDebugSection: View {
             hint: "After switching scenario, click refresh to see the effect"
         ) {
             VStack(alignment: .leading, spacing: 12) {
-                // 启用调试模式开关
+                // Enable debug mode switch
                 HStack {
                     Toggle("", isOn: $settings.debugModeEnabled)
                         .toggleStyle(.switch)
@@ -43,13 +43,13 @@ struct GeneralSettingsDebugSection: View {
                         .foregroundColor(.secondary)
                 }
 
-                // 百分比滑块（仅在启用调试模式时显示）
+                // Percentage sliders (shown only while debug mode is on)
                 if settings.debugModeEnabled {
                     Divider()
                         .padding(.vertical, 4)
 
                     VStack(alignment: .leading, spacing: 12) {
-                        // 5小时限制
+                        // 5 hour limit
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
                                 Text("5 hour limit percentage:")
@@ -65,7 +65,7 @@ struct GeneralSettingsDebugSection: View {
                                 .tint(.green)
                         }
 
-                        // 7天限制
+                        // 7 day limit
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
                                 Text("7 day limit percentage:")
@@ -81,7 +81,7 @@ struct GeneralSettingsDebugSection: View {
                                 .tint(.purple)
                         }
 
-                        // Extra Usage 限制
+                        // Extra Usage limit
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
                                 Text("Extra Usage percentage:")
@@ -97,7 +97,7 @@ struct GeneralSettingsDebugSection: View {
                                 .tint(.pink)
                         }
 
-                        // Opus Weekly 限制
+                        // Opus Weekly limit
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
                                 Text("Opus Weekly percentage:")
@@ -113,7 +113,7 @@ struct GeneralSettingsDebugSection: View {
                                 .tint(.orange)
                         }
 
-                        // Sonnet Weekly 限制
+                        // Sonnet Weekly limit
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
                                 Text("Sonnet Weekly percentage:")
@@ -137,7 +137,7 @@ struct GeneralSettingsDebugSection: View {
                             .fontWeight(.semibold)
                             .foregroundColor(.secondary)
 
-                        // Codex 5小时窗口
+                        // Codex 5 hour window
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
                                 Text("Codex 5 hour percentage:")
@@ -153,7 +153,7 @@ struct GeneralSettingsDebugSection: View {
                                 .tint(Color(red: 45/255.0, green: 212/255.0, blue: 191/255.0))
                         }
 
-                        // Codex 7天窗口
+                        // Codex 7 day window
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
                                 Text("Codex 7 day percentage:")
@@ -188,7 +188,7 @@ struct GeneralSettingsDebugSection: View {
                     .padding(.leading, 20)
                 }
 
-                // 模拟更新开关
+                // Simulated update switch
                 Divider()
                     .padding(.vertical, 4)
 
@@ -209,7 +209,7 @@ struct GeneralSettingsDebugSection: View {
                         .foregroundColor(.secondary)
                 }
 
-                // 单独显示所有形状图标开关
+                // Switch for showing every shape icon separately
                 Divider()
                     .padding(.vertical, 4)
 
@@ -230,7 +230,7 @@ struct GeneralSettingsDebugSection: View {
                         .foregroundColor(.secondary)
                 }
 
-                // 保持详情窗口打开开关
+                // Switch for keeping the detail window open
                 Divider()
                     .padding(.vertical, 4)
 
@@ -251,11 +251,11 @@ struct GeneralSettingsDebugSection: View {
                         .foregroundColor(.secondary)
                 }
 
-                // Codex 续期防线测试（仅适用于 Codex）
+                // Codex renewal fallback test (Codex only)
                 Divider()
                     .padding(.vertical, 4)
 
-                // Level 1：SSR Token 刷新
+                // Level 1: SSR token refresh
                 HStack {
                     Button(action: {
                         isTestingTokenRefresh = true
@@ -294,7 +294,7 @@ struct GeneralSettingsDebugSection: View {
                         .foregroundColor(.secondary)
                 }
 
-                // Level 2：隐藏 WebView 静默刷新
+                // Level 2: silent refresh in a hidden WebView
                 HStack {
                     Button(action: {
                         isTestingSilentRefresh = true

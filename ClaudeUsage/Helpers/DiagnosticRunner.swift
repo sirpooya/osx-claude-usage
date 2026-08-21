@@ -239,7 +239,7 @@ final class CodexDiagnosticRunner: DiagnosticRunner {
         ]
         var steps: [DiagnosticStep] = []
 
-        // Step 1: /api/auth/session — 用 session-token Cookie 换 accessToken
+        // Step 1: /api/auth/session, trade the session-token cookie for an accessToken
         let (sessionStep, accessToken) = await runSessionStep(sessionToken: sessionToken)
         steps.append(sessionStep)
 
@@ -249,14 +249,14 @@ final class CodexDiagnosticRunner: DiagnosticRunner {
 
         var usageSuccess = false
 
-        // Step 2: /backend-api/wham/usage — 用 Bearer accessToken 拉使用量
+        // Step 2: /backend-api/wham/usage, fetch usage with the Bearer accessToken
         if let at = accessToken {
             let usageStep = await runUsageStep(accessToken: at)
             steps.append(usageStep)
             usageSuccess = usageStep.success
         }
 
-        // Step 3: SSR refresh probe — 仅在 session 或 usage 失败时触发
+        // Step 3: SSR refresh probe, only when session or usage failed
         if !sessionStep.success || !usageSuccess {
             let ssrStep = await runSsrProbeStep()
             steps.append(ssrStep)
@@ -357,7 +357,7 @@ final class CodexDiagnosticRunner: DiagnosticRunner {
                 return (step, accessToken)
             }
 
-            // 解析失败
+            // Parsing failed
             let bodyPreview = String(data: data, encoding: .utf8).map { String($0.prefix(500)) }
             let step = DiagnosticStep(
                 name: stepName, success: false,
@@ -479,7 +479,7 @@ final class CodexDiagnosticRunner: DiagnosticRunner {
     private func runSsrProbeStep() async -> DiagnosticStep {
         let stepName = "SSR Token Refresh Probe"
 
-        // 若后台刷新已在进行中则跳过探测，避免误导诊断结论
+        // Skip the probe when a background refresh is already running, so the diagnosis is not misleading
         guard !CodexTokenRefreshCoordinator.shared.isRefreshing else {
             return DiagnosticStep(
                 name: stepName, success: false,
@@ -588,12 +588,12 @@ final class CodexDiagnosticRunner: DiagnosticRunner {
         usageOk: Bool,
         ssrOk: Bool
     ) -> (String, [String], ProviderDiagnosticResult.ConfidenceLevel) {
-        // 两步都通过
+        // Both steps passed
         if sessionOk && usageOk {
             return (DiagnosticMessage.diagnosisCodexSuccess, [DiagnosticMessage.suggestionSuccess], .high)
         }
 
-        // session 通过，usage 被 Cloudflare 拦截
+        // session passed, usage blocked by Cloudflare
         if sessionOk && usageStep?.cloudflareChallenge == true {
             return (DiagnosticMessage.diagnosisCodexUsageCloudflare, [
                 DiagnosticMessage.suggestionCodexCheckChatGPTBrowser,
@@ -602,7 +602,7 @@ final class CodexDiagnosticRunner: DiagnosticRunner {
             ], .high)
         }
 
-        // session 通过，usage 401 — 区分 SSR 能否恢复
+        // session passed, usage returned 401: can SSR recover or not
         if sessionOk && !usageOk && usageStep?.errorType == .accessTokenExpired {
             if ssrOk {
                 return (DiagnosticMessage.diagnosisCodexAccessExpired, [
@@ -615,7 +615,7 @@ final class CodexDiagnosticRunner: DiagnosticRunner {
             }
         }
 
-        // session 被 Cloudflare 拦截
+        // session blocked by Cloudflare
         if sessionStep?.cloudflareChallenge == true {
             return (DiagnosticMessage.diagnosisCodexSessionCloudflare, [
                 DiagnosticMessage.suggestionCodexCheckChatGPTBrowser,
@@ -624,7 +624,7 @@ final class CodexDiagnosticRunner: DiagnosticRunner {
             ], .high)
         }
 
-        // session 401/403（token 失效）— SSR 能否恢复
+        // session 401/403 (dead token): can SSR recover or not
         if sessionStep?.errorType == .sessionTokenInvalid {
             if ssrOk {
                 return (DiagnosticMessage.diagnosisCodexSsrRecovered, [
@@ -638,7 +638,7 @@ final class CodexDiagnosticRunner: DiagnosticRunner {
             }
         }
 
-        // session 解析失败（usage 端点异常）
+        // session parsing failed (the usage endpoint misbehaved)
         if sessionOk && !usageOk {
             return (DiagnosticMessage.diagnosisCodexUsageFailed, [
                 DiagnosticMessage.suggestionRetryLater,
@@ -646,7 +646,7 @@ final class CodexDiagnosticRunner: DiagnosticRunner {
             ], .medium)
         }
 
-        // 网络错误
+        // Network error
         if sessionStep?.errorType == .networkError {
             return (DiagnosticMessage.diagnosisNetwork, [
                 DiagnosticMessage.suggestionCheckInternet,

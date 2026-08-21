@@ -8,9 +8,9 @@
 
 import Foundation
 
-/// 本地化字符串访问器
-/// 提供类型安全的本地化字符串访问方式
-/// 支持动态语言切换，根据用户设置返回对应语言的字符串
+/// Localized string accessors
+/// Type safe access to localized strings
+/// Supports switching languages at runtime, returning the string for the user's setting
 enum L {
     
     // MARK: - Menu Items
@@ -185,9 +185,9 @@ enum L {
     
     // MARK: - Update
     enum Update {
-        /// 通用“好”按钮，被诊断 / 设置等多处复用
+        /// Shared "OK" button, reused by the diagnostics and settings UI
         static var okButton: String { localized("update.ok_button") }
-        // 更新提示：菜单栏徽章 / 彩虹文字 / 弹窗横幅
+        // Update hints: menu bar badge / rainbow text / popover banner
         enum Notification {
             static var available: String { localized("update.notification.available") }
             static var badgeMenu: String { localized("update.notification.badge_menu") }
@@ -492,14 +492,14 @@ enum L {
         static var cloudflareBlocked: String { localized("weblogin.cloudflare_blocked") }
         static var privacyNotice: String { localized("weblogin.privacy_notice") }
 
-        // MARK: Claude OAuth 登录（系统浏览器）
+        // MARK: Claude OAuth login (system browser)
         static var claudeOAuthPortBusy: String { localized("weblogin.claude_oauth_port_busy") }
         static var claudeOAuthManualHint: String { localized("weblogin.claude_oauth_manual_hint") }
         static var claudeOAuthManualPrompt: String { localized("weblogin.claude_oauth_manual_prompt") }
         static var claudeOAuthManualSubmit: String { localized("weblogin.claude_oauth_manual_submit") }
         static var claudeOAuthManualInvalid: String { localized("weblogin.claude_oauth_manual_invalid") }
 
-        // MARK: Codex OAuth 登录（系统浏览器）
+        // MARK: Codex OAuth login (system browser)
         static var codexOAuthPreparing: String { localized("weblogin.codex_oauth_preparing") }
         static var codexOAuthWaitingBrowser: String { localized("weblogin.codex_oauth_waiting_browser") }
         static var codexOAuthWaitingHint: String { localized("weblogin.codex_oauth_waiting_hint") }
@@ -542,10 +542,10 @@ enum L {
 
     // MARK: - Helper Methods
     
-    /// 本地化字符串辅助方法
-    /// 根据用户设置的语言返回对应的本地化字符串
-    /// - Parameter key: 本地化字符串的键名
-    /// - Returns: 对应语言的本地化字符串
+    /// Localized string helpers
+    /// Returns the localized string for the language the user chose
+    /// - Parameter key: the localized string key
+    /// - Returns: the localized string in the selected language
     // MARK: - CLI Account Sync
     enum CLISync {
         static var title: String { localized("cli_sync.title") }
@@ -571,13 +571,13 @@ enum L {
     }
 
     private static func localized(_ key: String) -> String {
-        // 从UserSettings获取用户选择的语言
+        // Read the language the user selected from UserSettings
         let language = UserSettings.shared.language.rawValue
         
-        // 获取对应语言的bundle
+        // Get the bundle for that language
         guard let path = Bundle.main.path(forResource: language, ofType: "lproj"),
               let bundle = Bundle(path: path) else {
-            // 如果找不到对应语言，使用系统默认
+            // Fall back to the system default when that language is missing
             return NSLocalizedString(key, comment: "")
         }
         

@@ -2,8 +2,8 @@
 //  AuthSettingsView+CLIAccount.swift
 //  ClaudeUsage
 //
-//  "CLI Account" 卡片：把 Claude Code CLI 已登录的账号接过来，零粘贴登录。
-//  与手动 sessionKey / 浏览器 OAuth 并列，三者任一配好即可出数据。
+//  The "CLI Account" card: adopt the account Claude Code CLI already signed in, a zero paste login.
+//  It sits alongside the manual sessionKey and browser OAuth paths, and configuring any one of the three produces data.
 //
 
 import SwiftUI
@@ -28,7 +28,7 @@ extension AuthSettingsView {
 
                 cliActionRow
 
-                // 多 CLAUDE_CONFIG_DIR 才需要手动指定条目，单账户场景不打扰用户
+                // Only a machine with several CLAUDE_CONFIG_DIRs needs the entry picked by hand, so a single account setup is left alone
                 if cliSync.availableEntries.count > 1 {
                     Divider()
                     cliCredentialsSourceSection
@@ -38,7 +38,7 @@ extension AuthSettingsView {
         }
     }
 
-    // MARK: - 状态行
+    // MARK: - Status row
 
     private var cliStatusRow: some View {
         HStack(spacing: 8) {
@@ -79,11 +79,11 @@ extension AuthSettingsView {
         }
     }
 
-    // MARK: - 已同步账户详情
+    // MARK: - Synced account detail
 
     private func cliAccountDetails(credentials: ClaudeCodeCredentials) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            // 只展示打码后的 token：完整值永不显示、不复制、不写日志
+            // Only the masked token is shown: the full value is never displayed, copied or logged
             cliDetailRow(
                 icon: "key.fill",
                 iconColor: .red,
@@ -139,7 +139,7 @@ extension AuthSettingsView {
         }
     }
 
-    // MARK: - 操作按钮
+    // MARK: - Action buttons
 
     private var cliActionRow: some View {
         HStack(spacing: 8) {
@@ -180,7 +180,7 @@ extension AuthSettingsView {
         }
     }
 
-    // MARK: - 高级：凭据来源
+    // MARK: - Advanced: credential source
 
     private var cliCredentialsSourceSection: some View {
         VStack(alignment: .leading, spacing: 8) {
