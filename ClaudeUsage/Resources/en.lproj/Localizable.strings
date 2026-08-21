@@ -455,10 +455,14 @@
 /* MARK: - CLI Account Sync */
 "cli_sync.title" = "CLI Account";
 "cli_sync.hint" = "Uses the account Claude Code is already signed in to on this Mac. Nothing to paste, and the token stays in your keychain.";
-"cli_sync.status_synced" = "CLI Account Synced";
+"cli_sync.status_synced" = "Synced";
 "cli_sync.status_syncing" = "Syncing";
-"cli_sync.status_available" = "Claude Code found. Not synced yet";
-"cli_sync.status_unavailable" = "Claude Code credentials not found";
+"cli_sync.status_available" = "Not Synced";
+"cli_sync.status_unavailable" = "Not Found";
+"cli_sync.status_available_detail" = "Claude Code found on this Mac";
+"cli_sync.status_unavailable_detail" = "Sign in with the claude command, then try again";
+"cli_sync.status_failed" = "Sync Failed";
+"cli_sync.last_synced" = "Last synced %@ ago";
 "cli_sync.access_token" = "Access Token";
 "cli_sync.subscription" = "Subscription";
 "cli_sync.scopes" = "Scopes";

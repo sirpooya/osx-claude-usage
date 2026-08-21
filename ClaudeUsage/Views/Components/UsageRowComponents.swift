@@ -60,6 +60,9 @@ struct UsageLimitBar: View {
     let color: Color
     var isRefreshing: Bool = false
     var height: CGFloat = 5
+    /// Where the period itself has got to (0-1), drawn as a tick across the bar.
+    /// nil hides it: either the setting is off or this limit has no window to measure.
+    var markerFraction: CGFloat? = nil
 
     /// While refreshing, the whole bar breathes gently in place of the old ring's spinner
     @State private var isPulsing = false
@@ -77,6 +80,10 @@ struct UsageLimitBar: View {
                         .spring(response: 0.42, dampingFraction: 0.78, blendDuration: 0.05),
                         value: fraction
                     )
+
+                if let markerFraction {
+                    timeMarker(in: geometry.size.width, at: markerFraction)
+                }
             }
         }
         .frame(height: height)
@@ -89,6 +96,22 @@ struct UsageLimitBar: View {
     private func fillWidth(in totalWidth: CGFloat) -> CGFloat {
         guard fraction > 0 else { return 0 }
         return min(totalWidth, max(height, totalWidth * fraction))
+    }
+
+    /// The period tick. Drawn over both the fill and the track, in `labelColor` so it stays
+    /// legible against either: near-black over a light track, white over a dark one, and in both
+    /// cases readable on top of the saturated fill.
+    private func timeMarker(in totalWidth: CGFloat, at markerFraction: CGFloat) -> some View {
+        let markerWidth: CGFloat = 1.5
+        let clamped = min(max(markerFraction, 0), 1)
+        // Inset by half the tick so it sits fully inside the capsule at 0% and 100% instead of
+        // half-hanging off the rounded ends.
+        let centreX = markerWidth / 2 + (totalWidth - markerWidth) * clamped
+        return Capsule(style: .continuous)
+            .fill(Color(nsColor: .labelColor).opacity(0.55))
+            .frame(width: markerWidth, height: height)
+            .position(x: centreX, y: height / 2)
+            .animation(.easeInOut(duration: 0.25), value: clamped)
     }
 
     private func updatePulse(_ refreshing: Bool) {
@@ -122,6 +145,9 @@ struct UsageLimitBarRow: View {
     let percentage: Double?
     let color: Color
     var isRefreshing: Bool = false
+    /// How far through the period this limit is (0-1), or nil for no tick.
+    /// Already mirrored for the remaining-percentage mode by the caller.
+    var markerFraction: CGFloat? = nil
     /// Observed so flipping the remaining percentage setting re-renders open popover rows
     @ObservedObject private var settings = UserSettings.shared
     /// The trailing text (reset time or time left).
@@ -160,7 +186,8 @@ struct UsageLimitBarRow: View {
             UsageLimitBar(
                 fraction: UsagePercentDisplay.displayFraction(percentage ?? 0),
                 color: color,
-                isRefreshing: isRefreshing
+                isRefreshing: isRefreshing,
+                markerFraction: markerFraction
             )
         }
     }
@@ -195,8 +222,28 @@ struct UnifiedLimitRow: View {
             percentage: percentageValue,
             color: barColor,
             isRefreshing: isRefreshing,
+            markerFraction: markerFraction,
             trailing: { displayValue }
         )
+    }
+
+    /// Where to put the period tick, as a fraction of the bar.
+    ///
+    /// Mirrored to `1 - elapsed` in remaining-percentage mode, because the fill is mirrored too:
+    /// leaving it un-mirrored would put the tick on the opposite side of the fill from where the
+    /// comparison it exists to support actually lies.
+    ///
+    /// nil (no tick) when the setting is off, or the limit has no fixed window to measure
+    /// (the Extra Usage buckets), or there is no reset time to measure from.
+    private var markerFraction: CGFloat? {
+        guard settings.showTimeMarker,
+              let duration = UsagePaceCalculator.windowDuration(for: type),
+              let elapsed = UsagePaceCalculator.elapsedFraction(
+                  resetsAt: resetsAtValue,
+                  duration: duration
+              )
+        else { return nil }
+        return CGFloat(settings.showRemainingPercentage ? 1 - elapsed : elapsed)
     }
 
     // MARK: - Computed Properties

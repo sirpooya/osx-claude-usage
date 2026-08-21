@@ -646,6 +646,13 @@ enum L {
         static var statusSyncing: String { localized("cli_sync.status_syncing") }
         static var statusAvailable: String { localized("cli_sync.status_available") }
         static var statusUnavailable: String { localized("cli_sync.status_unavailable") }
+        static var statusAvailableDetail: String { localized("cli_sync.status_available_detail") }
+        static var statusUnavailableDetail: String { localized("cli_sync.status_unavailable_detail") }
+        static var statusFailed: String { localized("cli_sync.status_failed") }
+        /// "Last synced 3m ago". The elapsed string comes from ClaudeCodeSyncService.timeSinceSync
+        static func lastSynced(_ elapsed: String) -> String {
+            String(format: localized("cli_sync.last_synced"), elapsed)
+        }
         static var accessToken: String { localized("cli_sync.access_token") }
         static var subscription: String { localized("cli_sync.subscription") }
         static var scopes: String { localized("cli_sync.scopes") }

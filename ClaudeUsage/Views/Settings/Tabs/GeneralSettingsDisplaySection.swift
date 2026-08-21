@@ -135,6 +135,24 @@ struct GeneralSettingsDisplaySection: View {
                         .foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+
+                Divider()
+
+                // Time marker: a tick at how far through the period we are
+                VStack(alignment: .leading, spacing: 6) {
+                    Toggle(isOn: $settings.showTimeMarker) {
+                        Text(L.Display.showTimeMarker)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                    }
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+
+                    Text(L.Display.showTimeMarkerDesc)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
     }

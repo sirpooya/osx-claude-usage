@@ -47,13 +47,16 @@ struct CredentialStatusCard<Trailing: View>: View {
                 .fill(isConnected ? Color.green : Color.secondary.opacity(0.45))
                 .frame(width: 9, height: 9)
 
-            VStack(alignment: .leading, spacing: 1) {
+            // Medium, not semibold: the pane header right above is 17pt semibold, and two
+            // bold lines in a row read as two headings rather than a heading and its status.
+            VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 13, weight: .medium))
                 if let detail, !detail.isEmpty {
                     Text(detail)
                         .font(.system(size: 11))
                         .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
 

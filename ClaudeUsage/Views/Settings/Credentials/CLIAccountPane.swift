@@ -51,7 +51,7 @@ struct CLIAccountPane: View {
         CredentialStatusCard(
             isConnected: cliSync.isSynced,
             title: statusTitle,
-            detail: cliSync.isSynced ? cliSync.timeSinceSync : nil
+            detail: statusDetail
         ) {
             if case .syncing = cliSync.state {
                 ProgressView().controlSize(.small)
@@ -60,15 +60,26 @@ struct CLIAccountPane: View {
         .id(tick)
     }
 
+    /// The state alone, one or two words. The pane header above already says "CLI Account",
+    /// so repeating it here left two competing bold lines with nothing between them.
     private var statusTitle: String {
         switch cliSync.state {
         case .synced: return L.CLISync.statusSynced
         case .syncing: return L.CLISync.statusSyncing
-        case .failed(let message): return message
+        case .failed: return L.CLISync.statusFailed
         case .notSynced:
             if cliSync.isSynced { return L.CLISync.statusSynced }
             return cliSync.isAvailable ? L.CLISync.statusAvailable : L.CLISync.statusUnavailable
         }
+    }
+
+    /// The line under the title: what the state means, or how long ago the sync happened.
+    /// A bare "3m" was the whole second line before, which named nothing.
+    private var statusDetail: String? {
+        if case .failed(let message) = cliSync.state { return message }
+        if cliSync.isSynced { return cliSync.timeSinceSync.map(L.CLISync.lastSynced) }
+        if case .syncing = cliSync.state { return nil }
+        return cliSync.isAvailable ? L.CLISync.statusAvailableDetail : L.CLISync.statusUnavailableDetail
     }
 
     // MARK: - Synced details
