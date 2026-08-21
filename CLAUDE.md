@@ -472,6 +472,45 @@ comes from its own fill rather than the backdrop. Its setting is a single `Monoc
 subtitled "Use adaptive color instead of status colors (green/orange/red)". Full write-up in the
 `menubar-icon-theming` skill.
 
+### Per-display appearance (two monitors, opposite wallpapers)
+
+Each display's menu bar picks its own appearance from the wallpaper behind it, so a colour icon
+whose greys were resolved against one bar renders wrong on the other monitor. Template icons
+never had the problem (AppKit re-tints them per bar); `button.effectiveAppearance` is a single
+value, so probe-then-recolour can only ever match one display. Fixed 2026-08-21, verified live
+with one light and one dark bar showing dark and white digits simultaneously.
+
+What makes it fixable: the app itself hosts one `NSStatusBarWindow` per display (verified with
+lldb: 3 instances on this 2-display machine). The secondary ones carry the private
+`NSStatusItemReplicant`, and every one draws the icon separately with its own
+`effectiveAppearance`. Two fixes in `MenuBarPerDisplayIcon.swift`, applied together:
+
+- **Fix A (the real fix, public API).** `dynamicImage(size:render:)` wraps the renderer in
+  `NSImage(size:flipped:drawingHandler:)`. The handler runs once per bar draw (NSImage caches
+  per appearance since 10.14), reads `NSAppearance.currentDrawing()`, pins
+  `UsageColorScheme.drawingIsDarkOverride` and re-renders, so tonal parts resolve per display
+  while accent colours stay literal. In Swift the class property is `currentDrawing()`, not
+  `currentDrawingAppearance` (that spelling is an error twice over).
+- **Fix B (belt and braces).** `applyToReplicants(mainButton:render:)` walks the
+  `NSStatusBarWindow` instances in `NSApp.windows`, deep-searches each for its
+  `NSStatusBarButton`, skips the main one and assigns an image force-rendered for that window's
+  own appearance. Re-applied from KVO on each window's `effectiveAppearance` (deferred out of
+  the callback with `DispatchQueue.main.async`, because the pass rebuilds the very observation
+  that is firing), from `didChangeScreenParametersNotification` + 1s, and 1s after every icon
+  update, since replicant windows are created lazily. My first screenshot after launch caught
+  exactly that: an empty replicant that the delayed pass then populated.
+
+Wiring, in `MenuBarUI.updateMenuBarIcon`:
+- `UsageColorScheme.isDarkMode(for:)` gained Method 0: `drawingIsDarkOverride` wins over the
+  button probe. The shared render closure passes `button: nil` so the override is the only
+  appearance source, and captures `iconRenderer` rather than `self` (the closure is stored in
+  `lastReplicantRender`, capturing self would cycle).
+- A probe render decides template vs colour and fixes the wrapper's size up front (dynamic
+  images need their size at creation; geometry is appearance-independent, so one probe is safe).
+- The icon cache stores the dynamic wrapper, which re-resolves per appearance, so cached icons
+  stay correct across per-display appearance changes.
+- Template icons skip both fixes: wrapping a template would break AppKit's own tinting.
+
 ## Centring an NSWindow around SwiftUI
 
 `welcomeWindow.center()` does not work here and neither does `setContentSize` before it. A

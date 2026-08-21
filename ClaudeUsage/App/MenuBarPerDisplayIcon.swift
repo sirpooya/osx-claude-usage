@@ -36,7 +36,7 @@ enum MenuBarPerDisplayIcon {
     /// Only useful for color icons; template icons already adapt natively.
     static func dynamicImage(size: NSSize, render: @escaping (Bool) -> NSImage) -> NSImage {
         return NSImage(size: size, flipped: false) { rect in
-            let isDark = NSAppearance.currentDrawingAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            let isDark = NSAppearance.currentDrawing().bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
             UsageColorScheme.drawingIsDarkOverride = isDark
             defer { UsageColorScheme.drawingIsDarkOverride = nil }
             render(isDark).draw(in: rect)
