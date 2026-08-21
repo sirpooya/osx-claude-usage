@@ -62,114 +62,21 @@ struct CodexColumnView: View {
     // MARK: - Body
 
     var body: some View {
-        VStack(spacing: 15) {
-            // 圆环区域
-            ZStack {
-                if let primary = primaryRingData {
-                    let primaryColor = primaryRingColor(for: primary.percentage)
-                    let primaryRange = UsageRingDisplay.displayedTrimRange(
-                        usedPercentage: primary.percentage,
-                        showRemainingMode: showRemainingMode
-                    )
-
-                    // 背景圆环
-                    Circle()
-                        .stroke(Color.gray.opacity(0.2), lineWidth: 10)
-                        .frame(width: 100, height: 100)
-
-                    // 主进度条（刷新中显示加载动画）
-                    if isCodexRefreshing {
-                        codexLoadingAnimation()
-                    } else {
-                        Circle()
-                            .trim(from: primaryRange.from, to: primaryRange.to)
-                            .stroke(
-                                primaryColor,
-                                style: StrokeStyle(lineWidth: 10, lineCap: .round)
-                            )
-                            .frame(width: 100, height: 100)
-                            .rotationEffect(.degrees(-90))
-                            .animation(
-                                .spring(response: 0.42, dampingFraction: 0.78, blendDuration: 0.05),
-                                value: primaryRange
-                            )
-                    }
-
-                    // 外层细圆环（Secondary / 7天）
-                    if showSecondaryRing, let secondary = secondaryData {
-                        let secondaryRange = UsageRingDisplay.displayedTrimRange(
-                            usedPercentage: secondary.percentage,
-                            showRemainingMode: showRemainingMode
-                        )
-
-                        Circle()
-                            .stroke(Color.gray.opacity(0.15), lineWidth: 3)
-                            .frame(width: 114, height: 114)
-
-                        if isCodexRefreshing {
-                            codexOuterLoadingAnimation()
-                        } else {
-                            Circle()
-                                .trim(from: secondaryRange.from, to: secondaryRange.to)
-                                .stroke(
-                                    UsageColorScheme.codexSecondaryColorSwiftUI(secondary.percentage),
-                                    style: StrokeStyle(lineWidth: 3, lineCap: .round)
-                                )
-                                .frame(width: 114, height: 114)
-                                .rotationEffect(.degrees(-90))
-                                .animation(
-                                    .spring(response: 0.42, dampingFraction: 0.78, blendDuration: 0.05),
-                                    value: secondaryRange
-                                )
-                        }
-                    }
-
-                    if !isCodexRefreshing {
-                        DetailUsageRingSweep(
-                            trigger: remainingModeAnimationTrigger,
-                            diameter: 122,
-                            lineWidth: 3,
-                            color: primaryColor
-                        )
-                    }
-
-                    // 中心百分比
-                    DetailUsageRingCenterText(
-                        usedPercentage: primary.percentage,
-                        showRemainingMode: showRemainingMode
-                    )
-                }
+        // 每条限制一行整宽进度条，与 Claude 列同一套布局
+        VStack(spacing: 12) {
+            ForEach(activeCodexTypes, id: \.self) { type in
+                UnifiedLimitRow(
+                    type: type,
+                    codexData: codexUsageData,
+                    showRemainingMode: showRemainingMode,
+                    isRefreshing: isCodexRefreshing
+                )
             }
-            .frame(height: 114)
-            .contentShape(Circle())
-            .onTapGesture {
-                if refreshState.canRefresh && !refreshState.isRefreshing {
-                    onRefresh?()
-                }
-            }
-            .onLongPressGesture(minimumDuration: 3.0) {
-                let allTypes = UsageDetailView.LoadingAnimationType.allCases
-                let currentIndex = allTypes.firstIndex(of: animationType) ?? 0
-                animationType = allTypes[(currentIndex + 1) % allTypes.count]
-
-                onAnimationHint?(animationType.name)
-            }
-
-            // 限制行
-            VStack(spacing: 5) {
-                ForEach(activeCodexTypes, id: \.self) { type in
-                    UnifiedLimitRow(
-                        type: type,
-                        codexData: codexUsageData,
-                        showRemainingMode: showRemainingMode
-                    )
-                }
-            }
-            .contentShape(Rectangle())
-            .onTapGesture {
-                onToggleRemainingMode?()
-            }
-            .padding(.horizontal, 14)
+        }
+        .padding(.horizontal, 16)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            onToggleRemainingMode?()
         }
     }
 

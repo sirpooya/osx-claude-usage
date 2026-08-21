@@ -68,22 +68,14 @@ struct SetupStepView: View {
 
     // MARK: - Sections
 
-    /// App 图标。
-    /// 注意：Assets 里的 AppIcon 是 appiconset，actool 只把它当图标编译，
-    /// 不会生成同名图片资源，所以 NSImage(named: "AppIcon") 取不到（返回 nil）。
-    /// 这里退回去读 Bundle 自身的图标，拿到的就是 Finder 里显示的那一张。
+    /// App 图标。AppIcon 的兜底逻辑收敛在 ImageHelper.namedImage 里。
     @ViewBuilder
     private var appMark: some View {
-        Image(nsImage: appIconImage)
-            .resizable()
-            .frame(width: 72, height: 72)
-    }
-
-    private var appIconImage: NSImage {
-        if let packed = ImageHelper.createAppIcon(size: 72) { return packed }
-        let icon = NSWorkspace.shared.icon(forFile: Bundle.main.bundlePath)
-        icon.size = NSSize(width: 72, height: 72)
-        return icon
+        if let icon = ImageHelper.createAppIcon(size: 72) {
+            Image(nsImage: icon)
+                .resizable()
+                .frame(width: 72, height: 72)
+        }
     }
 
     /// 浏览器登录按钮（唯一入口，占满整行）

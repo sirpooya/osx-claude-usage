@@ -8,6 +8,27 @@
 
 import SwiftUI
 
+/// Popover 的固定排版尺寸。高度要手算，因为 body 上挂了显式 frame
+/// （NSHostingController 的 preferredContentSize 只跟随这个 frame）。
+private enum PopoverMetrics {
+    /// 一行限制的高度：标题行 15 + 间距 5 + 进度条 5，再留 1 的余量
+    static let rowHeight: CGFloat = 26
+    /// 限制行之间的间距
+    static let rowSpacing: CGFloat = 12
+    /// 限制列表左右边距
+    static let horizontalPadding: CGFloat = 16
+    /// 标题栏上方留白 + 标题行 + 底部留白
+    static let chromeHeight: CGFloat = 18 + 20 + 20
+    /// 空状态（未登录 / 出错 / 加载中）用固定高度：图标 + 文案 + 按钮比进度条列表高
+    static let stateHeight: CGFloat = 210
+
+    /// n 行限制占的高度
+    static func rowsHeight(_ rowCount: Int) -> CGFloat {
+        guard rowCount > 0 else { return 0 }
+        return CGFloat(rowCount) * rowHeight + CGFloat(rowCount - 1) * rowSpacing
+    }
+}
+
 /// 用量详情视图
 /// 显示 Claude 的当前使用情况，包括百分比进度条、倒计时和重置时间
 struct UsageDetailView: View {
@@ -109,62 +130,60 @@ struct UsageDetailView: View {
             .filter { $0.provider == .codex }
     }
 
-    /// 根据活动类型数量计算动态高度（单 Provider 模式）
+    /// Claude 列实际渲染的限制行数（含超出前两个槽位的模型行）
+    private func claudeRowCount(for data: UsageData?) -> Int {
+        guard let data else { return 2 }
+        let types = UserSettings.shared.getActiveDisplayTypes(usageData: data)
+            .filter { $0.provider == .claude }
+        var count = types.count
+        // 智能模式会把第三个及以后的模型也补成行，高度得算上，否则会被裁掉
+        if UserSettings.shared.displayMode == .smart {
+            count += max(0, data.weeklyModels.count - 2)
+        }
+        return max(count, 1)
+    }
+
+    /// Codex 列实际渲染的限制行数
+    private func codexRowCount(for codex: CodexUsageData?) -> Int {
+        guard let codex else { return 2 }
+        let types = UserSettings.shared.getActiveDisplayTypes(usageData: nil, codexUsageData: codex)
+            .filter { $0.provider == .codex }
+        return max(types.count, 1)
+    }
+
+    /// 单 Provider（Claude）模式高度
     private var dynamicHeight: CGFloat {
-        let activeCount = activeDisplayTypes.count
-
-        // 统一使用动态计算，确保底部边距一致
-        // 基础高度：圆环、标题、上下边距等固定内容的总高度
-        // 每行实际高度：文字(12pt) + vertical padding(12pt) + 背景高度 ≈ 26pt
-        // 行间距：5pt
-        let baseHeight: CGFloat = 190
-        let rowHeight: CGFloat = 26
-        let spacing: CGFloat = 5
-
-        // 单限制固定显示2行，双限制和3+限制显示对应行数
-        let rowCount = activeCount == 1 ? 2 : activeCount
-        let textHeight = CGFloat(rowCount) * rowHeight + CGFloat(max(0, rowCount - 1)) * spacing
-
-        return baseHeight + textHeight
+        if errorMessage != nil || usageData == nil {
+            return PopoverMetrics.stateHeight
+        }
+        return PopoverMetrics.chromeHeight
+            + contentSpacing
+            + PopoverMetrics.rowsHeight(claudeRowCount(for: usageData))
     }
 
-    /// Codex-only 模式的动态高度
+    /// Codex-only 模式高度
     private var codexOnlyHeight: CGFloat {
-        let activeCount = activeCodexDisplayTypes.count
-        let baseHeight: CGFloat = 190
-        let rowHeight: CGFloat = 26
-        let spacing: CGFloat = 5
-        let rowCount = activeCount == 1 ? 2 : max(activeCount, codexUsageData == nil ? 0 : 1)
-        let textHeight = CGFloat(rowCount) * rowHeight + CGFloat(max(0, rowCount - 1)) * spacing
-
-        return baseHeight + textHeight
+        if codexUsageData == nil {
+            return PopoverMetrics.stateHeight
+        }
+        return PopoverMetrics.chromeHeight
+            + contentSpacing
+            + PopoverMetrics.rowsHeight(codexRowCount(for: codexUsageData))
     }
 
-    /// 双 Provider 模式的动态高度（取两列最大行数）
+    /// 双 Provider 模式高度（取两列的较高者）
     private var multiProviderHeight: CGFloat {
-        let claudeRowCount: Int
-        if let data = usageData {
-            let types = UserSettings.shared.getActiveDisplayTypes(usageData: data)
-                .filter { $0.provider == .claude }
-            claudeRowCount = types.count == 1 ? 2 : max(types.count, 1)
-        } else {
-            claudeRowCount = 2
-        }
+        let claudeHeight: CGFloat = (errorMessage != nil || usageData == nil)
+            ? PopoverMetrics.stateHeight
+            : PopoverMetrics.chromeHeight + contentSpacing
+                + PopoverMetrics.rowsHeight(claudeRowCount(for: usageData))
 
-        let codexRowCount: Int
-        if let codex = codexUsageData {
-            let types = UserSettings.shared.getActiveDisplayTypes(usageData: nil, codexUsageData: codex)
-                .filter { $0.provider == .codex }
-            codexRowCount = max(types.count, 1)
-        } else {
-            codexRowCount = 2
-        }
+        let codexHeight: CGFloat = codexUsageData == nil
+            ? PopoverMetrics.stateHeight
+            : PopoverMetrics.chromeHeight + contentSpacing
+                + PopoverMetrics.rowsHeight(codexRowCount(for: codexUsageData))
 
-        let maxRows = max(claudeRowCount, codexRowCount)
-        let rowHeight: CGFloat = 26
-        let spacing: CGFloat = 5
-        let rowsHeight = CGFloat(maxRows) * rowHeight + CGFloat(max(0, maxRows - 1)) * spacing
-        return 190 + rowsHeight
+        return max(claudeHeight, codexHeight)
     }
 
     private var contentSpacing: CGFloat {
@@ -253,171 +272,37 @@ struct UsageDetailView: View {
                 errorState(error)
             }
         } else if let data = usageData {
-            // 使用数据
-            VStack(spacing: 15) {
-                // 圆形进度条
-                ZStack {
-                    let primaryLimitData = getPrimaryLimitData(data: data, activeTypes: activeDisplayTypes)
-
-                    if let primary = primaryLimitData {
-                        let primaryRingColor = colorForPrimaryByActiveTypes(data: data, activeTypes: activeDisplayTypes)
-                        let primaryRingRange = UsageRingDisplay.displayedTrimRange(
-                            usedPercentage: primary.percentage,
-                            showRemainingMode: showRemainingMode
-                        )
-
-                        Circle()
-                            .stroke(Color.gray.opacity(0.2), lineWidth: 10)
-                            .frame(width: 100, height: 100)
-
-                        if isClaudeRefreshing {
-                            loadingAnimation()
-                        } else {
-                            Circle()
-                                .trim(from: primaryRingRange.from, to: primaryRingRange.to)
-                                .stroke(
-                                    primaryRingColor,
-                                    style: StrokeStyle(lineWidth: 10, lineCap: .round)
-                                )
-                                .frame(width: 100, height: 100)
-                                .rotationEffect(.degrees(-90))
-                                .animation(
-                                    .spring(response: 0.42, dampingFraction: 0.78, blendDuration: 0.05),
-                                    value: primaryRingRange
-                                )
-                        }
-
-                        if activeDisplayTypes.contains(.fiveHour) &&
-                           activeDisplayTypes.contains(.sevenDay) {
-                            let sevenDayPercentage = data.sevenDay?.percentage ?? (UserSettings.shared.shouldShowCustomPlaceholderInPopover ? 0 : nil)
-
-                            if let percentage = sevenDayPercentage {
-                                let outerRingRange = UsageRingDisplay.displayedTrimRange(
-                                    usedPercentage: percentage,
-                                    showRemainingMode: showRemainingMode
-                                )
-
-                                Circle()
-                                    .stroke(Color.gray.opacity(0.15), lineWidth: 3)
-                                    .frame(width: 114, height: 114)
-
-                                if isClaudeRefreshing {
-                                    outerLoadingAnimation()
-                                } else {
-                                    Circle()
-                                        .trim(from: outerRingRange.from, to: outerRingRange.to)
-                                        .stroke(
-                                            colorForSevenDay(percentage),
-                                            style: StrokeStyle(lineWidth: 3, lineCap: .round)
-                                        )
-                                        .frame(width: 114, height: 114)
-                                        .rotationEffect(.degrees(-90))
-                                        .animation(
-                                            .spring(response: 0.42, dampingFraction: 0.78, blendDuration: 0.05),
-                                            value: outerRingRange
-                                        )
-                                }
-                            }
-                        }
-
-                        if !isClaudeRefreshing {
-                            DetailUsageRingSweep(
-                                trigger: remainingModeAnimationTrigger,
-                                diameter: 122,
-                                lineWidth: 3,
-                                color: primaryRingColor
-                            )
-                        }
-
-                        DetailUsageRingCenterText(
-                            usedPercentage: primary.percentage,
-                            showRemainingMode: showRemainingMode
+            // 使用数据：每条限制一行整宽进度条。点一下在「重置时间 / 剩余时间」间切换
+            VStack(spacing: PopoverMetrics.rowSpacing) {
+                ForEach(activeDisplayTypes, id: \.self) { type in
+                    UnifiedLimitRow(
+                        type: type,
+                        data: data,
+                        showRemainingMode: showRemainingMode,
+                        isRefreshing: isClaudeRefreshing
+                    )
+                }
+                // 前两个模型走上面的 opus / sonnet 槽位；第三个及以后的模型
+                // （如同时出现 Fable + Opus + Sonnet）在此按 Claude API 顺序补齐，
+                // 配色在两个槽位之间轮换，标签用 API 返回的模型名。
+                // 仅智能模式展开全部；自定义模式尊重用户勾选的固定槽位。
+                if UserSettings.shared.displayMode == .smart {
+                    let overflow = Array(data.weeklyModels.enumerated()).dropFirst(2)
+                    ForEach(overflow, id: \.offset) { entry in
+                        UnifiedLimitRow(
+                            type: entry.offset % 2 == 0 ? .opusWeekly : .sonnetWeekly,
+                            data: data,
+                            showRemainingMode: showRemainingMode,
+                            isRefreshing: isClaudeRefreshing,
+                            weeklyModelOverride: entry.element
                         )
                     }
                 }
-                .frame(height: 114)
-                .contentShape(Circle())
-                .onTapGesture {
-                    if refreshState.canRefresh && !refreshState.isRefreshing {
-                        onMenuAction?(.refreshClaude)
-                    }
-                }
-                .onLongPressGesture(minimumDuration: 3.0) {
-                    let allTypes = LoadingAnimationType.allCases
-                    let currentIndex = allTypes.firstIndex(of: claudeAnimationType) ?? 0
-                    let nextIndex = (currentIndex + 1) % allTypes.count
-                    claudeAnimationType = allTypes[nextIndex]
-
-                    showAnimationHint(claudeAnimationType.name, provider: .claude)
-                }
-
-                VStack(spacing: 8) {
-                    let activeTypes = activeDisplayTypes
-
-                    if activeTypes.count >= 2 {
-                        VStack(spacing: 5) {
-                            ForEach(activeTypes, id: \.self) { type in
-                                UnifiedLimitRow(
-                                    type: type,
-                                    data: data,
-                                    showRemainingMode: showRemainingMode
-                                )
-                            }
-                            // 前两个模型走上面的 opus / sonnet 槽位；第三个及以后的模型
-                            // （如同时出现 Fable + Opus + Sonnet）在此按 Claude API 顺序补齐，
-                            // 形状在圆角方 / 斜切方之间轮换，标签用 API 返回的模型名。
-                            // 仅智能模式展开全部；自定义模式尊重用户勾选的固定槽位。
-                            if UserSettings.shared.displayMode == .smart {
-                                let overflow = Array(data.weeklyModels.enumerated()).dropFirst(2)
-                                ForEach(overflow, id: \.offset) { entry in
-                                    UnifiedLimitRow(
-                                        type: entry.offset % 2 == 0 ? .opusWeekly : .sonnetWeekly,
-                                        data: data,
-                                        showRemainingMode: showRemainingMode,
-                                        weeklyModelOverride: entry.element
-                                    )
-                                }
-                            }
-                        }
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            toggleRemainingMode()
-                        }
-                    } else if activeTypes.count == 1 {
-                        let singleType = activeTypes.first!
-
-                        if singleType == .fiveHour, let fiveHour = data.fiveHour {
-                            VStack(spacing: 5) {
-                                InfoRow(
-                                    icon: "clock.fill",
-                                    title: L.Usage.fiveHourLimit,
-                                    value: fiveHour.formattedResetsInHours
-                                )
-                                InfoRow(
-                                    icon: "arrow.clockwise",
-                                    title: L.Usage.resetTime,
-                                    value: fiveHour.formattedResetTimeShort
-                                )
-                            }
-                        } else if singleType == .sevenDay, let sevenDay = data.sevenDay {
-                            VStack(spacing: 5) {
-                                InfoRow(
-                                    icon: "calendar",
-                                    title: L.Usage.sevenDayLimit,
-                                    value: sevenDay.formattedResetsInDays,
-                                    tintColor: .purple
-                                )
-                                InfoRow(
-                                    icon: "calendar.badge.clock",
-                                    title: L.Usage.resetDate,
-                                    value: sevenDay.formattedResetDateLong,
-                                    tintColor: .purple
-                                )
-                            }
-                        }
-                    }
-                }
-                .padding(.horizontal, 14)
+            }
+            .padding(.horizontal, PopoverMetrics.horizontalPadding)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                toggleRemainingMode()
             }
         } else {
             // 加载中

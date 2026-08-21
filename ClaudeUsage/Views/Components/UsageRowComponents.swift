@@ -194,6 +194,106 @@ struct ProviderDivider: View {
     }
 }
 
+// MARK: - Usage Limit Bar
+
+/// 单条限制的横向进度条。整宽铺满，用胶囊形状，替代原来的大圆环。
+struct UsageLimitBar: View {
+    let fraction: CGFloat
+    let color: Color
+    var isRefreshing: Bool = false
+    var height: CGFloat = 5
+
+    /// 刷新中让整条轻微呼吸，代替原圆环的旋转加载动画
+    @State private var isPulsing = false
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                Capsule(style: .continuous)
+                    .fill(Color.primary.opacity(0.10))
+
+                Capsule(style: .continuous)
+                    .fill(color)
+                    .frame(width: fillWidth(in: geometry.size.width))
+                    .animation(
+                        .spring(response: 0.42, dampingFraction: 0.78, blendDuration: 0.05),
+                        value: fraction
+                    )
+            }
+        }
+        .frame(height: height)
+        .opacity(isRefreshing && isPulsing ? 0.4 : 1)
+        .onAppear { updatePulse(isRefreshing) }
+        .onChange(of: isRefreshing) { newValue in updatePulse(newValue) }
+    }
+
+    /// 填充宽度。百分比极小时也要留一个圆点的宽度，否则用户看不出有没有用量
+    private func fillWidth(in totalWidth: CGFloat) -> CGFloat {
+        guard fraction > 0 else { return 0 }
+        return min(totalWidth, max(height, totalWidth * fraction))
+    }
+
+    private func updatePulse(_ refreshing: Bool) {
+        if refreshing {
+            withAnimation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) {
+                isPulsing = true
+            }
+        } else {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                isPulsing = false
+            }
+        }
+    }
+}
+
+// MARK: - Usage Limit Bar Row
+
+/// 一行限制：左上标题，右上「百分比 · 重置时间」，下方整宽进度条
+struct UsageLimitBarRow: View {
+    let title: String
+    let percentage: Double?
+    let color: Color
+    var isRefreshing: Bool = false
+    /// 右侧尾部文案（重置时间或剩余时间）。
+    /// 用闭包而不是快照值，好让 TimelineView 每分钟自己重算一次，
+    /// 不必依赖外层每秒 objectWillChange 重建整个 popover。
+    let trailing: () -> String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(title)
+                    .font(.system(size: 12, weight: .medium))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+
+                Spacer(minLength: 8)
+
+                // TimelineView 让这行文字自己按分钟粒度刷新（精度只到分钟，60s 足够）
+                TimelineView(.periodic(from: .now, by: 60)) { _ in
+                    Text(trailingText)
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                }
+            }
+
+            UsageLimitBar(
+                fraction: UsageRingDisplay.usedFraction(percentage ?? 0),
+                color: color,
+                isRefreshing: isRefreshing
+            )
+        }
+    }
+
+    private var trailingText: String {
+        let value = trailing()
+        guard let percentage else { return value }
+        return "\(Int(UsageRingDisplay.clampedPercentage(percentage)))% · \(value)"
+    }
+}
+
 // MARK: - Unified Limit Row Component
 
 /// 统一的限制行组件（支持所有 Claude 和 Codex 限制类型）
@@ -202,45 +302,21 @@ struct UnifiedLimitRow: View {
     var data: UsageData? = nil
     var codexData: CodexUsageData? = nil
     let showRemainingMode: Bool
+    /// 该 Provider 正在刷新，进度条呼吸提示
+    var isRefreshing: Bool = false
     /// 溢出模型行覆盖：提供时，行的百分比/标签/重置时间直接取自这个模型条目，
-    /// `type` 仅用于决定外观（圆角方/斜切方形状与配色的槽位）。用于 popover 展示
-    /// 超出前两个槽位的第三个及以后的模型（如同时出现 Fable / Opus / Sonnet）。
+    /// `type` 仅用于决定配色槽位。用于 popover 展示超出前两个槽位的第三个
+    /// 及以后的模型（如同时出现 Fable / Opus / Sonnet）。
     var weeklyModelOverride: UsageData.WeeklyModelLimit? = nil
 
     var body: some View {
-        HStack(spacing: 8) {
-            // 图标（含百分比数字和进度弧）
-            MiniProgressIcon(type: type, color: iconColor, percentage: percentageValue ?? 0)
-
-            // 限制类型名称
-            Text(limitName)
-                .font(.system(size: 12))
-                .foregroundColor(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.9)
-
-            Spacer(minLength: 8)
-
-            // 右侧：重置时间或剩余额度
-            // TimelineView 让这行文字自己按分钟粒度刷新，不再依赖外层每秒 objectWillChange
-            // 触发整个 popover 重建（displayValue 精度只到分钟，60s 间隔足够）
-            TimelineView(.periodic(from: .now, by: 60)) { _ in
-                Text(displayValue)
-                    .font(.system(size: 12))
-                    .fontWeight(.medium)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.9)
-                    .id(showRemainingMode ? "remaining" : "reset")  // 强制识别为不同视图
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .top).combined(with: .opacity),
-                        removal: .move(edge: .bottom).combined(with: .opacity)
-                    ))
-            }
-        }
-        .padding(.vertical, 2)
-        .padding(.horizontal, 12)
-        .background(Color.gray.opacity(0.1))
-        .cornerRadius(8)
+        UsageLimitBarRow(
+            title: limitName,
+            percentage: percentageValue,
+            color: barColor,
+            isRefreshing: isRefreshing,
+            trailing: { displayValue }
+        )
     }
 
     // MARK: - Computed Properties
@@ -262,6 +338,30 @@ struct UnifiedLimitRow: View {
             return data?.sonnetModelName ?? L.DetailRow.sonnetWeekly
         case .extraUsage, .codexExtraUsage:
             return L.DetailRow.extraUsage
+        }
+    }
+
+    /// 进度条颜色。沿用各限制类型自己的配色，并跟随百分比升级到警告色，
+    /// 所以颜色既标明是哪条限制，也标明离触顶还有多远。
+    private var barColor: Color {
+        let percentage = percentageValue ?? 0
+        switch type {
+        case .fiveHour:
+            return UsageColorScheme.fiveHourColorSwiftUI(percentage, opacity: 1.0)
+        case .sevenDay:
+            return UsageColorScheme.sevenDayColorSwiftUI(percentage, opacity: 1.0)
+        case .opusWeekly:
+            return Color(nsColor: UsageColorScheme.opusWeeklyColor(percentage))
+        case .sonnetWeekly:
+            return Color(nsColor: UsageColorScheme.sonnetWeeklyColor(percentage))
+        case .extraUsage:
+            return Color(nsColor: UsageColorScheme.extraUsageColor(percentage))
+        case .codexPrimary:
+            return UsageColorScheme.codexPrimaryColorSwiftUI(percentage, opacity: 1.0)
+        case .codexSecondary:
+            return UsageColorScheme.codexSecondaryColorSwiftUI(percentage, opacity: 1.0)
+        case .codexExtraUsage:
+            return UsageColorScheme.codexExtraUsageColorSwiftUI(percentage, opacity: 1.0)
         }
     }
 

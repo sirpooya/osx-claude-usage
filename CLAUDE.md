@@ -195,13 +195,43 @@ files are compiled automatically with no `project.pbxproj` editing.
 What has been changed from upstream so far:
 
 - Renamed everything to `ClaudeUsage`, bundle id `com.claudeusage.ClaudeUsage`. This also
-  rewrote upstream's GitHub and Sparkle appcast URLs, which now point nowhere real. Fix those
-  before shipping any update.
+  rewrote upstream's GitHub and Sparkle appcast URLs. The GitHub ones are now repointed at
+  `f-is-h/Usage4Claude` (11 references across 7 locale files, `DiagnosticReport.swift`,
+  `AboutView.swift`; verified HTTP 200 including every localized `#initial-setup` anchor).
+  **The Sparkle appcast URL is still dead. Fix it before shipping any update.** Note the doc
+  links now point at upstream's README, which documents Usage4Claude, not this fork.
 - Replaced both icon assets with our own artwork. See "App icon".
-- Removed the first onboarding page. The flow now opens straight on the setup page. Skip moved
-  onto that page, because it only existed on the deleted page and without it a user with no
-  session key could not dismiss onboarding at all.
+- Onboarding is now a single window with one path: sign in with a claude.ai account.
+  - Removed upstream's first page, then the manual Session Key field, the Display Options
+    block (theme, display content, smart/custom limits), the Skip button and the Finish bar.
+    Display settings live in Settings; nothing here needs a "later" escape hatch.
+  - Window is titled **Login** (new `window.login_title` key), 300x400, and shows app icon,
+    app name, tagline and a note under the button (`welcome.tagline`, `welcome.sign_in_note`).
+  - The CTA is brand-coloured via `UsageColorScheme.brand` (#D97757, display-p3, same value as
+    the icon artwork).
+  - `ClaudeOAuthCoordinator` already calls `addAccount` before its callback, so `WelcomeView`
+    no longer re-fetches organizations. That removed the org-fetch spinner and error row.
+  - With no Finish button, `willCloseNotification` sets `isFirstLaunch = false`, otherwise
+    closing the window would reopen it on every launch.
+- Fixed the welcome window not opening centred. See "Centring an NSWindow around SwiftUI".
+- Default menu bar theme is now `.monochrome` (was `.colorTranslucent`), in `UserSettings`.
+- Fixed colour-mode menu bar icons. See "Menu bar icon colour modes".
+- Fixed `NSImage(named: "AppIcon")` always returning nil. See "App icon".
+- Reworked the popover's no-credentials and error states, in `UsageDetailView`:
+  - Upstream branched on `error.contains("Authentication") || error.contains("configured")`,
+    but the actual string is "Please **configure** authentication information in settings
+    first", so both tests failed and the Go to Settings button was suppressed.
+  - Worse, both buttons called `onMenuAction?(.authSettings)` while one was labelled "Run
+    Diagnostic". The same duplicated pair existed in the Codex block. Real diagnostics live in
+    Settings > Auth > Help (`DiagnosticsView`), not here.
+  - Now keyed off `UserSettings.shared.hasValidCredentials`, not string sniffing. Signed-out is
+    an empty state (`usage.sign_in_prompt`) with one button that opens the login window and
+    then refreshes; genuine errors get Refresh plus Go to Settings. Error text uses
+    `fixedSize` so it wraps instead of truncating to "...information in...".
 - Translated all hardcoded Chinese in UI strings and the 148 logger messages to English.
+  New keys added by this fork are written in all 7 locales, not English-only.
+- Dead code left behind by the above: `MenuBarIconPreview` and `HorizontalRadioGroup` in
+  `WelcomeSupportingViews.swift` now have no callers.
 
 Deliberately **not** translated, because doing so breaks non-English locales:
 
@@ -209,14 +239,72 @@ Deliberately **not** translated, because doing so breaks non-English locales:
   (`"M月d日"`, `"H时"`, `"H時"`, `"M월d일"`). These are format strings, not copy.
 - The zh/ja/ko AM/PM marker list used for parsing in `TimeFormatHelper.swift`.
 - Localized documentation URL anchors in `SetupStepView.swift` (`#首次配置` and friends).
-- `error.contains("认证")` in `UsageDetailView.swift`, which classifies error strings when the
-  app runs in Chinese.
+- ~~`error.contains("认证")` in `UsageDetailView.swift`~~ removed. Classifying by error string
+  was the bug described above; the popover now checks `hasValidCredentials` instead.
 - `zh-Hans.lproj` / `zh-Hant.lproj`, and the language endonyms (`日本語`, `中文（简体）`) that
   every locale file carries. Those are correct as they are.
 
 Still upstream's, still Chinese: roughly 2,360 lines of code comments and doc comments across
 89 Swift files. Not user visible. Also `scripts/build.sh` and parts of `README.md`, `CHANGELOG.md`,
 `docs/`, and `website/`.
+
+## Menu bar icon colour modes
+
+Two modes, and one rule that explains every bug here:
+
+| Mode | Flag | What AppKit does |
+|---|---|---|
+| Monochrome | `image.isTemplate = true` | **Discards RGB, keeps alpha.** AppKit re-tints to match the bar. |
+| Colour | `isTemplate = false` | **Every colour is literal.** You own all contrast. |
+
+Upstream drew both modes with the same hardcoded colours, so monochrome looked correct by
+accident while colour mode rendered the literal values: a black glyph (the unreadable dark "0"
+on a dark bar), a `gray 0.5` track ring (the stray grey border) and a `white 0.5` backing disc
+(the milky wash). Monochrome was not working, it was hiding the bug.
+
+- `UsageColorScheme.menuBarForeground(for:)` / `menuBarTrack(for:)` resolve white on a dark bar
+  and near-black on a light one. Use them for every glyph, track and disc in colour mode.
+- Probe appearance from `button.effectiveAppearance.bestMatch(from:)`, never `NSApp`. The bar
+  goes dark under a dark desktop picture even in light mode. `UsageColorScheme.isDarkMode(for:)`
+  already does this; pass the `NSStatusBarButton` through.
+- Dynamic colours (`labelColor`, `secondaryLabelColor`) resolve against whatever appearance is
+  current inside `lockFocus()`, which is the app's, not the bar's. Resolve explicitly instead.
+- The same glyph bug existed four times: `MenuBarIconRenderer.createCircleImage` plus the
+  rounded-square, diamond and hexagon shapes in `ShapeIconRenderer`. Each adapted its stroke
+  correctly and then drew its number in `NSColor.black`.
+- `createCircleTemplateImage` still draws black on purpose. It is a template, so only alpha
+  survives. Do not "fix" it.
+
+The competing app (`HamedElfayome.Claude-Usage`, MIT) sidesteps the problem differently: it
+fills the shape with the saturated status colour and knocks the glyph out in white, so contrast
+comes from its own fill rather than the backdrop. Its setting is a single `Monochrome` toggle
+subtitled "Use adaptive color instead of status colors (green/orange/red)". Full write-up in the
+`menubar-icon-theming` skill.
+
+## Centring an NSWindow around SwiftUI
+
+`welcomeWindow.center()` does not work here and neither does `setContentSize` before it. A
+SwiftUI fixed `.frame` reaches the window through Auto Layout **after** the creating method
+returns, so `center()` runs against the pre-layout intrinsic size (518x664 for this view), then
+the window shrinks to its real size from the top-left and keeps the wrong origin. The result
+was 146pt too high.
+
+Things that did **not** fix it: `setContentSize` then `center()`, `hostingController.sizingOptions = []`,
+and `contentView?.layoutSubtreeIfNeeded()` before `center()`.
+
+What works is skipping `center()` and setting size and position in one `setFrame`, computed from
+a size known up front:
+
+- `WelcomeView.contentSize` is the single source of truth, used by both the view's `.frame` and
+  the window. If those two disagree the centring is wrong again.
+- `frameRect(forContentRect:)` converts content size to frame size (title bar included).
+- Centre horizontally on `screen.frame` for true optical centre, vertically on
+  `screen.visibleFrame` so the menu bar does not bias it upward.
+
+Beware when verifying: with a right-hand Dock, centring a 518pt-wide window on the full screen
+and centring a 460pt-wide one in `visibleFrame` land within 2pt of each other, so three
+different wrong fixes all produced byte-identical coordinates. Measure with
+`CGWindowListCopyWindowInfo` and compare against `(screen.width - window.width) / 2`.
 
 ## Conventions
 
@@ -252,10 +340,20 @@ Two distinct assets, and both have to be updated or the logo changes in half the
    - The `.icon` lives inside the `ClaudeUsage/` folder because the Xcode target uses a
      `PBXFileSystemSynchronizedRootGroup`, so anything dropped there is compiled automatically.
 
-2. **`ClaudeUsage/Resources/Assets.xcassets/AppIcon.appiconset`** is the *in-app* logo, loaded
-   at runtime by `ImageHelper.createAppIcon` via `NSImage(named: "AppIcon")`. It appears in the
-   onboarding header, About, account rows, and the colour menu bar theme. Changing only the
-   `.icon` leaves this one stale, which is exactly the bug that shipped once already.
+2. **`ClaudeUsage/Resources/Assets.xcassets/AppIcon.appiconset`** is the *in-app* logo. It
+   appears in the login window, the popover header, About, account rows, and the colour menu
+   bar theme. Changing only the `.icon` leaves this one stale, which is exactly the bug that
+   shipped once already.
+   - **`NSImage(named: "AppIcon")` always returns nil.** An `.appiconset` is compiled as icon
+     data, never as a named image, so every call site silently fell back to a placeholder: a
+     blue `chart.pie.fill` in the popover header, a plain circle for the colour menu bar theme,
+     and nothing at all in the login window. Verified with
+     `assetutil --info .../Assets.car`, which lists `AppIconReverse`, `CodexIcon` and
+     `CodexIconReverse` but no `AppIcon`.
+   - `ImageHelper.namedImage(_:)` is the single fallback: it tries `NSImage(named:)` first, then
+     `NSWorkspace.shared.icon(forFile: Bundle.main.bundlePath)` for the `AppIcon` name only.
+     `createAppIcon` and `createSquareIcon` both route through it, so do not reintroduce a bare
+     `NSImage(named: "AppIcon")`.
    - Regenerate it from the composed system icon rather than from the raw SVG, so it matches the
      real app icon including Apple's squircle and material. Install the app, then extract with
      `NSWorkspace.shared.icon(forFile:)` drawn into a 1024 `NSBitmapImageRep`, and `sips -Z` that
