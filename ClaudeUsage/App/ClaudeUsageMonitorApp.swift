@@ -117,8 +117,55 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             .store(in: &cancellables)
     }
     
+    // MARK: - Diagnostics
+
+    /// 内存压力源。必须持有强引用，否则会被立刻释放而收不到任何事件。
+    private var memoryPressureSource: DispatchSourceMemoryPressure?
+
+    /// 判定并记录上一次运行的结局。
+    ///
+    /// 三种结局对应三种完全不同的排查方向，所以要分开说：
+    /// - crashed：应用自己的 bug，看 backtrace
+    /// - killed：外部原因（内存压力 / 强制退出 / 注销），应用代码可能无辜
+    /// - clean：正常退出，不用查
+    private func reportPreviousSessionOutcome() {
+        let outcome = SessionSentinel.shared.begin()
+
+        switch outcome {
+        case .firstRun, .clean:
+            logInfo("Session start. \(outcome.summary)")
+        case .crashed(let report):
+            // error 级别会同步落盘，这条一定要留住
+            logError("ABNORMAL EXIT. \(outcome.summary)")
+            for frame in report.frames.prefix(24) {
+                logError("  frame: \(frame)")
+            }
+        case .killed:
+            logError("ABNORMAL EXIT. \(outcome.summary)")
+            logError("  No crash report means the process did not crash. Check Console.app for jetsam, and Control Center for a blocked status item.")
+        }
+    }
+
+    /// 记录内存压力事件。
+    /// killed 判定加上一条 critical 压力记录，基本就能确认是 jetsam。
+    private func observeMemoryPressure() {
+        let source = DispatchSource.makeMemoryPressureSource(
+            eventMask: [.warning, .critical],
+            queue: .main
+        )
+        source.setEventHandler {
+            let footprint = SessionSentinel.residentFootprint() / (1024 * 1024)
+            let event = source.data.contains(.critical) ? "critical" : "warning"
+            Task { @MainActor in
+                logError("Memory pressure \(event). Footprint \(footprint) MB. A kill may follow.")
+            }
+        }
+        source.activate()
+        memoryPressureSource = source
+    }
+
     // MARK: - Private Methods
-    
+
     /// 显示欢迎窗口
     /// 在首次启动或未配置认证信息时调用
     private func showWelcomeWindow() {
@@ -169,10 +216,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// 清理定时器和窗口资源
     /// 注意：Combine 订阅会在 cancellables 被释放时自动清理
     func applicationWillTerminate(_ notification: Notification) {
+        // 标记为正常退出。少了这一步，下次启动会把这次当成被杀，
+        // 于是每次退出都变成一条假的异常记录。
+        logInfo("Session ending cleanly.")
+        SessionSentinel.shared.markCleanExit()
+
+        memoryPressureSource?.cancel()
+        memoryPressureSource = nil
+
         menuBarManager?.cleanup()
         welcomeWindow?.close()
         welcomeWindow = nil
         cancellables.removeAll()
+
+        // 最后再刷一次盘，保证尾部日志不留在队列里
+        DiagnosticLogger.shared.flush()
     }
 }
 
