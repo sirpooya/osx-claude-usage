@@ -47,26 +47,6 @@ struct UsageDetailView: View {
     /// 是否应显示更新徽章（用户未确认时才显示徽章）
     @Binding var shouldShowUpdateBadge: Bool
 
-    /// 加载动画效果类型
-    enum LoadingAnimationType: Int, CaseIterable {
-        case rainbow = 0   // 彩虹渐变旋转
-        case dashed = 1    // 虚线旋转
-        case pulse = 2     // 脉冲效果
-
-        var name: String {
-            switch self {
-            case .rainbow: return L.LoadingAnimation.rainbow
-            case .dashed: return L.LoadingAnimation.dashed
-            case .pulse: return L.LoadingAnimation.pulse
-            }
-        }
-    }
-
-    // Claude 列加载动画类型（可长按圆环切换）
-    @State var claudeAnimationType: LoadingAnimationType = .rainbow
-    // Codex 列加载动画类型（独立）
-    @State var codexAnimationType: LoadingAnimationType = .rainbow
-
     /// 菜单操作类型
     enum MenuAction {
         case generalSettings
@@ -87,17 +67,11 @@ struct UsageDetailView: View {
     // 用于动画的状态（改为从外部传入，避免每次重建视图时重置）
     @State var rotationAngle: Double = 0
     @State var animationTimer: Timer?
-    // 显示动画类型切换提示
-    @State private var showAnimationTypeHint = false
-    @State private var animationTypeHintName = ""
-    @State private var animationTypeHintProvider: ProviderType?
-    @State private var animationTypeHintDismissWorkItem: DispatchWorkItem?
     // 显示更新通知
     @State private var showUpdateNotification = false
     // 显示模式切换（false: 重置时间, true: 剩余时间）
     @AppStorage("showRemainingMode") private var savedRemainingMode = false
     @State private var showRemainingMode = UserDefaults.standard.bool(forKey: "showRemainingMode")
-    @State private var remainingModeAnimationTrigger = 0
     
     // MARK: - Body
 
@@ -498,11 +472,6 @@ struct UsageDetailView: View {
                 codexUsageData: codex,
                 showRemainingMode: $showRemainingMode,
                 refreshState: refreshState,
-                animationType: $codexAnimationType,
-                rotationAngle: $rotationAngle,
-                remainingModeAnimationTrigger: remainingModeAnimationTrigger,
-                onRefresh: { onMenuAction?(.refreshCodex) },
-                onAnimationHint: { showAnimationHint($0, provider: .codex) },
                 onToggleRemainingMode: toggleRemainingMode
             )
         } else if let error = codexErrorMessage {
@@ -552,13 +521,8 @@ struct UsageDetailView: View {
 
     private var singleProviderBody: some View {
         VStack(spacing: contentSpacing) {
-            VStack(spacing: contentSpacing) {
-                headerView(provider: .claude, showsControls: true)
-                claudeMainContent
-            }
-            .offset(y: isAnimationHintVisible(for: .claude) ? -18 : 0)
-
-            animationHintView(for: .claude)
+            headerView(provider: .claude, showsControls: true)
+            claudeMainContent
             updateNotificationView
             Spacer()
         }
@@ -566,13 +530,8 @@ struct UsageDetailView: View {
 
     private func codexOnlyBody(codex: CodexUsageData?) -> some View {
         VStack(spacing: contentSpacing) {
-            VStack(spacing: contentSpacing) {
-                headerView(provider: .codex, showsControls: true)
-                codexOnlyMainContent(codex: codex)
-            }
-            .offset(y: isAnimationHintVisible(for: .codex) ? -18 : 0)
-
-            animationHintView(for: .codex)
+            headerView(provider: .codex, showsControls: true)
+            codexOnlyMainContent(codex: codex)
             updateNotificationView
             Spacer()
         }
@@ -582,30 +541,14 @@ struct UsageDetailView: View {
         VStack(spacing: contentSpacing) {
             HStack(alignment: .top, spacing: 0) {
                 VStack(spacing: contentSpacing) {
-                    ZStack(alignment: .bottom) {
-                        VStack(spacing: contentSpacing) {
-                            headerView(provider: .claude, showsControls: false)
-                            claudeMainContent
-                        }
-                        .offset(y: isAnimationHintVisible(for: .claude) ? -18 : 0)
-                    }
-                    .overlay(alignment: .bottom) {
-                        animationHintOverlay(for: .claude)
-                    }
+                    headerView(provider: .claude, showsControls: false)
+                    claudeMainContent
                 }
                 .frame(width: 290, alignment: .top)
 
                 VStack(spacing: contentSpacing) {
-                    ZStack(alignment: .bottom) {
-                        VStack(spacing: contentSpacing) {
-                            headerView(provider: .codex, showsControls: true)
-                            codexOnlyMainContent(codex: codex)
-                        }
-                        .offset(y: isAnimationHintVisible(for: .codex) ? -18 : 0)
-                    }
-                    .overlay(alignment: .bottom) {
-                        animationHintOverlay(for: .codex)
-                    }
+                    headerView(provider: .codex, showsControls: true)
+                    codexOnlyMainContent(codex: codex)
                 }
                 .frame(width: 290, alignment: .top)
             }
@@ -617,34 +560,6 @@ struct UsageDetailView: View {
             updateNotificationView
             Spacer()
         }
-    }
-
-    private func isAnimationHintVisible(for provider: ProviderType) -> Bool {
-        showAnimationTypeHint && animationTypeHintProvider == provider
-    }
-
-    @ViewBuilder
-    private func animationHintView(for provider: ProviderType) -> some View {
-        if isAnimationHintVisible(for: provider) {
-            animationHintContent
-                .transition(.opacity.combined(with: .scale))
-        }
-    }
-
-    @ViewBuilder
-    private func animationHintOverlay(for provider: ProviderType) -> some View {
-        if isAnimationHintVisible(for: provider) {
-            animationHintContent
-                .offset(y: contentSpacing + 2)
-                .transition(.opacity.combined(with: .scale))
-        }
-    }
-
-    private var animationHintContent: some View {
-        AnimationTypeHintView(animationTypeName: animationTypeHintName)
-            .padding(.top, -8)
-            .padding(.bottom, 6)
-            .allowsHitTesting(false)
     }
 
     var body: some View {
@@ -660,7 +575,6 @@ struct UsageDetailView: View {
         .frame(width: contentWidth, height: contentHeight)
         .animation(.easeInOut(duration: 0.25), value: isMultiProviderActive)
         .animation(.easeInOut(duration: 0.25), value: isCodexOnlyActive)
-        .animation(.easeInOut(duration: 0.25), value: showAnimationTypeHint)
         .id(localization.updateTrigger)  // 语言变化时重新创建视图
         .onAppear {
             var transaction = Transaction(animation: nil)
@@ -707,10 +621,8 @@ struct UsageDetailView: View {
             }
         }
         .onDisappear {
-            // 视图消失时清理定时器和重置状态
+            // 视图消失时清理定时器
             stopRotationAnimation()
-            animationTypeHintDismissWorkItem?.cancel()
-            animationTypeHintProvider = nil
         }
         #if DEBUG
         .background(
@@ -719,29 +631,9 @@ struct UsageDetailView: View {
         #endif
     }
 
-    private func showAnimationHint(_ animationTypeName: String, provider: ProviderType) {
-        animationTypeHintDismissWorkItem?.cancel()
-        animationTypeHintName = animationTypeName
-        animationTypeHintProvider = provider
-
-        withAnimation(.easeInOut(duration: 0.25)) {
-            showAnimationTypeHint = true
-        }
-
-        let dismissWorkItem = DispatchWorkItem {
-            withAnimation(.easeInOut(duration: 0.25)) {
-                showAnimationTypeHint = false
-                animationTypeHintProvider = nil
-            }
-        }
-        animationTypeHintDismissWorkItem = dismissWorkItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: dismissWorkItem)
-    }
-
     private func toggleRemainingMode() {
         withAnimation(.spring(response: 0.42, dampingFraction: 0.78, blendDuration: 0.05)) {
             showRemainingMode.toggle()
-            remainingModeAnimationTrigger += 1
         }
         savedRemainingMode = showRemainingMode
     }

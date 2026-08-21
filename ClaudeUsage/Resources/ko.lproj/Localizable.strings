@@ -441,3 +441,25 @@
 "weblogin.claude_oauth_manual_prompt" = "브라우저 주소창의 링크를 여기에 붙여넣으세요 (http://localhost 로 시작)";
 "weblogin.claude_oauth_manual_submit" = "이 링크로 로그인";
 "weblogin.claude_oauth_manual_invalid" = "인증 코드를 찾을 수 없습니다. 브라우저 주소창의 전체 링크를 복사한 후 다시 시도하세요.";
+
+/* MARK: - CLI Account Sync */
+"cli_sync.title" = "CLI Account";
+"cli_sync.hint" = "Uses the account Claude Code is already signed in to on this Mac. Nothing to paste, and the token stays in your keychain.";
+"cli_sync.status_synced" = "CLI Account Synced";
+"cli_sync.status_syncing" = "Syncing";
+"cli_sync.status_available" = "Claude Code found. Not synced yet";
+"cli_sync.status_unavailable" = "Claude Code credentials not found";
+"cli_sync.access_token" = "Access Token";
+"cli_sync.subscription" = "Subscription";
+"cli_sync.scopes" = "Scopes";
+"cli_sync.resync" = "Re-sync";
+"cli_sync.remove" = "Remove";
+"cli_sync.sync_now" = "Sync from Claude Code";
+"cli_sync.refresh" = "Refresh";
+"cli_sync.advanced_title" = "Credentials source";
+"cli_sync.keychain_entry" = "Keychain entry";
+"cli_sync.automatic" = "Automatic (default behavior)";
+"cli_sync.advanced_hint" = "Leave this on Automatic unless you use several CLAUDE_CONFIG_DIRs and want to pin one of them.";
+"cli_sync.error_no_credentials" = "Could not read Claude Code credentials. Sign in with the claude command, then try again.";
+"cli_sync.error_no_refresh_token" = "The Claude Code keychain entry has no refresh token. Sign in with the claude command again.";
+"cli_sync.default_account_name" = "Claude Code";

@@ -15,6 +15,8 @@ import SwiftUI
 /// 使用卡片式布局，用于管理多账户
 struct AuthSettingsView: View {
     @ObservedObject var settings = UserSettings.shared
+    /// CLI 账户同步服务（单例，卡片实现见 AuthSettingsView+CLIAccount.swift）
+    @ObservedObject var cliSync = ClaudeCodeSyncService.shared
     @State var isAddingAccount = false
     @State var newSessionKey = ""
     @State var newAlias = ""
@@ -56,6 +58,9 @@ struct AuthSettingsView: View {
 
                     // 账户列表视图
                     accountListView
+
+                    // CLI 账户同步（Claude Code 已登录的账号，零粘贴）
+                    cliAccountCard
 
                     // 当前 Claude 账户详情
                     if let currentAccount = settings.currentAccount {

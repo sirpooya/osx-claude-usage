@@ -2,8 +2,22 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!--
+	  App Sandbox is OFF, deliberately.
+
+	  CLI Account Sync reads the OAuth token that Claude Code itself stores in the
+	  login keychain (service "Claude Code-credentials"). Inside the sandbox a
+	  process can only reach keychain items in its own access group, so that read
+	  fails with errSecItemNotFound no matter what else is granted. Turning the
+	  sandbox off is the price of zero-setup login, and it is what every other
+	  tracker that syncs the CLI account does too.
+
+	  Consequence: no Mac App Store distribution. Shipping is Homebrew cask plus
+	  Sparkle, so nothing is lost. The app still makes no network calls beyond
+	  api.anthropic.com and claude.ai, and never writes the token anywhere.
+	-->
 	<key>com.apple.security.app-sandbox</key>
-	<true/>
+	<false/>
 	<key>com.apple.security.network.client</key>
 	<true/>
 	<!--

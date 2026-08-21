@@ -70,6 +70,7 @@ enum ClaudeOAuthService {
         var request = URLRequest(url: url)
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         request.setValue(ClaudeOAuthConfig.betaHeader, forHTTPHeaderField: "anthropic-beta")
+        request.setValue(ClaudeOAuthConfig.userAgent, forHTTPHeaderField: "User-Agent")
         session.dataTask(with: request) { data, _, _ in
             guard let data = data,
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],

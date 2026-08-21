@@ -33,6 +33,10 @@ enum ClaudeOAuthConfig {
     static let profileURL = "https://api.anthropic.com/api/oauth/profile"
     /// OAuth 接口要求的 beta 头
     static let betaHeader = "oauth-2025-04-20"
+    /// OAuth 用量/账户接口要求的 User-Agent。
+    /// 这个头是硬性要求，不是礼貌性标识：缺了它，即便 access_token 完全有效，
+    /// 端点也会立刻返回持续的 429 rate_limit_error（见 anthropics/claude-code#31021）。
+    static let userAgent = "claude-cli/2.0.0 (external, cli)"
 
     // MARK: - 本地回调（优先）/ 手动粘贴（fallback）
 

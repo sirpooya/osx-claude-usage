@@ -452,6 +452,12 @@ class ClaudeAPIService {
     ///   仿照 Codex 侧 `DataRefreshManager.fetchCodexOnly(retryOnUnauthorized:)` 的既有模式，
     ///   避免用户在下一个刷新周期到来前一直看到错误状态。
     private func fetchOAuthUsage(retryOnUnauthorized: Bool = true, completion: @escaping (Result<UsageData, Error>) -> Void) {
+        // CLI 同步账户走单独一条路：token 的主人是 Claude Code，不是我们
+        if settings.currentAccount?.credentialSource.isCLISynced == true {
+            fetchCLISyncedUsage(retryOnUnauthorized: retryOnUnauthorized, completion: completion)
+            return
+        }
+
         let refreshToken = settings.sessionKey
         fetchOAuthAccessToken(refreshToken: refreshToken) { [weak self] result in
             guard let self else { return }
@@ -460,6 +466,88 @@ class ClaudeAPIService {
                 DispatchQueue.main.async { completion(.failure(error)) }
             case .success(let accessToken):
                 self.fetchClaudeOAuthUsageData(accessToken: accessToken, retryOnUnauthorized: retryOnUnauthorized, completion: completion)
+            }
+        }
+    }
+
+    // MARK: - CLI Account Sync
+
+    /// CLI 同步账户专用取数路径。
+    ///
+    /// 与浏览器 OAuth 账户的关键差别：refresh_token 的所有者是 Claude Code CLI，
+    /// 服务端换发时旧值立即失效。所以这里的顺序是
+    ///   1. 每次都重读钥匙串（CLI 可能已经在我们背后换过 token 了）
+    ///   2. access_token 还没过期就直接用，一次网络请求都不多花，也不打扰 CLI
+    ///   3. 真过期了才自己刷新，并把轮换后的新值**写回钥匙串**，
+    ///      否则用户的 Claude Code 会在下次刷新时被登出
+    private func fetchCLISyncedUsage(retryOnUnauthorized: Bool, completion: @escaping (Result<UsageData, Error>) -> Void) {
+        let preferredService = settings.currentAccount?.keychainService
+
+        // 钥匙串读取可能触发系统授权框，不能占着主线程
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else { return }
+            guard let credentials = ClaudeCodeSyncService.currentCredentials(preferredService: preferredService) else {
+                Logger.api.error("CLI sync: keychain credentials are no longer readable")
+                DispatchQueue.main.async { completion(.failure(UsageError.noCredentials)) }
+                return
+            }
+
+            // access_token 仍在有效期内：直接用，不碰 refresh_token
+            if credentials.isAccessTokenUsable {
+                self.fetchClaudeOAuthUsageData(
+                    accessToken: credentials.accessToken,
+                    retryOnUnauthorized: retryOnUnauthorized,
+                    completion: completion
+                )
+                return
+            }
+
+            self.refreshCLISyncedToken(credentials: credentials) { result in
+                switch result {
+                case .failure(let error):
+                    DispatchQueue.main.async { completion(.failure(error)) }
+                case .success(let accessToken):
+                    self.fetchClaudeOAuthUsageData(
+                        accessToken: accessToken,
+                        retryOnUnauthorized: retryOnUnauthorized,
+                        completion: completion
+                    )
+                }
+            }
+        }
+    }
+
+    /// 用钥匙串里的 refresh_token 换新 access_token，并把轮换结果写回钥匙串条目。
+    /// 写回失败不阻断本次取数（我们手里的新 token 本轮仍然可用），但会记一条日志：
+    /// 那意味着 CLI 那边握着的已是失效值，下次同步要重新对齐。
+    private func refreshCLISyncedToken(
+        credentials: ClaudeCodeCredentials,
+        completion: @escaping (Result<String, Error>) -> Void
+    ) {
+        guard !credentials.refreshToken.isEmpty else {
+            completion(.failure(UsageError.unauthorized))
+            return
+        }
+
+        ClaudeOAuthService.refresh(refreshToken: credentials.refreshToken) { result in
+            switch result {
+            case .failure(let error):
+                Logger.api.error("CLI sync: token refresh failed \(error.localizedDescription)")
+                completion(.failure(error))
+            case .success(let tokens):
+                let rotated = tokens.refreshToken.isEmpty ? credentials.refreshToken : tokens.refreshToken
+                ClaudeCodeKeychain.writeBack(
+                    accessToken: tokens.accessToken,
+                    refreshToken: rotated,
+                    expiresAt: tokens.expiresAt,
+                    to: credentials
+                )
+                if rotated != credentials.refreshToken {
+                    DispatchQueue.main.async {
+                        UserSettings.shared.silentlyUpdateCurrentClaudeSessionToken(rotated)
+                    }
+                }
+                completion(.success(tokens.accessToken))
             }
         }
     }
@@ -521,6 +609,10 @@ class ClaudeAPIService {
         var request = URLRequest(url: url)
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         request.setValue(ClaudeOAuthConfig.betaHeader, forHTTPHeaderField: "anthropic-beta")
+        // User-Agent 是这个端点的硬性要求：缺了它即使 token 有效也会被立刻打成
+        // 持续 429 rate_limit_error（anthropics/claude-code#31021 踩的就是这个坑）
+        request.setValue(ClaudeOAuthConfig.userAgent, forHTTPHeaderField: "User-Agent")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.cachePolicy = .reloadIgnoringLocalCacheData
 
         session.dataTask(with: request) { [weak self] data, response, error in

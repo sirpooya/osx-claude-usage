@@ -441,3 +441,25 @@
 "weblogin.claude_oauth_manual_prompt" = "Paste the link from your browser's address bar (starts with http://localhost)";
 "weblogin.claude_oauth_manual_submit" = "Sign in with this link";
 "weblogin.claude_oauth_manual_invalid" = "No authorization code found. Copy the full link from your browser's address bar and try again.";
+
+/* MARK: - CLI Account Sync */
+"cli_sync.title" = "CLI Account";
+"cli_sync.hint" = "Uses the account Claude Code is already signed in to on this Mac. Nothing to paste, and the token stays in your keychain.";
+"cli_sync.status_synced" = "CLI Account Synced";
+"cli_sync.status_syncing" = "Syncing";
+"cli_sync.status_available" = "Claude Code found. Not synced yet";
+"cli_sync.status_unavailable" = "Claude Code credentials not found";
+"cli_sync.access_token" = "Access Token";
+"cli_sync.subscription" = "Subscription";
+"cli_sync.scopes" = "Scopes";
+"cli_sync.resync" = "Re-sync";
+"cli_sync.remove" = "Remove";
+"cli_sync.sync_now" = "Sync from Claude Code";
+"cli_sync.refresh" = "Refresh";
+"cli_sync.advanced_title" = "Credentials source";
+"cli_sync.keychain_entry" = "Keychain entry";
+"cli_sync.automatic" = "Automatic (default behavior)";
+"cli_sync.advanced_hint" = "Leave this on Automatic unless you use several CLAUDE_CONFIG_DIRs and want to pin one of them.";
+"cli_sync.error_no_credentials" = "Could not read Claude Code credentials. Sign in with the claude command, then try again.";
+"cli_sync.error_no_refresh_token" = "The Claude Code keychain entry has no refresh token. Sign in with the claude command again.";
+"cli_sync.default_account_name" = "Claude Code";

@@ -545,6 +545,30 @@ enum L {
     /// 根据用户设置的语言返回对应的本地化字符串
     /// - Parameter key: 本地化字符串的键名
     /// - Returns: 对应语言的本地化字符串
+    // MARK: - CLI Account Sync
+    enum CLISync {
+        static var title: String { localized("cli_sync.title") }
+        static var hint: String { localized("cli_sync.hint") }
+        static var statusSynced: String { localized("cli_sync.status_synced") }
+        static var statusSyncing: String { localized("cli_sync.status_syncing") }
+        static var statusAvailable: String { localized("cli_sync.status_available") }
+        static var statusUnavailable: String { localized("cli_sync.status_unavailable") }
+        static var accessToken: String { localized("cli_sync.access_token") }
+        static var subscription: String { localized("cli_sync.subscription") }
+        static var scopes: String { localized("cli_sync.scopes") }
+        static var resync: String { localized("cli_sync.resync") }
+        static var remove: String { localized("cli_sync.remove") }
+        static var syncNow: String { localized("cli_sync.sync_now") }
+        static var refresh: String { localized("cli_sync.refresh") }
+        static var advancedTitle: String { localized("cli_sync.advanced_title") }
+        static var keychainEntry: String { localized("cli_sync.keychain_entry") }
+        static var automatic: String { localized("cli_sync.automatic") }
+        static var advancedHint: String { localized("cli_sync.advanced_hint") }
+        static var errorNoCredentials: String { localized("cli_sync.error_no_credentials") }
+        static var errorNoRefreshToken: String { localized("cli_sync.error_no_refresh_token") }
+        static var defaultAccountName: String { localized("cli_sync.default_account_name") }
+    }
+
     private static func localized(_ key: String) -> String {
         // 从UserSettings获取用户选择的语言
         let language = UserSettings.shared.language.rawValue

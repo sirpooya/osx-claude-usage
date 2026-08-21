@@ -97,10 +97,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         menuBarManager = MenuBarManager()
 
-        if settings.isFirstLaunch || !settings.hasAnyValidCredentials {
-            showWelcomeWindow()
-        } else {
-            menuBarManager.startRefreshing()
+        // 登录窗口之前先试着接管 Claude Code CLI 已登录的账号。
+        // 钥匙串里已经有可用凭据时，用户一个窗口都不用看见（也不用粘任何 key）。
+        Task { @MainActor in
+            let syncedFromCLI = await ClaudeCodeSyncService.shared.syncOnLaunchIfNeeded()
+            if syncedFromCLI {
+                // 已经拿到可用账户，首次启动引导就没有存在的意义了
+                self.settings.isFirstLaunch = false
+                logInfo("CLI account synced from the Claude Code keychain. Skipping the welcome window")
+            }
+
+            if self.settings.isFirstLaunch || !self.settings.hasAnyValidCredentials {
+                self.showWelcomeWindow()
+            } else {
+                self.menuBarManager.startRefreshing()
+            }
         }
 
         // 使用 Combine 订阅通知，自动管理生命周期

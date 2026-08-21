@@ -17,6 +17,8 @@ import SwiftUI
 struct SetupStepView: View {
     /// 登录成功后的回调。账户已由 ClaudeOAuthCoordinator 写入设置，这里只负责收尾。
     let onSignedIn: () -> Void
+    /// 进入手动填 Session Key 的第二页
+    let onManualEntry: () -> Void
 
     /// 标题取 App 自身的名字，改名后不用再同步文案
     private var appName: String {
@@ -50,6 +52,10 @@ struct SetupStepView: View {
             Spacer(minLength: 20)
 
             browserSignIn
+
+            Spacer().frame(height: 10)
+
+            manualEntryButton
 
             Spacer().frame(height: 12)
 
@@ -91,5 +97,16 @@ struct SetupStepView: View {
         .buttonStyle(.borderedProminent)
         .controlSize(.large)
         .tint(UsageColorScheme.brand)
+    }
+
+    /// 次要入口：进阶用户手动粘贴 Session Key，内容在第二页
+    private var manualEntryButton: some View {
+        Button(action: onManualEntry) {
+            Text(L.Welcome.manualSessionKey)
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.large)
+        .tint(.black)
     }
 }
