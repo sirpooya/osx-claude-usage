@@ -105,6 +105,7 @@
 "settings.about.license_value" = "Licence MIT";
 "settings.about.github" = "Visiter le dépôt GitHub";
 "settings.about.coffee" = "Offrir un café";
+"settings.about.report_issue" = "Signaler un problème";
 "settings.about.github_sponsor" = "Sponsor GitHub";
 "settings.about.copyright" = "© 2026 Pooya Kamel";
 

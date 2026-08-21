@@ -443,7 +443,8 @@ What has been changed from upstream so far:
   (fits fr "Authentification" at 11pt) so the pills line up evenly.
 - **About tab rebuilt in the osx-launchpad layout** (icon 104pt, 22pt semibold name, version
   pill, grouped rounded cards of 36pt rows, tertiary copyright): an info card (Developer,
-  License) and a links card (GitHub, Buy Me A Coffee) with fully tappable rows, accent arrow,
+  License) and a links card (GitHub, Report Issue, Buy Me A Coffee; `settings.about.report_issue`
+  is a new key, translated in all 7 locales, opening the repo's /issues) with fully tappable rows, accent arrow,
   hover underline and pointing-hand cursor. Content column capped at 420pt inside the 720pt
   window. The card/row/divider/pill pieces are private to `AboutView.swift` and copy launchpad's
   `SettingsComponents` metrics (radius 12 continuous, labelColor 0.05 fill, hairline 0.06,
@@ -559,6 +560,18 @@ Everything lives in `MenuBarPerDisplayIcon.swift` plus the colour path of
 - Colour icons bypass the icon cache (wrapper creation is free, rendering is lazy per draw);
   only template icons are cached. Template mode needs none of this, AppKit tints and dims
   templates per bar natively.
+
+Dim status as of 2026-08-21 night: colours per display are solid and verified in both focus
+directions. The dim is solid on the bar hosting the real item; on the replicant bar it only
+takes effect when macOS re-snapshots the item, because a replicant's bitmap refreshes ONLY at
+item (re)creation. Verified immune to: image reassignment, length nudges,
+contentView.setNeedsDisplay, pixel-changing beacons, 28s waits. Current levers: the dim
+decision is anchored on the main window only (replicant windows lie: zero frames, nil screens
+mid-lifecycle, a phantom third per-Space window), and `refreshDimIfNeeded` blips
+`statusItem.isVisible` off/on (public API, rate-limited to one per 5s) on focus-display change
+to force a re-snapshot. OPEN ISSUE: the launch-time snapshot of the secondary bar still
+sometimes renders undimmed; if the blip proves insufficient, the next lever is blipping at
+first-data rather than only on flips.
 
 Hard-won negative knowledge. Do not retry these:
 

@@ -18,6 +18,17 @@ enum UsagePercentDisplay {
     static func usedFraction(_ usedPercentage: Double) -> CGFloat {
         CGFloat(clampedPercentage(usedPercentage) / 100.0)
     }
+
+    /// The percentage to show and to fill with: used, or remaining when battery style display is on.
+    /// Status colors deliberately stay keyed off the used percentage, so escalation still means "close to the limit".
+    static func displayPercentage(_ usedPercentage: Double) -> Double {
+        let clamped = clampedPercentage(usedPercentage)
+        return UserSettings.shared.showRemainingPercentage ? 100 - clamped : clamped
+    }
+
+    static func displayFraction(_ usedPercentage: Double) -> CGFloat {
+        CGFloat(displayPercentage(usedPercentage) / 100.0)
+    }
 }
 
 // MARK: - Provider Divider
@@ -101,6 +112,8 @@ struct UsageLimitBarRow: View {
     let percentage: Double?
     let color: Color
     var isRefreshing: Bool = false
+    /// Observed so flipping the remaining percentage setting re-renders open popover rows
+    @ObservedObject private var settings = UserSettings.shared
     /// The trailing text (reset time or time left).
     /// A closure rather than a snapshot value, so TimelineView can recompute it once a minute itself
     /// instead of relying on the outer objectWillChange rebuilding the whole popover every second.
@@ -127,7 +140,7 @@ struct UsageLimitBarRow: View {
             }
 
             UsageLimitBar(
-                fraction: UsagePercentDisplay.usedFraction(percentage ?? 0),
+                fraction: UsagePercentDisplay.displayFraction(percentage ?? 0),
                 color: color,
                 isRefreshing: isRefreshing
             )
@@ -137,7 +150,7 @@ struct UsageLimitBarRow: View {
     private var trailingText: String {
         let value = trailing()
         guard let percentage else { return value }
-        return "\(Int(UsagePercentDisplay.clampedPercentage(percentage)))% · \(value)"
+        return "\(Int(UsagePercentDisplay.displayPercentage(percentage)))% · \(value)"
     }
 }
 

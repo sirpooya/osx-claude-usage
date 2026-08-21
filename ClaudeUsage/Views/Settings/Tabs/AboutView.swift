@@ -20,6 +20,7 @@ struct AboutView: View {
 
     private enum Links {
         static let github = URL(string: "https://github.com/sirpooya/osx-claude-usage")!
+        static let issues = URL(string: "https://github.com/sirpooya/osx-claude-usage/issues")!
         static let coffee = URL(string: "https://ko-fi.com/pooya")!
     }
 
@@ -57,6 +58,8 @@ struct AboutView: View {
                 // Links card
                 AboutCard {
                     AboutLinkRow(title: L.SettingsAbout.github, url: Links.github)
+                    AboutCardDivider()
+                    AboutLinkRow(title: L.SettingsAbout.reportIssue, url: Links.issues)
                     AboutCardDivider()
                     AboutLinkRow(title: L.SettingsAbout.coffee, url: Links.coffee)
                 }

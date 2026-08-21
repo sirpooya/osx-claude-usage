@@ -105,6 +105,7 @@
 "settings.about.license_value" = "MIT License";
 "settings.about.github" = "访问 GitHub 仓库";
 "settings.about.coffee" = "Buy Me A Coffee";
+"settings.about.report_issue" = "报告问题";
 "settings.about.github_sponsor" = "GitHub Sponsor";
 "settings.about.copyright" = "© 2026 Pooya Kamel";
 

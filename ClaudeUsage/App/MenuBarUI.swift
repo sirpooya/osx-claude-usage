@@ -72,6 +72,11 @@ class MenuBarUI {
         setupStatusItem()
         setupPopover()
 
+        // The per-display dim decision anchors on the real item's window
+        MenuBarPerDisplayIcon.mainWindowProvider = { [weak statusItem] in
+            statusItem?.button?.window
+        }
+
         // Display connect/disconnect lazily creates or destroys replicant status bar windows
         screenParamsObserver = NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,

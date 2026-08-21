@@ -149,6 +149,7 @@ enum L {
         static var licenseValue: String { localized("settings.about.license_value") }
         static var github: String { localized("settings.about.github") }
         static var coffee: String { localized("settings.about.coffee") }
+        static var reportIssue: String { localized("settings.about.report_issue") }
         static var githubSponsor: String { localized("settings.about.github_sponsor") }
         static var copyright: String { localized("settings.about.copyright") }
     }

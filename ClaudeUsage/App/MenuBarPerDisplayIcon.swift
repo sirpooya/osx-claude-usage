@@ -72,24 +72,31 @@ enum MenuBarPerDisplayIcon {
         }
     }
 
-    /// Dim decision at draw time. The handler only knows which appearance it is drawing
-    /// for, so the appearance is mapped back to the displays whose bars have it: dim when
-    /// at least one bar draws this appearance and none of them is the active one. When both
-    /// bars share one appearance the mapping is ambiguous and nothing is dimmed; full
-    /// brightness is the safe wrong answer, a wrongly dimmed active bar is not.
-    ///
-    /// Stale per-Space bar windows report screen == nil, so placement falls back to the
-    /// screen containing the window's frame; treating those as active (the old safe
-    /// default) silently vetoed the dim for the whole appearance.
+    /// Provider for the window hosting the REAL status item button, set by MenuBarUI.
+    /// The main window is the only bar window whose screen and appearance are always live
+    /// and trustworthy; replicant windows show zero frames and nil screens mid-lifecycle,
+    /// which made every windows-scan decision scheme misfire at snapshot time.
+    static var mainWindowProvider: (() -> NSWindow?)?
+
+    /// Dim decision at draw time, anchored on the main window only:
+    /// - Main bar active: any OTHER appearance can only belong to inactive bars, dim it.
+    /// - Main bar inactive: the other appearance belongs to the active bar, keep it
+    ///   bright; the main bar's own appearance is dimmed only when a second bar with a
+    ///   DIFFERENT appearance is observable, otherwise both bars share one variant and
+    ///   dimming it would dim the active bar too.
     private static func shouldDimDraw(forDark isDark: Bool) -> Bool {
-        guard let active = activeMenuBarDisplayUUID() else { return false }
-        var matchedAny = false
-        for window in statusBarWindows() where barIsDark(window) == isDark {
-            guard let uuid = displayUUID(for: window) else { continue }
-            matchedAny = true
-            if uuid.caseInsensitiveCompare(active) == .orderedSame { return false }
+        guard let active = activeMenuBarDisplayUUID(),
+              let mainWindow = mainWindowProvider?(),
+              let mainUUID = displayUUID(for: mainWindow) else { return false }
+        let mainIsDark = barIsDark(mainWindow)
+        let mainIsActive = mainUUID.caseInsensitiveCompare(active) == .orderedSame
+        if mainIsActive {
+            return isDark != mainIsDark
         }
-        return matchedAny
+        if isDark != mainIsDark { return false }
+        return statusBarWindows().contains { window in
+            window !== mainWindow && barIsDark(window) != mainIsDark
+        }
     }
 
     /// Display UUID hosting this window: its screen when set, otherwise the screen whose

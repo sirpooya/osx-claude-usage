@@ -408,7 +408,16 @@ class UserSettings: ObservableObject {
             NotificationCenter.default.post(name: .settingsChanged, object: nil)
         }
     }
-    
+
+    /// Battery style display: show remaining capacity instead of used percentage.
+    /// Flips the displayed number and the ring/bar fill everywhere; status colors stay keyed off used.
+    @Published var showRemainingPercentage: Bool {
+        didSet {
+            defaults.set(showRemainingPercentage, forKey: "showRemainingPercentage")
+            NotificationCenter.default.post(name: .settingsChanged, object: nil)
+        }
+    }
+
     /// Refresh mode (smart or fixed)
     @Published var refreshMode: RefreshMode {
         didSet {
@@ -789,6 +798,9 @@ class UserSettings: ObservableObject {
         // Load the notification setting, on by default
         self.notificationsEnabled = defaults.object(forKey: "notificationsEnabled") as? Bool ?? true
 
+        // Load the remaining percentage display, off (show used) by default
+        self.showRemainingPercentage = defaults.bool(forKey: "showRemainingPercentage")
+
         // Launch at login loading moved into LaunchAtLoginManager.init()
 
         // MARK: - Initialize the debug mode settings
@@ -888,6 +900,7 @@ class UserSettings: ObservableObject {
         appearance = .system
         iconDisplayMode = .percentageOnly
         iconStyleMode = .colorTranslucent
+        showRemainingPercentage = false
         refreshMode = .smart
         refreshInterval = 180  // 3 minutes by default in fixed mode
         language = Self.detectSystemLanguage()
