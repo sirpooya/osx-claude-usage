@@ -295,10 +295,20 @@ What has been changed from upstream so far:
     Read the default with `object(forKey:) as? Bool ?? true`; `UserDefaults.bool(forKey:)`
     returns false for a missing key and would silently flip it back. Tapping the list still
     toggles to absolute reset times. Percentages always read as used, never as remaining.
-  - Countdowns are two units everywhere (`3h 41m left`, `2d 7h left`). `codexSecondary` used
-    `formattedCompactRemainingWithMinutes` and printed a third unit (`3d 4h 48m left`); it now
-    uses `formattedCompactRemaining` like every other row. No week unit: no limit window is
-    longer than 7 days, so days is the largest useful one.
+  - Countdowns run one unit coarser as the window gets longer: `45m left`, then `3h 41m left`
+    under a day, then **days only** (`2d left`) once a day is on the clock. Hours next to days
+    were precision nobody acted on, and `1d 0h left` read worse than `1d left`.
+    `formattedCompactRemaining` in `UsageData+Formatting.swift` is the single formatter; the
+    days branch uses the new `usage_data.compact_remaining_days_only` key (all 7 locales, each
+    matching that locale's existing phrasing, so de is `noch %dd` and ja is `残り%d日`).
+    The old two-unit `usage_data.compact_remaining_days` key and its `compactRemainingDays`
+    accessor are now unused but kept, as is the never-called
+    `formattedCompactRemainingWithMinutes` (which printed a third unit, `3d 4h 48m left`).
+    - The day count is **floored**, the same count the days-plus-hours version computed, so
+      `1d left` means a full day really is left and the reset can only land later than the label
+      implies. Rounding up would print `2d left` with 25h to go, promising time the user does not
+      have.
+    - No week unit: no limit window is longer than 7 days, so days is the largest useful one.
   - Both columns use the same rows, so Claude and Codex line up in two-provider mode.
   - Popover height is computed in `PopoverMetrics` (row 26, row spacing 14, chrome 18 + 20 + 10,
     empty states 210) plus `contentSpacing`, the fixed 16 between the title row and the bars.

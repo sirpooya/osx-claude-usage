@@ -98,6 +98,19 @@ struct GeneralSettingsDisplaySection: View {
             title: L.SettingsGeneral.displaySection
         ) {
             VStack(alignment: .leading, spacing: 16) {
+                // Live preview at the top of the card, so the colour choice below it is judged
+                // against the thing it actually changes. `MenuBarIconPreview` renders through the
+                // real `MenuBarIconRenderer` on mock 66% data, so it picks up the pace ramp, the
+                // monochrome mode and the icon/percentage switches with no extra wiring.
+                // Recovered from the deleted welcome screen setup step, which is where it lived.
+                HStack {
+                    Spacer()
+                    MenuBarIconPreview()
+                    Spacer()
+                }
+
+                Divider()
+
                 // One picker rather than two switches. The three modes are mutually exclusive
                 // (a bar has exactly one colour source), but as separate toggles nothing said so:
                 // Monochrome silently won over Pace-Aware, so a user could have both on and see
