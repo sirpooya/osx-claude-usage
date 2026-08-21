@@ -34,12 +34,27 @@ struct UsageDecodingTests {
         #expect(snapshot.spend?.enabled == false)
     }
 
-    @Test("Fractional second timestamps parse")
+    @Test("Fractional second timestamps parse to the right instant")
     func parsesFractionalSeconds() throws {
+        // Built from components rather than a hardcoded epoch, so the test
+        // cannot silently encode its own arithmetic mistake.
+        var components = DateComponents()
+        components.year = 2026
+        components.month = 8
+        components.day = 21
+        components.hour = 15
+        components.minute = 9
+        components.second = 59
+        components.timeZone = TimeZone(identifier: "UTC")
+        let expected = try #require(Calendar(identifier: .gregorian).date(from: components))
+
         let snapshot = try UsageClient.decodeSnapshot(from: recordedPayload, fetchedAt: Date())
         let session = try #require(snapshot.limits.first { $0.kind == "session" })
         let resets = try #require(session.resetsAt)
-        #expect(abs(resets.timeIntervalSince1970 - 1787411399.9594) < 1)
+
+        // Within a second of the whole second value, so the fractional part is
+        // parsed rather than causing a fallback to some other instant.
+        #expect(abs(resets.timeIntervalSince(expected)) < 1)
     }
 
     @Test("Timestamps without fractional seconds still parse")

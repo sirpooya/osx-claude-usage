@@ -68,7 +68,8 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         button.attributedTitle = MenuBarTitle.attributedTitle(
             snapshot: viewModel.snapshot,
             preferences: preferences,
-            failed: failed
+            failed: failed,
+            appearance: button.effectiveAppearance
         ) ?? NSAttributedString(string: "")
 
         button.toolTip = MenuBarTitle.tooltip(snapshot: viewModel.snapshot, preferences: preferences)

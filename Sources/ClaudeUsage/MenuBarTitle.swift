@@ -7,11 +7,29 @@ import ClaudeUsageCore
 /// changes, which is the single most noticeable flaw in most trackers.
 @MainActor
 enum MenuBarTitle {
+    /// Resolves the label color inside the menu bar's own appearance.
+    ///
+    /// A dynamic color such as `secondaryLabelColor` resolves against the app's
+    /// appearance, not the menu bar's, so a light app over a dark menu bar
+    /// renders near invisible text. Deriving both weights from one base color
+    /// resolved in the button's appearance keeps them from disagreeing.
+    private static func labelColors(for appearance: NSAppearance?) -> (primary: NSColor, secondary: NSColor) {
+        var base = NSColor.labelColor
+        if let appearance {
+            appearance.performAsCurrentDrawingAppearance {
+                base = NSColor.labelColor.usingColorSpace(.sRGB) ?? NSColor.labelColor
+            }
+        }
+        return (base, base.withAlphaComponent(0.65))
+    }
+
     static func attributedTitle(
         snapshot: UsageSnapshot?,
         preferences: Preferences,
-        failed: Bool
+        failed: Bool,
+        appearance: NSAppearance? = nil
     ) -> NSAttributedString? {
+        let colors = labelColors(for: appearance)
         guard preferences.menuBarStyle != .iconOnly else { return nil }
 
         guard let snapshot, let limit = snapshot.limit(for: preferences.menuBarSource) else {
@@ -19,7 +37,7 @@ enum MenuBarTitle {
                 string: failed ? "!" : "...",
                 attributes: [
                     .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium),
-                    .foregroundColor: NSColor.secondaryLabelColor,
+                    .foregroundColor: colors.secondary,
                 ]
             )
         }
@@ -27,7 +45,7 @@ enum MenuBarTitle {
         let tier = UsageTier.forPercent(limit.percent, preferences: preferences)
         let color: NSColor = (preferences.showColorWhenHigh && tier != .normal)
             ? tier.nsColor
-            : .labelColor
+            : colors.primary
 
         let result = NSMutableAttributedString()
 
@@ -36,7 +54,7 @@ enum MenuBarTitle {
                 string: limit.shortDisplayName + " ",
                 attributes: [
                     .font: NSFont.systemFont(ofSize: 10, weight: .medium),
-                    .foregroundColor: NSColor.secondaryLabelColor,
+                    .foregroundColor: colors.secondary,
                 ]
             ))
         }

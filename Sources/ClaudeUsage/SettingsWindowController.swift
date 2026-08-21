@@ -5,20 +5,29 @@ import SwiftUI
 ///
 /// An agent app has no Settings scene to hang off, so the window is created and
 /// held here. It is kept alive rather than recreated so tab selection and
-/// scroll position survive closing and reopening.
+/// window position survive closing and reopening.
 @MainActor
 final class SettingsWindowController {
+    private static let contentSize = NSSize(width: 460, height: 380)
+
     private let window: NSWindow
 
     init(viewModel: UsageViewModel, preferences: Preferences) {
-        let hosting = NSHostingController(
+        // The style mask has to be passed to the initializer. Assigning it
+        // afterwards leaves the hosted content view unsized, which paints the
+        // title bar and nothing else.
+        window = NSWindow(
+            contentRect: NSRect(origin: .zero, size: Self.contentSize),
+            styleMask: [.titled, .closable, .miniaturizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.contentViewController = NSHostingController(
             rootView: SettingsView(viewModel: viewModel, preferences: preferences)
         )
-
-        window = NSWindow(contentViewController: hosting)
         window.title = "ClaudeUsage Settings"
-        window.styleMask = [.titled, .closable, .miniaturizable]
         window.isReleasedWhenClosed = false
+        window.setContentSize(Self.contentSize)
         window.center()
         window.setFrameAutosaveName("ClaudeUsageSettings")
     }
