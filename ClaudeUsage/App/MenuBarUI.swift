@@ -47,6 +47,10 @@ class MenuBarUI {
     private var replicantAppearanceObservations: [NSKeyValueObservation] = []
     /// Display connect/disconnect re-applies the replicant pass
     private var screenParamsObserver: NSObjectProtocol?
+    /// The undimmed icon last assigned to the main button, restored when its bar is active again
+    private var lastMainIcon: NSImage?
+    /// Active-menu-bar-display changes (focus moved to the other monitor) re-run the pass
+    private var activeDisplayObservers: [NSObjectProtocol] = []
 
     // MARK: - Settings Reference
 
@@ -71,6 +75,21 @@ class MenuBarUI {
             queue: .main
         ) { [weak self] _ in
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                self?.applyReplicantPass()
+            }
+        }
+
+        // Which display owns the active menu bar changes with focus. The first name is the
+        // dedicated (undocumented) notification; the other two are public fallbacks that
+        // fire on the interactions that move focus between displays.
+        let workspaceCenter = NSWorkspace.shared.notificationCenter
+        let activeDisplayNames: [Notification.Name] = [
+            Notification.Name("NSWorkspaceActiveDisplayDidChangeNotification"),
+            NSWorkspace.didActivateApplicationNotification,
+            NSWorkspace.activeSpaceDidChangeNotification
+        ]
+        activeDisplayObservers = activeDisplayNames.map { name in
+            workspaceCenter.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
                 self?.applyReplicantPass()
             }
         }
@@ -342,9 +361,6 @@ class MenuBarUI {
             updateItem.title = L.Menu.checkUpdates
         }
 
-        // Sparkle's appcast URL still points at upstream's dead link, so keep this item disabled
-        updateItem.isEnabled = false
-
         menu.addItem(updateItem)
 
         // About
@@ -551,9 +567,12 @@ class MenuBarUI {
 
         // Fix B: force-render the replicant windows on secondary displays
         if icon.isTemplate {
+            // Template icons dim on inactive bars through the system tint; nothing to do
+            lastMainIcon = nil
             lastReplicantRender = nil
             replicantAppearanceObservations = []
         } else {
+            lastMainIcon = icon
             lastReplicantRender = render
             applyReplicantPass()
             // Replicant windows are created lazily; catch the ones that appear late
@@ -568,6 +587,22 @@ class MenuBarUI {
     private func applyReplicantPass() {
         guard let render = lastReplicantRender else { return }
         MenuBarPerDisplayIcon.applyToReplicants(mainButton: statusItem.button, render: render)
+
+        // The main button needs the same treatment: dim its color icon while its own bar is
+        // inactive, restore the dynamic icon when it is active again
+        if let mainButton = statusItem.button, let mainWindow = mainButton.window {
+            if MenuBarPerDisplayIcon.isBarActive(on: mainWindow) {
+                if let icon = lastMainIcon, mainButton.image !== icon {
+                    mainButton.image = icon
+                }
+            } else {
+                let isDark = UsageColorScheme.isDarkMode(for: mainButton)
+                UsageColorScheme.drawingIsDarkOverride = isDark
+                let bright = render(isDark)
+                UsageColorScheme.drawingIsDarkOverride = nil
+                mainButton.image = MenuBarPerDisplayIcon.dimmed(bright)
+            }
+        }
 
         replicantAppearanceObservations = MenuBarPerDisplayIcon.statusBarWindows().map { window in
             window.observe(\.effectiveAppearance) { [weak self] _, _ in
@@ -698,6 +733,9 @@ class MenuBarUI {
         cleanup()
         if let observer = screenParamsObserver {
             NotificationCenter.default.removeObserver(observer)
+        }
+        for observer in activeDisplayObservers {
+            NSWorkspace.shared.notificationCenter.removeObserver(observer)
         }
     }
 }

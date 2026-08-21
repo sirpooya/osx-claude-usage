@@ -31,6 +31,71 @@ import AppKit
 
 enum MenuBarPerDisplayIcon {
 
+    // MARK: - Inactive-bar dimming
+
+    /// macOS dims menu bar items on the display whose menu bar is inactive, but only through
+    /// the template tint. Color images are drawn literally and never dim, so a color status
+    /// icon stays full-brightness next to everyone else's dimmed icons. The fix: read which
+    /// display's menu bar is active (private SkyLight call, runtime-guarded) and dim our own
+    /// renders on the other bars to match.
+
+    /// Alpha applied to the icon on an inactive menu bar, eyeballed against the system's
+    /// dimming of template icons.
+    static let inactiveDimAlpha: CGFloat = 0.45
+
+    private typealias MainConnFn = @convention(c) () -> Int32
+    private typealias ActiveMenuBarFn = @convention(c) (Int32) -> Unmanaged<CFString>?
+    private typealias UUIDFromIDFn = @convention(c) (UInt32) -> Unmanaged<CFUUID>?
+
+    private static let skyLightHandle: UnsafeMutableRawPointer? =
+        dlopen("/System/Library/PrivateFrameworks/SkyLight.framework/SkyLight", RTLD_NOW)
+
+    private static let mainConnectionFn: MainConnFn? = {
+        guard let handle = skyLightHandle, let sym = dlsym(handle, "SLSMainConnectionID") else { return nil }
+        return unsafeBitCast(sym, to: MainConnFn.self)
+    }()
+
+    private static let activeMenuBarFn: ActiveMenuBarFn? = {
+        guard let handle = skyLightHandle, let sym = dlsym(handle, "SLSCopyActiveMenuBarDisplayIdentifier") else { return nil }
+        return unsafeBitCast(sym, to: ActiveMenuBarFn.self)
+    }()
+
+    /// CGDisplayCreateUUIDFromDisplayID is public but deprecated; dlsym keeps the build clean
+    private static let uuidFromDisplayIDFn: UUIDFromIDFn? = {
+        guard let handle = dlopen(nil, RTLD_NOW), let sym = dlsym(handle, "CGDisplayCreateUUIDFromDisplayID") else { return nil }
+        return unsafeBitCast(sym, to: UUIDFromIDFn.self)
+    }()
+
+    /// UUID string of the display whose menu bar is currently active, nil when the private
+    /// call is unavailable
+    private static func activeMenuBarDisplayUUID() -> String? {
+        guard let mainConnection = mainConnectionFn, let active = activeMenuBarFn,
+              let uuid = active(mainConnection())?.takeRetainedValue() else { return nil }
+        return uuid as String
+    }
+
+    /// Whether the menu bar hosting this window is the active one. true when any part of the
+    /// signal is unavailable, which keeps the icon at full brightness (the old behavior).
+    static func isBarActive(on window: NSWindow) -> Bool {
+        guard let active = activeMenuBarDisplayUUID(),
+              let screen = window.screen,
+              let number = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber,
+              let uuidFn = uuidFromDisplayIDFn,
+              let uuid = uuidFn(number.uint32Value)?.takeRetainedValue()
+        else { return true }
+        let uuidString = CFUUIDCreateString(nil, uuid) as String
+        return uuidString.caseInsensitiveCompare(active) == .orderedSame
+    }
+
+    /// Flattened copy of the image at reduced alpha, for inactive menu bars
+    static func dimmed(_ image: NSImage, alpha: CGFloat = inactiveDimAlpha) -> NSImage {
+        let out = NSImage(size: image.size)
+        out.lockFocus()
+        image.draw(in: NSRect(origin: .zero, size: image.size), from: .zero, operation: .sourceOver, fraction: alpha)
+        out.unlockFocus()
+        return out
+    }
+
     /// Fix A: appearance-resolving wrapper. The render closure re-runs per menu bar draw
     /// with UsageColorScheme.drawingIsDarkOverride pinned to that bar's appearance.
     /// Only useful for color icons; template icons already adapt natively.
@@ -52,7 +117,7 @@ enum MenuBarPerDisplayIcon {
             UsageColorScheme.drawingIsDarkOverride = isDark
             let image = render(isDark)
             UsageColorScheme.drawingIsDarkOverride = nil
-            button.image = image
+            button.image = isBarActive(on: window) ? image : dimmed(image)
         }
     }
 

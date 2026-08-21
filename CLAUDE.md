@@ -414,6 +414,29 @@ What has been changed from upstream so far:
 - About page: GitHub Sponsor button removed, and Buy Me A Coffee now opens `ko-fi.com/pooya`
   (was upstream's `ko-fi.com/1atte`) in both `AboutView.swift` and the two `MenuBarManager.swift`
   menu actions. The `website/` pages still carry the old ko-fi link.
+- **Relicensed to Pooya Kamel.** `LICENSE` now leads with `Copyright (c) 2026 Pooya Kamel` and
+  keeps f-is-h's line (MIT requires retaining it, annotated "original Usage4Claude"). About page
+  Developer row reads "Pooya Kamel"; `settings.about.copyright` is "© 2026 Pooya Kamel" in all
+  7 locales (a name, so not translated). The `Created by f-is-h` / `Copyright f-is-h` headers in
+  Swift files stay, per the attribution rows above.
+- **Version reset to 1.0.0** (`MARKETING_VERSION` in both configs; `CURRENT_PROJECT_VERSION`
+  tracks it). This fork versions independently of upstream's 3.x line.
+- **Settings tab bar restyled** to the icon-toolbar shared by osx-download-manager /
+  osx-launchpad: `ToolbarButton` is now glyph (18pt hierarchical, filled variants) over an 11pt
+  caption, accent-tinted when selected over a 0.05 primary pill (0.035 on hover), intrinsic width
+  with `minWidth: 52`, radius-9 continuous pill. Items sit centred with 2pt spacing instead of
+  splitting the bar into thirds; `TabDivider.swift` deleted (no other callers). The divider under
+  the bar is softened with `.overlay(Color.primary.opacity(0.03))`.
+- **Sparkle updates are live again.** `SUPublicEDKey` in `Config/Info.plist` is now this
+  machine's own Sparkle keypair (public `XPeIzL4GHFXBMLCP+A/vxqQE4Bn8tGi7jkw9sRBHXSc=`, private
+  key in the login Keychain, shared with the other osx-* apps; `generate_keys -p` prints it).
+  `appcast.xml` dropped upstream's six 3.x items, whose DMGs do not exist under this repo and
+  whose signatures were f-is-h's; the channel is valid but empty until the first v1.x release is
+  cut per `docs/SPARKLE_SETUP.md` (sign_update lives in the SPM artifact,
+  `SourcePackages/artifacts/sparkle/Sparkle/bin/`). Check for Updates re-enabled in
+  `MenuBarUI.createStandardMenu`. ⚠️ Until the cleaned appcast is pushed to main, the raw
+  feed URL still serves the old committed appcast listing v3.3.0, which the new public key
+  would refuse anyway; push before testing an update check.
 
 Deliberately **not** translated, because doing so breaks non-English locales:
 
