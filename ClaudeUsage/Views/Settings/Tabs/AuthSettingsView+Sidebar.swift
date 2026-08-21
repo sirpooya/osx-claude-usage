@@ -13,8 +13,9 @@ extension AuthSettingsView {
 
     /// The login methods, one sidebar row each
     enum CredentialSection: String, CaseIterable, Identifiable {
-        case cliAccount
         case claudeAI
+        case apiConsole
+        case cliAccount
         case codex
         case diagnostics
 
@@ -24,6 +25,7 @@ extension AuthSettingsView {
             switch self {
             case .cliAccount: return "terminal.fill"
             case .claudeAI: return "key.fill"
+            case .apiConsole: return "dollarsign.circle"
             case .codex: return "chevron.left.forwardslash.chevron.right"
             case .diagnostics: return "stethoscope"
             }
@@ -33,6 +35,7 @@ extension AuthSettingsView {
             switch self {
             case .cliAccount: return L.CLISync.title
             case .claudeAI: return L.CredentialsNav.claudeAI
+            case .apiConsole: return L.CredentialsNav.apiConsole
             case .codex: return L.CredentialsNav.codex
             case .diagnostics: return L.CredentialsNav.diagnostics
             }
@@ -43,6 +46,7 @@ extension AuthSettingsView {
             switch self {
             case .cliAccount: return L.CredentialsNav.cliPaneTitle
             case .claudeAI: return L.CredentialsNav.claudePaneTitle
+            case .apiConsole: return L.APIConsole.paneTitle
             case .codex: return L.CredentialsNav.codexPaneTitle
             case .diagnostics: return L.CredentialsNav.diagnostics
             }
@@ -52,6 +56,7 @@ extension AuthSettingsView {
             switch self {
             case .cliAccount: return L.CredentialsNav.cliPaneSubtitle
             case .claudeAI: return L.CredentialsNav.claudePaneSubtitle
+            case .apiConsole: return L.APIConsole.paneSubtitle
             case .codex: return L.CredentialsNav.codexPaneSubtitle
             case .diagnostics: return L.CredentialsNav.diagnosticsSubtitle
             }
@@ -79,7 +84,7 @@ extension AuthSettingsView {
                 .padding(.horizontal, 10)
                 .padding(.bottom, 4)
 
-            ForEach([CredentialSection.cliAccount, .claudeAI, .codex]) { section in
+            ForEach([CredentialSection.claudeAI, .apiConsole, .cliAccount, .codex]) { section in
                 sidebarRow(section)
             }
 
@@ -142,6 +147,8 @@ extension AuthSettingsView {
         switch section {
         case .cliAccount:
             return cliSync.isSynced
+        case .apiConsole:
+            return ConsoleAPIService.shared.isConfigured
         case .claudeAI:
             // Only manually pasted or browser OAuth accounts count here, a CLI synced one belongs to its own row
             return settings.accounts.contains { !$0.credentialSource.isCLISynced }
@@ -157,12 +164,6 @@ extension AuthSettingsView {
     private var credentialsDetailPane: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                paneHeader
-
-                if credentialSection != .diagnostics {
-                    connectionPill
-                }
-
                 paneContent
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -170,65 +171,57 @@ extension AuthSettingsView {
         }
     }
 
-    private var paneHeader: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(credentialSection.paneTitle)
-                .font(.title3)
-                .fontWeight(.semibold)
-            Text(credentialSection.paneSubtitle)
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-    }
-
-    /// The connected / not connected banner at the top of the pane
-    private var connectionPill: some View {
-        let connected = isConnected(credentialSection)
-        return HStack(spacing: 7) {
-            Circle()
-                .fill(connected ? Color.green : Color.secondary.opacity(0.4))
-                .frame(width: 8, height: 8)
-            Text(connected ? L.CredentialsNav.connected : L.CredentialsNav.notConnected)
-                .font(.subheadline)
-                .fontWeight(.medium)
-            Spacer()
-        }
-        .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color.primary.opacity(0.04))
-        )
-    }
-
     @ViewBuilder
     private var paneContent: some View {
         switch credentialSection {
-        case .cliAccount:
-            cliAccountCard
-
         case .claudeAI:
-            if isAddingAccount {
-                addAccountView
-            } else {
-                if let message = successMessage {
-                    inlineSuccessBanner(message)
-                }
-                accountListView
-                if let currentAccount = settings.currentAccount {
-                    currentAccountDetailView(account: currentAccount)
-                }
-                howToCard
-            }
+            ClaudeAIPane()
+
+        case .apiConsole:
+            APIConsolePane()
+
+        case .cliAccount:
+            CLIAccountPane()
 
         case .codex:
+            CredentialPageHeader(
+                title: L.CredentialsNav.codexPaneTitle,
+                subtitle: L.CredentialsNav.codexPaneSubtitle
+            )
+            CredentialStatusCard(
+                isConnected: isConnected(.codex),
+                title: isConnected(.codex) ? L.CredentialsNav.connected : L.CredentialsNav.notConnected
+            )
             if let currentCodexAccount = settings.currentCodexAccount {
                 currentCodexAccountDetailView(account: currentCodexAccount)
             } else {
-                accountListView
+                codexConnectCard
             }
 
         case .diagnostics:
+            CredentialPageHeader(
+                title: L.CredentialsNav.diagnostics,
+                subtitle: L.CredentialsNav.diagnosticsSubtitle
+            )
             diagnosticsCard
+            howToCard
+        }
+    }
+
+    /// Codex has no wizard of its own, its login is the browser flow
+    private var codexConnectCard: some View {
+        CredentialCard {
+            Text(L.APIConsole.configuration)
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundColor(.secondary)
+        } content: {
+            Button {
+                WebLoginWindowManager.shared.showCodexLoginWindow()
+            } label: {
+                Label(L.Account.addCodexAccount, systemImage: "globe")
+            }
+            .controlSize(.regular)
         }
     }
 

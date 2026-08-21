@@ -547,6 +547,44 @@ enum L {
     /// Returns the localized string for the language the user chose
     /// - Parameter key: the localized string key
     /// - Returns: the localized string in the selected language
+    // MARK: - API Console
+    enum APIConsole {
+        static var paneTitle: String { localized("api_console.pane_title") }
+        static var paneSubtitle: String { localized("api_console.pane_subtitle") }
+        static var configuration: String { localized("api_console.configuration") }
+        static var stepEnterKey: String { localized("api_console.step_enter_key") }
+        static var stepSelectOrg: String { localized("api_console.step_select_org") }
+        static var stepConfirm: String { localized("api_console.step_confirm") }
+        static var signInHint: String { localized("api_console.sign_in_hint") }
+        static var openConsole: String { localized("api_console.open_console") }
+        static var or: String { localized("api_console.or") }
+        static var manualKeyTitle: String { localized("api_console.manual_key_title") }
+        static var manualKeyHint: String { localized("api_console.manual_key_hint") }
+        static var fetchOrganizations: String { localized("api_console.fetch_organizations") }
+        static var selectOrgHint: String { localized("api_console.select_org_hint") }
+        static var organization: String { localized("api_console.organization") }
+        static var back: String { localized("api_console.back") }
+        static var connect: String { localized("api_console.connect") }
+        static var currentPeriod: String { localized("api_console.current_period") }
+        static var currentSpend: String { localized("api_console.current_spend") }
+        static var prepaidCredits: String { localized("api_console.prepaid_credits") }
+        static var errorInvalidKey: String { localized("api_console.error_invalid_key") }
+        static var errorNoOrganizations: String { localized("api_console.error_no_organizations") }
+        static var aboutTitle: String { localized("api_console.about_title") }
+        static var aboutPoint1: String { localized("api_console.about_point_1") }
+        static var aboutPoint2: String { localized("api_console.about_point_2") }
+        static var aboutPoint3: String { localized("api_console.about_point_3") }
+    }
+
+    // MARK: - Claude.ai Pane
+    enum ClaudeAIPane {
+        static var signIn: String { localized("claude_ai_pane.sign_in") }
+        static var signInHint: String { localized("claude_ai_pane.sign_in_hint") }
+        static var manualKeyHint: String { localized("claude_ai_pane.manual_key_hint") }
+        static var testConnection: String { localized("claude_ai_pane.test_connection") }
+        static var errorInvalidKey: String { localized("claude_ai_pane.error_invalid_key") }
+    }
+
     // MARK: - Credentials Navigation
     enum CredentialsNav {
         static var sectionCredentials: String { localized("credentials_nav.section_credentials") }
@@ -563,6 +601,7 @@ enum L {
         static var codexPaneTitle: String { localized("credentials_nav.codex_pane_title") }
         static var codexPaneSubtitle: String { localized("credentials_nav.codex_pane_subtitle") }
         static var diagnosticsSubtitle: String { localized("credentials_nav.diagnostics_subtitle") }
+        static var apiConsole: String { localized("credentials_nav.api_console") }
     }
 
     // MARK: - CLI Account Sync
@@ -587,6 +626,15 @@ enum L {
         static var errorNoCredentials: String { localized("cli_sync.error_no_credentials") }
         static var errorNoRefreshToken: String { localized("cli_sync.error_no_refresh_token") }
         static var defaultAccountName: String { localized("cli_sync.default_account_name") }
+        static var accountDetails: String { localized("cli_sync.account_details") }
+        static var accountDetailsSubtitle: String { localized("cli_sync.account_details_subtitle") }
+        static var configuration: String { localized("cli_sync.configuration") }
+        static var readyHint: String { localized("cli_sync.ready_hint") }
+        static var notFoundHint: String { localized("cli_sync.not_found_hint") }
+        static var aboutTitle: String { localized("cli_sync.about_title") }
+        static var aboutPoint1: String { localized("cli_sync.about_point_1") }
+        static var aboutPoint2: String { localized("cli_sync.about_point_2") }
+        static var aboutPoint3: String { localized("cli_sync.about_point_3") }
     }
 
     private static func localized(_ key: String) -> String {

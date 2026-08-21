@@ -480,3 +480,49 @@
 "credentials_nav.codex_pane_subtitle" = "Track your Codex usage and limits";
 "credentials_nav.diagnostics_subtitle" = "Check credentials and API connectivity";
 "icon_style.monochrome_toggle_hint" = "Uses adaptive color that matches the menu bar, instead of the green, orange and red status colors.";
+
+/* MARK: - API Console */
+"credentials_nav.api_console" = "API Console";
+"api_console.pane_title" = "API Billing";
+"api_console.pane_subtitle" = "Monitor API usage and spending";
+"api_console.configuration" = "Configuration";
+"api_console.step_enter_key" = "Enter Key";
+"api_console.step_select_org" = "Organization";
+"api_console.step_confirm" = "Confirm";
+"api_console.sign_in_hint" = "Sign in to the Anthropic Console, then copy your session key from it.";
+"api_console.open_console" = "Open Anthropic Console";
+"api_console.or" = "OR";
+"api_console.manual_key_title" = "API Session Key";
+"api_console.manual_key_hint" = "Your session key from console.anthropic.com";
+"api_console.fetch_organizations" = "Fetch Organizations";
+"api_console.select_org_hint" = "Choose the organization to track.";
+"api_console.organization" = "Organization";
+"api_console.back" = "Back";
+"api_console.connect" = "Connect";
+"api_console.current_period" = "CURRENT BILLING PERIOD";
+"api_console.current_spend" = "Current Spend";
+"api_console.prepaid_credits" = "Prepaid Credits";
+"api_console.error_invalid_key" = "That key was rejected. Copy a fresh session key from console.anthropic.com and try again.";
+"api_console.error_no_organizations" = "That key is valid but sees no organizations.";
+"api_console.about_title" = "About API Billing";
+"api_console.about_point_1" = "Shows pay as you go spend and prepaid credits, which subscription limits do not cover.";
+"api_console.about_point_2" = "Independent of the other login methods, so it can be connected on its own.";
+"api_console.about_point_3" = "Console session keys expire, so expect to paste a new one occasionally.";
+
+/* MARK: - Claude.ai pane */
+"claude_ai_pane.sign_in" = "Sign in to Claude.ai";
+"claude_ai_pane.sign_in_hint" = "Sign in to extract your session key automatically.";
+"claude_ai_pane.manual_key_hint" = "Paste your sessionKey cookie from claude.ai";
+"claude_ai_pane.test_connection" = "Test Connection";
+"claude_ai_pane.error_invalid_key" = "That session key was rejected. Copy a fresh one from claude.ai and try again.";
+
+/* MARK: - CLI Account extras */
+"cli_sync.account_details" = "ACCOUNT DETAILS";
+"cli_sync.account_details_subtitle" = "Your synced CLI credentials";
+"cli_sync.configuration" = "Configuration";
+"cli_sync.ready_hint" = "Claude Code is signed in on this Mac. Sync it to use that account here, with nothing to paste.";
+"cli_sync.not_found_hint" = "No Claude Code credentials were found. Sign in with the claude command in Terminal, then refresh.";
+"cli_sync.about_title" = "About CLI Account Sync";
+"cli_sync.about_point_1" = "Reuses the login Claude Code already holds, so there is no key to paste.";
+"cli_sync.about_point_2" = "The token stays in your keychain and is re-read on every refresh.";
+"cli_sync.about_point_3" = "Removing the sync here leaves your Claude Code login untouched.";
