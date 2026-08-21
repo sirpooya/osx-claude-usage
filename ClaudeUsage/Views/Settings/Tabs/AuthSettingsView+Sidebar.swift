@@ -210,18 +210,10 @@ extension AuthSettingsView {
 
     /// Codex has no wizard of its own, its login is the browser flow
     private var codexConnectCard: some View {
-        CredentialCard {
-            Text(L.APIConsole.configuration)
-                .font(.caption)
-                .fontWeight(.semibold)
-                .foregroundColor(.secondary)
-        } content: {
-            Button {
+        CredentialCard(title: L.APIConsole.configuration) {
+            CredentialPrimaryButton(title: L.Account.addCodexAccount, systemImage: "globe") {
                 WebLoginWindowManager.shared.showCodexLoginWindow()
-            } label: {
-                Label(L.Account.addCodexAccount, systemImage: "globe")
             }
-            .controlSize(.regular)
         }
     }
 

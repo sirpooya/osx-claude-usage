@@ -343,6 +343,33 @@ What has been changed from upstream so far:
   (`welcome.manual_session_key`). It is a plain alternative input, not a hazardous setting.
 - New `L.CLISync` localization namespace. The 21 keys carry English copy in all 7 locale files;
   de / fr / ja / ko / zh-Hans / zh-Hant still need real translations.
+- **Credentials settings rebuilt as a two pane sidebar**, replacing the single scroll Auth tab.
+  Sidebar rows are Claude.ai, API Console, CLI Account and Codex under CREDENTIALS, plus
+  Diagnostics under TOOLS, each credential row carrying its own connected dot. Settings window
+  went from 500x550 to 720x600 to fit it. `AuthSettingsView+Sidebar.swift` owns the shell;
+  `legacyStackedBody` keeps the old layout around for reference only.
+- **API Console is new functionality, not just a row.** `Services/ConsoleAPIService.swift` talks
+  to `console.anthropic.com/api`: `/organizations` to validate a pasted console session key,
+  `/organizations/<id>/current_spend` and `/organizations/<id>/prepaid/credits` for the figures.
+  Money arrives in cents. The session key and chosen organization live in our Keychain item
+  through three new named accessors on `KeychainManager` (`saveConsoleValue` and friends), so
+  every credential in the app still enters through that class rather than touching `storage`.
+- The three panes follow the competitor's design, which is deliberate and worth preserving:
+  filled `.borderedProminent` for a card's primary action, bordered red tint for destructive,
+  quiet bordered for Refresh and Back, title case card headers with a secondary subtitle line,
+  hairline separated detail rows with accent colored icons, and a 1-2-3 stepper whose connectors
+  stretch full width. All of it lives in `Views/Settings/Credentials/CredentialsChrome.swift`,
+  which carries that contract as a comment so the panes cannot drift apart.
+  - One intentional divergence: their label reads "Advanced: Manual Session Key", ours is just
+    "Manual Session Key". It is a plain alternative input, not a hazardous setting.
+- The CLI Account status card shows elapsed time since the last sync. `lastSyncedAt` persists in
+  `UserDefaults` under `cliSync.lastSyncedAt`, and the pane re-renders on a 30s timer, otherwise
+  the line sits frozen at whatever it said when the window opened.
+- **Menu bar icon style is one switch now, not three radios.** `iconStyleMode` keeps all three
+  cases for stored prefs, but the UI offers only Monochrome on or off (off maps to
+  `.colorTranslucent`). The default flipped from `.monochrome` to `.colorTranslucent`, so the
+  status colors carry the information and monochrome is the opt in. Per the
+  `menubar-icon-theming` skill, which encodes this preference.
   New keys added by this fork are written in all 7 locales, not English-only.
 - Dead code left behind by the above: `MenuBarIconPreview` and `HorizontalRadioGroup` in
   `WelcomeSupportingViews.swift` now have no callers.

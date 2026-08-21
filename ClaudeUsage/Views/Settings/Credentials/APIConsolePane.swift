@@ -54,13 +54,10 @@ struct APIConsolePane: View {
             detail: console.isConfigured ? console.credentials.maskedSessionKey : nil
         ) {
             if console.isConfigured {
-                Button(role: .destructive) {
+                CredentialDestructiveButton(title: L.CLISync.remove) {
                     console.remove()
                     resetWizard()
-                } label: {
-                    Label(L.CLISync.remove, systemImage: "trash")
                 }
-                .controlSize(.small)
             }
         }
     }
@@ -68,45 +65,44 @@ struct APIConsolePane: View {
     // MARK: - Figures once configured
 
     private var figuresCard: some View {
-        CredentialCard {
+        CredentialCardCustomHeader {
             HStack {
-                Text(L.APIConsole.currentPeriod)
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.secondary)
-                Spacer()
-                Button {
-                    Task { await console.refresh() }
-                } label: {
-                    Label(L.CLISync.refresh, systemImage: "arrow.clockwise")
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L.APIConsole.currentPeriod)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.primary.opacity(0.75))
+                    Text(L.APIConsole.currentPeriodSubtitle)
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
                 }
-                .controlSize(.small)
-                .disabled(console.isBusy)
+                Spacer()
+                CredentialSecondaryButton(title: L.CLISync.refresh, systemImage: "arrow.clockwise") {
+                    Task { await console.refresh() }
+                }
             }
         } content: {
-            CredentialDetailRow(
-                icon: "building.2.fill",
-                iconColor: .blue,
-                label: L.APIConsole.organization,
-                value: console.credentials.organizationName
-            )
-
-            if let spend = console.currentSpend {
+            CredentialDetailRows {
                 CredentialDetailRow(
-                    icon: "dollarsign.circle.fill",
-                    iconColor: .green,
-                    label: L.APIConsole.currentSpend,
-                    value: formatted(spend.dollars)
+                    icon: "building.2",
+                    label: L.APIConsole.organization,
+                    value: console.credentials.organizationName
                 )
-            }
 
-            if let credits = console.prepaidCredits {
-                CredentialDetailRow(
-                    icon: "creditcard.fill",
-                    iconColor: .orange,
-                    label: L.APIConsole.prepaidCredits,
-                    value: formatted(credits.dollars, currency: credits.currency)
-                )
+                if let spend = console.currentSpend {
+                    CredentialDetailRow(
+                        icon: "dollarsign.circle",
+                        label: L.APIConsole.currentSpend,
+                        value: formatted(spend.dollars)
+                    )
+                }
+
+                if let credits = console.prepaidCredits {
+                    CredentialDetailRow(
+                        icon: "creditcard",
+                        label: L.APIConsole.prepaidCredits,
+                        value: formatted(credits.dollars, currency: credits.currency)
+                    )
+                }
             }
 
             if console.isBusy {
@@ -114,7 +110,7 @@ struct APIConsolePane: View {
             }
 
             if let error = console.lastError {
-                inlineError(error)
+                CredentialInlineError(message: error)
             }
         }
     }
@@ -122,17 +118,18 @@ struct APIConsolePane: View {
     // MARK: - Configuration wizard
 
     private var configurationCard: some View {
-        CredentialCard {
-            Text(L.APIConsole.configuration)
-                .font(.caption)
-                .fontWeight(.semibold)
-                .foregroundColor(.secondary)
+        CredentialCardCustomHeader {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(L.APIConsole.configuration)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.primary.opacity(0.75))
 
-            CredentialStepIndicator(current: step, titles: [
-                .enterKey: L.APIConsole.stepEnterKey,
-                .selectOrganization: L.APIConsole.stepSelectOrg,
-                .confirm: L.APIConsole.stepConfirm
-            ])
+                CredentialStepIndicator(current: step, titles: [
+                    .enterKey: L.APIConsole.stepEnterKey,
+                    .selectOrganization: L.APIConsole.stepSelectOrg,
+                    .confirm: L.APIConsole.stepConfirm
+                ])
+            }
         } content: {
             switch step {
             case .enterKey: enterKeyStep
@@ -145,52 +142,38 @@ struct APIConsolePane: View {
     private var enterKeyStep: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(L.APIConsole.signInHint)
-                .font(.caption)
+                .font(.system(size: 12))
                 .foregroundColor(.secondary)
 
-            Button {
+            CredentialPrimaryButton(title: L.APIConsole.openConsole, systemImage: "globe") {
                 NSWorkspace.shared.open(URL(string: "https://console.anthropic.com/settings/billing")!)
-            } label: {
-                Label(L.APIConsole.openConsole, systemImage: "globe")
             }
-            .controlSize(.regular)
 
-            HStack(spacing: 8) {
-                Rectangle().fill(Color.secondary.opacity(0.2)).frame(height: 1)
-                Text(L.APIConsole.or).font(.caption2).foregroundColor(.secondary)
-                Rectangle().fill(Color.secondary.opacity(0.2)).frame(height: 1)
-            }
+            CredentialOrDivider()
 
             Text(L.APIConsole.manualKeyTitle)
-                .font(.caption)
-                .fontWeight(.medium)
+                .font(.system(size: 12, weight: .semibold))
 
             SecureField("sk-ant-api03-...", text: $sessionKey)
                 .textFieldStyle(.roundedBorder)
-                .font(.system(.caption, design: .monospaced))
+                .font(.system(size: 12, design: .monospaced))
 
             Text(L.APIConsole.manualKeyHint)
-                .font(.caption2)
+                .font(.system(size: 11))
                 .foregroundColor(.secondary)
 
-            if let errorMessage { inlineError(errorMessage) }
+            if let errorMessage { CredentialInlineError(message: errorMessage) }
 
             HStack {
                 Spacer()
-                Button {
+                CredentialPrimaryButton(
+                    title: L.APIConsole.fetchOrganizations,
+                    systemImage: "building.2",
+                    isBusy: isFetching,
+                    isEnabled: !sessionKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                ) {
                     fetchOrganizations()
-                } label: {
-                    if isFetching {
-                        HStack(spacing: 6) {
-                            ProgressView().controlSize(.small)
-                            Text(L.APIConsole.fetchOrganizations)
-                        }
-                    } else {
-                        Label(L.APIConsole.fetchOrganizations, systemImage: "building.2")
-                    }
                 }
-                .controlSize(.regular)
-                .disabled(sessionKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isFetching)
             }
         }
     }
@@ -198,7 +181,7 @@ struct APIConsolePane: View {
     private var selectOrganizationStep: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(L.APIConsole.selectOrgHint)
-                .font(.caption)
+                .font(.system(size: 12))
                 .foregroundColor(.secondary)
 
             ForEach(organizations) { organization in
@@ -207,11 +190,11 @@ struct APIConsolePane: View {
                     step = .confirm
                 } label: {
                     HStack(spacing: 8) {
-                        Image(systemName: "building.2.fill")
-                            .font(.caption)
-                            .foregroundColor(.blue)
+                        Image(systemName: "building.2")
+                            .font(.system(size: 12))
+                            .foregroundColor(.accentColor)
                         Text(organization.name)
-                            .font(.subheadline)
+                            .font(.system(size: 13))
                         Spacer()
                         Image(systemName: "chevron.right")
                             .font(.caption2)
@@ -227,8 +210,7 @@ struct APIConsolePane: View {
                 .buttonStyle(.plain)
             }
 
-            Button(L.Account.cancel) { resetWizard() }
-                .controlSize(.small)
+            CredentialSecondaryButton(title: L.Account.cancel) { resetWizard() }
         }
     }
 
@@ -236,29 +218,23 @@ struct APIConsolePane: View {
         VStack(alignment: .leading, spacing: 10) {
             if let organization = selectedOrganization {
                 CredentialDetailRow(
-                    icon: "building.2.fill",
-                    iconColor: .blue,
+                    icon: "building.2",
                     label: L.APIConsole.organization,
                     value: organization.name
                 )
             }
 
             HStack {
-                Button(L.APIConsole.back) { step = .selectOrganization }
-                    .controlSize(.small)
+                CredentialSecondaryButton(title: L.APIConsole.back) { step = .selectOrganization }
                 Spacer()
-                Button {
+                CredentialPrimaryButton(title: L.APIConsole.connect, systemImage: "checkmark.circle") {
                     guard let organization = selectedOrganization else { return }
                     let key = sessionKey.trimmingCharacters(in: .whitespacesAndNewlines)
                     Task {
                         await console.save(sessionKey: key, organization: organization)
                         sessionKey = ""
                     }
-                } label: {
-                    Label(L.APIConsole.connect, systemImage: "checkmark.circle")
                 }
-                .controlSize(.regular)
-                .keyboardShortcut(.defaultAction)
             }
         }
     }
@@ -309,15 +285,4 @@ struct APIConsolePane: View {
         return formatter.string(from: NSNumber(value: amount)) ?? String(format: "%.2f", amount)
     }
 
-    private func inlineError(_ message: String) -> some View {
-        HStack(alignment: .top, spacing: 6) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.caption2)
-                .foregroundColor(.orange)
-            Text(message)
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
 }

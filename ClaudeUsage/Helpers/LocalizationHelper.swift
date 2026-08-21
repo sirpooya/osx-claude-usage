@@ -572,6 +572,7 @@ enum L {
         static var back: String { localized("api_console.back") }
         static var connect: String { localized("api_console.connect") }
         static var currentPeriod: String { localized("api_console.current_period") }
+        static var currentPeriodSubtitle: String { localized("api_console.current_period_subtitle") }
         static var currentSpend: String { localized("api_console.current_spend") }
         static var prepaidCredits: String { localized("api_console.prepaid_credits") }
         static var errorInvalidKey: String { localized("api_console.error_invalid_key") }
@@ -589,6 +590,7 @@ enum L {
         static var manualKeyHint: String { localized("claude_ai_pane.manual_key_hint") }
         static var testConnection: String { localized("claude_ai_pane.test_connection") }
         static var errorInvalidKey: String { localized("claude_ai_pane.error_invalid_key") }
+        static var accountsSubtitle: String { localized("claude_ai_pane.accounts_subtitle") }
     }
 
     // MARK: - Credentials Navigation
@@ -629,6 +631,7 @@ enum L {
         static var keychainEntry: String { localized("cli_sync.keychain_entry") }
         static var automatic: String { localized("cli_sync.automatic") }
         static var advancedHint: String { localized("cli_sync.advanced_hint") }
+        static var advancedSubtitle: String { localized("cli_sync.advanced_subtitle") }
         static var errorNoCredentials: String { localized("cli_sync.error_no_credentials") }
         static var errorNoRefreshToken: String { localized("cli_sync.error_no_refresh_token") }
         static var defaultAccountName: String { localized("cli_sync.default_account_name") }

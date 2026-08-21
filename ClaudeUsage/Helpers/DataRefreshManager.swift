@@ -220,6 +220,7 @@ class DataRefreshManager: ObservableObject {
                     self.usageData = data
                     self.errorMessage = nil
                     self.refreshState.lastUpdatedAt = Date()
+                    self.refreshState.claudeErrorIsTransient = false
                     self.claudeBackoffUntil = nil
                     self.persistCachedUsage(data)
                     monitoringUtilizations[.claude] = data.percentage
@@ -242,6 +243,7 @@ class DataRefreshManager: ObservableObject {
                     // untouched here so the popover and the menu bar icon keep showing the last
                     // good fetch; `errorMessage` is only a note on top of it.
                     self.errorMessage = error.localizedDescription
+                    self.refreshState.claudeErrorIsTransient = Self.isTransient(error)
                     if Self.isRateLimit(error) {
                         self.claudeBackoffUntil = Date().addingTimeInterval(self.rateLimitBackoff)
                         Logger.menuBar.info("Claude API rate limited. Pausing automatic polls for \(Int(self.rateLimitBackoff / 60)) min")
@@ -841,6 +843,22 @@ class DataRefreshManager: ObservableObject {
         if until > Date() { return true }
         claudeBackoffUntil = nil
         return false
+    }
+
+    /// Whether an error will probably fix itself on the next poll. These must never reach the UI as
+    /// an error screen: the competitor never shows one at all, and a transient 429 replacing good
+    /// numbers with "Too many requests" is exactly the behaviour being removed here.
+    private static func isTransient(_ error: Error) -> Bool {
+        switch error {
+        case UsageError.rateLimited, UsageError.networkError, UsageError.noData, UsageError.decodingError:
+            return true
+        case UsageError.httpError(let statusCode):
+            return statusCode == 429 || (500...599).contains(statusCode)
+        default:
+            // Auth problems (no credentials, unauthorized, session expired, Cloudflare) are the only
+            // ones the user can actually act on, so those are the only ones that get a screen.
+            return false
+        }
     }
 
     /// Whether an error means "the server told us to slow down"

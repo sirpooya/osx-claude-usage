@@ -254,7 +254,7 @@ struct UsageDetailView: View {
             // already have with an error screen: it annotates them with a "couldn't refresh" note
             // and leaves the bars in place. The error branch below is only for having nothing at all.
             claudeLimitRows(data: data)
-        } else if let error = errorMessage {
+        } else if let error = errorMessage, !refreshState.claudeErrorIsTransient {
             // Not being signed in is not an error, so it is treated as an empty state; only a genuine error gets the warning icon.
             // This used to guess between the two cases with error.contains("Authentication"/"configured"),
             // while the real copy is "Please configure authentication information...",
@@ -342,7 +342,7 @@ struct UsageDetailView: View {
 
     // MARK: - Header Buttons
 
-    /// Refresh button plus three dot menu button (shared by the single and dual column headers)
+    /// Refresh button plus Settings gear (shared by the single and dual column headers)
     @ViewBuilder
     private var refreshAndMenuButtons: some View {
         Button(action: { onMenuAction?(.refresh) }) {
@@ -357,81 +357,21 @@ struct UsageDetailView: View {
         .disabled(!refreshState.canRefresh || refreshState.isRefreshing)
         .focusable(false)
 
+        // A gear straight into Settings, rather than an ellipsis menu that duplicated the
+        // status item's right click menu. Everything that menu carried (accounts, updates,
+        // About, status pages, Quit) is still one right click away on the menu bar icon.
         ZStack(alignment: .topTrailing) {
-            Menu {
-                if UserSettings.shared.accounts.count > 1 {
-                    Menu {
-                        ForEach(UserSettings.shared.accounts) { account in
-                            Button(action: { UserSettings.shared.switchToAccount(account) }) {
-                                HStack {
-                                    Text(account.displayName)
-                                    if account.id == UserSettings.shared.currentAccountId {
-                                        Spacer(); Image(systemName: "checkmark")
-                                    }
-                                }
-                            }
-                        }
-                    } label: {
-                        let name = UserSettings.shared.currentAccountName ?? L.Menu.account
-                        Label("\(L.Menu.accountPrefix) \(name)", systemImage: "person.2")
-                    }
-                    Divider()
-                }
-
-                if UserSettings.shared.codexAccounts.count > 1 {
-                    Menu {
-                        ForEach(UserSettings.shared.codexAccounts) { account in
-                            Button(action: { UserSettings.shared.switchToCodexAccount(account) }) {
-                                HStack {
-                                    Text(account.displayName)
-                                    if account.id == UserSettings.shared.currentCodexAccountId {
-                                        Spacer(); Image(systemName: "checkmark")
-                                    }
-                                }
-                            }
-                        }
-                    } label: {
-                        let name = UserSettings.shared.currentCodexAccount?.displayName ?? "Codex"
-                        Label("Codex: \(name)", systemImage: "person.2.fill")
-                    }
-                    Divider()
-                }
-
-                Button(action: { onMenuAction?(.generalSettings) }) {
-                    Text(L.Menu.settings)
-                }
-                // Sparkle's appcast URL still points at upstream's dead link, so keep this item disabled
-                if hasAvailableUpdate {
-                    Button(action: { onMenuAction?(.checkForUpdates) }) {
-                        Text(createUpdateMenuText())
-                    }
-                    .disabled(true)
-                } else {
-                    Button(action: { onMenuAction?(.checkForUpdates) }) {
-                        Text(L.Menu.checkUpdates)
-                    }
-                    .disabled(true)
-                }
-                Button(action: { onMenuAction?(.about) }) {
-                    Text(L.Menu.about)
-                }
-                Divider()
-                Button(action: { onMenuAction?(.quit) }) {
-                    Text(L.Menu.quit)
-                }
-            } label: {
-                Image(systemName: "ellipsis")
+            Button(action: { onMenuAction?(.generalSettings) }) {
+                Image(systemName: "gearshape")
                     .font(.system(size: 14))
                     .foregroundColor(.secondary)
-                    .rotationEffect(.degrees(90))
                     .frame(width: 20, height: 20)
             }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-            .fixedSize()
             .buttonStyle(.plain)
             .focusable(false)
+            .help(L.Menu.generalSettings)
 
+            // The update dot lived on the ellipsis, so it moves here rather than disappearing
             if shouldShowUpdateBadge {
                 Circle().fill(Color.red).frame(width: 6, height: 6).offset(x: 5, y: -5)
             }

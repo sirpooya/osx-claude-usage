@@ -25,6 +25,10 @@ class RefreshState: ObservableObject {
     @Published var notificationMessage: String?
     /// Notification type
     @Published var notificationType: NotificationType = .loading
+    /// Whether the last Claude error was transient (rate limit, network blip, server error).
+    /// Transient failures are never worth a UI state of their own: there is a retry coming, so the
+    /// popover keeps showing data, or the loading state, and never an error screen.
+    @Published var claudeErrorIsTransient = false
     /// When the currently displayed Claude data was actually fetched.
     /// Set from the cached snapshot at launch, then from every successful fetch. The popover uses
     /// it to say how old the numbers are when a refresh fails, instead of hiding them behind an error.

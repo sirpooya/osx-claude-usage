@@ -75,19 +75,20 @@ struct ClaudeAIPane: View {
     // MARK: - Configured accounts
 
     private var accountsCard: some View {
-        CredentialCard {
+        CredentialCardCustomHeader {
             HStack {
-                Text(L.Account.listTitle)
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.secondary)
-                Spacer()
-                Button {
-                    WebLoginWindowManager.shared.showLoginWindow()
-                } label: {
-                    Label(L.Account.addAccount, systemImage: "plus")
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L.Account.listTitle)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.primary.opacity(0.75))
+                    Text(L.ClaudeAIPane.accountsSubtitle)
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
                 }
-                .controlSize(.small)
+                Spacer()
+                CredentialPrimaryButton(title: L.Account.addAccount, systemImage: "plus") {
+                    WebLoginWindowManager.shared.showLoginWindow()
+                }
             }
         } content: {
             ForEach(claudeAIAccounts, id: \.id) { account in
@@ -107,20 +108,15 @@ struct ClaudeAIPane: View {
                     Spacer()
 
                     if settings.currentAccount?.id != account.id {
-                        Button(L.Account.switchTo) {
+                        CredentialSecondaryButton(title: L.Account.switchTo) {
                             settings.switchToAccount(account)
                         }
-                        .controlSize(.small)
                     }
 
-                    Button(role: .destructive) {
+                    CredentialDestructiveButton(title: L.Account.delete) {
                         accountToRemove = account
                         showRemoveConfirmation = true
-                    } label: {
-                        Image(systemName: "trash")
                     }
-                    .controlSize(.small)
-                    .buttonStyle(.borderless)
                 }
                 .padding(8)
                 .background(
@@ -134,17 +130,18 @@ struct ClaudeAIPane: View {
     // MARK: - Configuration wizard
 
     private var configurationCard: some View {
-        CredentialCard {
-            Text(L.APIConsole.configuration)
-                .font(.caption)
-                .fontWeight(.semibold)
-                .foregroundColor(.secondary)
+        CredentialCardCustomHeader {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(L.APIConsole.configuration)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.primary.opacity(0.75))
 
-            CredentialStepIndicator(current: step, titles: [
-                .enterKey: L.APIConsole.stepEnterKey,
-                .selectOrganization: L.APIConsole.stepSelectOrg,
-                .confirm: L.APIConsole.stepConfirm
-            ])
+                CredentialStepIndicator(current: step, titles: [
+                    .enterKey: L.APIConsole.stepEnterKey,
+                    .selectOrganization: L.APIConsole.stepSelectOrg,
+                    .confirm: L.APIConsole.stepConfirm
+                ])
+            }
         } content: {
             switch step {
             case .enterKey: enterKeyStep
@@ -157,52 +154,38 @@ struct ClaudeAIPane: View {
     private var enterKeyStep: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(L.ClaudeAIPane.signInHint)
-                .font(.caption)
+                .font(.system(size: 12))
                 .foregroundColor(.secondary)
 
-            Button {
+            CredentialPrimaryButton(title: L.ClaudeAIPane.signIn, systemImage: "globe") {
                 WebLoginWindowManager.shared.showLoginWindow()
-            } label: {
-                Label(L.ClaudeAIPane.signIn, systemImage: "globe")
             }
-            .controlSize(.regular)
 
-            HStack(spacing: 8) {
-                Rectangle().fill(Color.secondary.opacity(0.2)).frame(height: 1)
-                Text(L.APIConsole.or).font(.caption2).foregroundColor(.secondary)
-                Rectangle().fill(Color.secondary.opacity(0.2)).frame(height: 1)
-            }
+            CredentialOrDivider()
 
             Text(L.Welcome.manualSessionKey)
-                .font(.caption)
-                .fontWeight(.medium)
+                .font(.system(size: 12, weight: .semibold))
 
             SecureField("sk-ant-sid01-...", text: $sessionKey)
                 .textFieldStyle(.roundedBorder)
-                .font(.system(.caption, design: .monospaced))
+                .font(.system(size: 12, design: .monospaced))
 
             Text(L.ClaudeAIPane.manualKeyHint)
-                .font(.caption2)
+                .font(.system(size: 11))
                 .foregroundColor(.secondary)
 
-            if let errorMessage { inlineError(errorMessage) }
+            if let errorMessage { CredentialInlineError(message: errorMessage) }
 
             HStack {
                 Spacer()
-                Button {
+                CredentialPrimaryButton(
+                    title: L.ClaudeAIPane.testConnection,
+                    systemImage: "checkmark.seal",
+                    isBusy: isValidating,
+                    isEnabled: !sessionKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                ) {
                     testConnection()
-                } label: {
-                    if isValidating {
-                        HStack(spacing: 6) {
-                            ProgressView().controlSize(.small)
-                            Text(L.ClaudeAIPane.testConnection)
-                        }
-                    } else {
-                        Label(L.ClaudeAIPane.testConnection, systemImage: "checkmark.seal")
-                    }
                 }
-                .controlSize(.regular)
-                .disabled(sessionKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isValidating)
             }
         }
     }
@@ -210,7 +193,7 @@ struct ClaudeAIPane: View {
     private var selectOrganizationStep: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(L.APIConsole.selectOrgHint)
-                .font(.caption)
+                .font(.system(size: 12))
                 .foregroundColor(.secondary)
 
             ForEach(organizations) { organization in
@@ -219,11 +202,11 @@ struct ClaudeAIPane: View {
                     step = .confirm
                 } label: {
                     HStack(spacing: 8) {
-                        Image(systemName: "building.2.fill")
-                            .font(.caption)
-                            .foregroundColor(.blue)
+                        Image(systemName: "building.2")
+                            .font(.system(size: 12))
+                            .foregroundColor(.accentColor)
                         Text(organization.name)
-                            .font(.subheadline)
+                            .font(.system(size: 13))
                         Spacer()
                         Image(systemName: "chevron.right")
                             .font(.caption2)
@@ -239,8 +222,7 @@ struct ClaudeAIPane: View {
                 .buttonStyle(.plain)
             }
 
-            Button(L.Account.cancel) { resetWizard() }
-                .controlSize(.small)
+            CredentialSecondaryButton(title: L.Account.cancel) { resetWizard() }
         }
     }
 
@@ -248,24 +230,18 @@ struct ClaudeAIPane: View {
         VStack(alignment: .leading, spacing: 10) {
             if let organization = selectedOrganization {
                 CredentialDetailRow(
-                    icon: "building.2.fill",
-                    iconColor: .blue,
+                    icon: "building.2",
                     label: L.APIConsole.organization,
                     value: organization.name
                 )
             }
 
             HStack {
-                Button(L.APIConsole.back) { step = .selectOrganization }
-                    .controlSize(.small)
+                CredentialSecondaryButton(title: L.APIConsole.back) { step = .selectOrganization }
                 Spacer()
-                Button {
+                CredentialPrimaryButton(title: L.APIConsole.connect, systemImage: "checkmark.circle") {
                     addAccount()
-                } label: {
-                    Label(L.APIConsole.connect, systemImage: "checkmark.circle")
                 }
-                .controlSize(.regular)
-                .keyboardShortcut(.defaultAction)
             }
         }
     }
@@ -320,15 +296,4 @@ struct ClaudeAIPane: View {
         sessionKey = ""
     }
 
-    private func inlineError(_ message: String) -> some View {
-        HStack(alignment: .top, spacing: 6) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.caption2)
-                .foregroundColor(.orange)
-            Text(message)
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
 }

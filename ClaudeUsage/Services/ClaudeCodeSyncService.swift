@@ -48,10 +48,30 @@ final class ClaudeCodeSyncService: ObservableObject {
     }
 
     private static let pinnedServiceKey = "cliSync.pinnedService"
+    private static let lastSyncedAtKey = "cliSync.lastSyncedAt"
+
+    /// When the last successful sync happened, kept across launches so the status card can
+    /// show "1 hr, 35 min" rather than resetting to nothing every time the app restarts.
+    @Published private(set) var lastSyncedAt: Date?
+
+    /// Elapsed time since the last sync, in the compact form the status card shows
+    var timeSinceSync: String? {
+        guard let lastSyncedAt else { return nil }
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = [.hour, .minute, .second]
+        formatter.unitsStyle = .abbreviated
+        formatter.maximumUnitCount = 2
+        let elapsed = max(0, Date().timeIntervalSince(lastSyncedAt))
+        // Under a minute the seconds matter, above it they are noise
+        if elapsed >= 60 { formatter.allowedUnits = [.hour, .minute] }
+        return formatter.string(from: elapsed)
+    }
 
     private init() {
         pinnedService = UserDefaults.standard.string(forKey: Self.pinnedServiceKey)
         availableEntries = ClaudeCodeKeychain.listEntries()
+        let stored = UserDefaults.standard.double(forKey: Self.lastSyncedAtKey)
+        lastSyncedAt = stored > 0 ? Date(timeIntervalSince1970: stored) : nil
     }
 
     // MARK: - Queries
@@ -83,7 +103,7 @@ final class ClaudeCodeSyncService: ObservableObject {
         // A CLI account already exists: only realign its token to the latest Keychain value, do not rebuild the account
         if let existing = syncedAccount {
             realignStoredToken(for: existing)
-            state = .synced(at: Date())
+            stampSynced()
             return true
         }
 
@@ -117,7 +137,7 @@ final class ClaudeCodeSyncService: ObservableObject {
 
         let profile = await fetchProfile(credentials: credentials)
         upsertAccount(credentials: credentials, profile: profile)
-        state = .synced(at: Date())
+        stampSynced()
         Logger.settings.notice("CLI sync: synced the Claude Code account from keychain service \(credentials.serviceName, privacy: .public)")
         return true
     }
@@ -130,7 +150,17 @@ final class ClaudeCodeSyncService: ObservableObject {
         }
         credentials = nil
         state = .notSynced
+        lastSyncedAt = nil
+        UserDefaults.standard.removeObject(forKey: Self.lastSyncedAtKey)
         Logger.settings.notice("CLI sync: removed the synced account (the Claude Code keychain item was left untouched)")
+    }
+
+    /// Record a successful sync, both in the published state and on disk
+    private func stampSynced() {
+        let now = Date()
+        lastSyncedAt = now
+        UserDefaults.standard.set(now.timeIntervalSince1970, forKey: Self.lastSyncedAtKey)
+        state = .synced(at: now)
     }
 
     // MARK: - For the API layer

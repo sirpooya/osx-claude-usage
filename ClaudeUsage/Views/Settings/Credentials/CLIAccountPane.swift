@@ -3,14 +3,19 @@
 //  ClaudeUsage
 //
 //  CLI Account pane: adopt the account Claude Code is already signed in to.
-//  Status, then the synced account details, then the credentials source picker for
-//  people running more than one CLAUDE_CONFIG_DIR, then the explainer.
+//  Status with elapsed time, the synced account details, the credentials source picker
+//  for people running more than one CLAUDE_CONFIG_DIR, then the explainer.
 //
 
+import Combine
 import SwiftUI
 
 struct CLIAccountPane: View {
     @ObservedObject private var cliSync = ClaudeCodeSyncService.shared
+
+    /// Drives the elapsed time line, which would otherwise sit frozen at its first value
+    @State private var tick = Date()
+    private let ticker = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -37,6 +42,7 @@ struct CLIAccountPane: View {
             )
         }
         .onAppear { cliSync.refreshEntries() }
+        .onReceive(ticker) { tick = $0 }
     }
 
     // MARK: - Status
@@ -45,12 +51,13 @@ struct CLIAccountPane: View {
         CredentialStatusCard(
             isConnected: cliSync.isSynced,
             title: statusTitle,
-            detail: nil
+            detail: cliSync.isSynced ? cliSync.timeSinceSync : nil
         ) {
             if case .syncing = cliSync.state {
                 ProgressView().controlSize(.small)
             }
         }
+        .id(tick)
     }
 
     private var statusTitle: String {
@@ -67,56 +74,48 @@ struct CLIAccountPane: View {
     // MARK: - Synced details
 
     private func accountDetailsCard(credentials: ClaudeCodeCredentials) -> some View {
-        CredentialCard {
-            Text(L.CLISync.accountDetails)
-                .font(.caption)
-                .fontWeight(.semibold)
-                .foregroundColor(.secondary)
-            Text(L.CLISync.accountDetailsSubtitle)
-                .font(.caption2)
-                .foregroundColor(.secondary)
-        } content: {
-            // Masked only: the full token is never displayed, copied or logged
-            CredentialDetailRow(
-                icon: "key.fill",
-                iconColor: .red,
-                label: L.CLISync.accessToken,
-                value: credentials.maskedAccessToken,
-                monospaced: true
-            )
-
-            if !credentials.subscriptionType.isEmpty {
+        CredentialCard(
+            title: L.CLISync.accountDetails,
+            subtitle: L.CLISync.accountDetailsSubtitle
+        ) {
+            CredentialDetailRows {
+                // Masked only: the full token is never displayed, copied or logged
                 CredentialDetailRow(
-                    icon: "person.crop.circle.badge.checkmark",
-                    iconColor: .blue,
-                    label: L.CLISync.subscription,
-                    value: credentials.subscriptionType
+                    icon: "key",
+                    label: L.CLISync.accessToken,
+                    value: credentials.maskedAccessToken,
+                    monospaced: true
                 )
-            }
 
-            if !credentials.scopes.isEmpty {
-                CredentialDetailRow(
-                    icon: "checkmark.shield.fill",
-                    iconColor: .green,
-                    label: L.CLISync.scopes,
-                    value: credentials.scopes.joined(separator: ", ")
-                )
+                if !credentials.subscriptionType.isEmpty {
+                    CredentialDetailRow(
+                        icon: "person.crop.circle",
+                        label: L.CLISync.subscription,
+                        value: credentials.subscriptionType
+                    )
+                }
+
+                if !credentials.scopes.isEmpty {
+                    CredentialDetailRow(
+                        icon: "checkmark.shield",
+                        label: L.CLISync.scopes,
+                        value: credentials.scopes.joined(separator: ", ")
+                    )
+                }
             }
 
             HStack(spacing: 8) {
-                Button {
+                CredentialPrimaryButton(
+                    title: L.CLISync.resync,
+                    systemImage: "arrow.triangle.2.circlepath",
+                    isBusy: isSyncing
+                ) {
                     Task { await cliSync.sync() }
-                } label: {
-                    Label(L.CLISync.resync, systemImage: "arrow.triangle.2.circlepath")
                 }
-                .controlSize(.small)
 
-                Button(role: .destructive) {
+                CredentialDestructiveButton(title: L.CLISync.remove) {
                     cliSync.removeSync()
-                } label: {
-                    Label(L.CLISync.remove, systemImage: "trash")
                 }
-                .controlSize(.small)
 
                 Spacer()
             }
@@ -124,35 +123,33 @@ struct CLIAccountPane: View {
         }
     }
 
+    private var isSyncing: Bool {
+        if case .syncing = cliSync.state { return true }
+        return false
+    }
+
     // MARK: - Not synced yet
 
     private var connectCard: some View {
-        CredentialCard {
-            Text(L.CLISync.configuration)
-                .font(.caption)
-                .fontWeight(.semibold)
-                .foregroundColor(.secondary)
-        } content: {
+        CredentialCard(title: L.CLISync.configuration) {
             Text(cliSync.isAvailable ? L.CLISync.readyHint : L.CLISync.notFoundHint)
-                .font(.caption)
+                .font(.system(size: 12))
                 .foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
             HStack(spacing: 8) {
-                Button {
+                CredentialPrimaryButton(
+                    title: L.CLISync.syncNow,
+                    systemImage: "arrow.down.circle",
+                    isBusy: isSyncing,
+                    isEnabled: cliSync.isAvailable
+                ) {
                     Task { await cliSync.sync() }
-                } label: {
-                    Label(L.CLISync.syncNow, systemImage: "arrow.down.circle")
                 }
-                .controlSize(.regular)
-                .disabled(!cliSync.isAvailable)
 
-                Button {
+                CredentialSecondaryButton(title: L.CLISync.refresh, systemImage: "arrow.clockwise") {
                     cliSync.refreshEntries()
-                } label: {
-                    Label(L.CLISync.refresh, systemImage: "arrow.clockwise")
                 }
-                .controlSize(.small)
 
                 Spacer()
             }
@@ -162,20 +159,13 @@ struct CLIAccountPane: View {
     // MARK: - Credentials source
 
     private var credentialsSourceCard: some View {
-        CredentialCard {
-            Text(L.CLISync.advancedTitle)
-                .font(.caption)
-                .fontWeight(.semibold)
-                .foregroundColor(.secondary)
-            Text(L.CLISync.advancedHint)
-                .font(.caption2)
-                .foregroundColor(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        } content: {
+        CredentialCard(
+            title: L.CLISync.advancedTitle,
+            subtitle: L.CLISync.advancedSubtitle
+        ) {
             HStack(spacing: 8) {
                 Text(L.CLISync.keychainEntry)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    .font(.system(size: 12))
 
                 Picker("", selection: Binding(
                     get: { cliSync.pinnedService ?? "" },
@@ -188,13 +178,15 @@ struct CLIAccountPane: View {
                 }
                 .labelsHidden()
 
-                Button {
+                CredentialSecondaryButton(title: L.CLISync.refresh, systemImage: "arrow.clockwise") {
                     cliSync.refreshEntries()
-                } label: {
-                    Label(L.CLISync.refresh, systemImage: "arrow.clockwise")
                 }
-                .controlSize(.small)
             }
+
+            Text(L.CLISync.advancedHint)
+                .font(.system(size: 11))
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }
