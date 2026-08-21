@@ -62,16 +62,11 @@ struct GeneralSettingsDisplayOptionsSection: View {
 
                         // Constraint hints
                         if hasOnlyOneCircularIcon {
-                            HStack(alignment: .top, spacing: 4) {
-                                Image(systemName: "info.circle.fill")
-                                    .font(.caption2)
-                                    .foregroundColor(.blue)
-                                Text(L.DisplayOptions.circularIconConstraint)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                            .padding(.leading, 20)
+                            Text(L.DisplayOptions.circularIconConstraint)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .padding(.leading, 20)
                         }
 
                         // Theme availability hint

@@ -13,10 +13,6 @@ import SwiftUI
 #if DEBUG
 struct GeneralSettingsDebugSection: View {
     @ObservedObject private var settings = UserSettings.shared
-    @State private var tokenRefreshStatus: String? = nil
-    @State private var isTestingTokenRefresh = false
-    @State private var silentRefreshStatus: String? = nil
-    @State private var isTestingSilentRefresh = false
 
     var body: some View {
         SettingCard(
@@ -251,85 +247,6 @@ struct GeneralSettingsDebugSection: View {
                         .foregroundColor(.secondary)
                 }
 
-                // Codex renewal fallback test (Codex only)
-                Divider()
-                    .padding(.vertical, 4)
-
-                // Level 1: SSR token refresh
-                HStack {
-                    Button(action: {
-                        isTestingTokenRefresh = true
-                        tokenRefreshStatus = nil
-                        Task { @MainActor in
-                            CodexTokenRefreshCoordinator.shared.refresh { result in
-                                isTestingTokenRefresh = false
-                                switch result {
-                                case .success(let token):
-                                    tokenRefreshStatus = "Success (\(token.prefix(16))…)"
-                                case .failure:
-                                    tokenRefreshStatus = "Failed"
-                                }
-                            }
-                        }
-                    }) {
-                        if isTestingTokenRefresh {
-                            ProgressView().controlSize(.small)
-                        } else {
-                            Text("Level 1: SSR refresh")
-                        }
-                    }
-                    .disabled(isTestingTokenRefresh || !settings.hasValidCodexCredentials)
-                    .controlSize(.small)
-
-                    if let status = tokenRefreshStatus {
-                        Text(status)
-                            .font(.caption)
-                            .foregroundColor(status.hasPrefix("✓") ? .green : .red)
-                    }
-
-                    Spacer()
-
-                    Text("SSR bootstrap accessToken")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-
-                // Level 2: silent refresh in a hidden WebView
-                HStack {
-                    Button(action: {
-                        isTestingSilentRefresh = true
-                        silentRefreshStatus = nil
-                        CodexSilentRefreshCoordinator.shared.refresh { result in
-                            isTestingSilentRefresh = false
-                            switch result {
-                            case .success:
-                                silentRefreshStatus = "Success"
-                            case .failure(let error):
-                                silentRefreshStatus = "Failed: \(error.localizedDescription)"
-                            }
-                        }
-                    }) {
-                        if isTestingSilentRefresh {
-                            ProgressView().controlSize(.small)
-                        } else {
-                            Text("Level 2: WebView refresh")
-                        }
-                    }
-                    .disabled(isTestingSilentRefresh || !settings.hasValidCodexCredentials)
-                    .controlSize(.small)
-
-                    if let status = silentRefreshStatus {
-                        Text(status)
-                            .font(.caption)
-                            .foregroundColor(status.hasPrefix("✓") ? .green : .red)
-                    }
-
-                    Spacer()
-
-                    Text("Reads the cookie with a hidden WebView")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
             }
         }
     }

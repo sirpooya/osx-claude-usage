@@ -77,24 +77,19 @@ extension AuthSettingsView {
 
     private var credentialsSidebar: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(L.CredentialsNav.sectionCredentials)
-                .font(.caption2)
-                .fontWeight(.semibold)
-                .foregroundColor(.secondary)
-                .padding(.horizontal, 10)
-                .padding(.bottom, 4)
+            // Grouped by provider, each group headed by that provider's own icon.
+            // "Claude" and "Codex" are brand names, so they are deliberately not localized.
+            sectionHeader("Claude", icon: ImageHelper.createAppIcon(size: sectionIconSize), topPadding: 0)
 
-            ForEach([CredentialSection.claudeAI, .apiConsole, .cliAccount, .codex]) { section in
+            ForEach([CredentialSection.claudeAI, .apiConsole, .cliAccount]) { section in
                 sidebarRow(section)
             }
 
-            Text(L.CredentialsNav.sectionTools)
-                .font(.caption2)
-                .fontWeight(.semibold)
-                .foregroundColor(.secondary)
-                .padding(.horizontal, 10)
-                .padding(.top, 14)
-                .padding(.bottom, 4)
+            sectionHeader("Codex", icon: ImageHelper.createCodexIcon(size: sectionIconSize), topPadding: 14)
+
+            sidebarRow(.codex)
+
+            sectionHeader(L.CredentialsNav.sectionTools, icon: nil, topPadding: 14)
 
             sidebarRow(.diagnostics)
 
@@ -102,6 +97,28 @@ extension AuthSettingsView {
         }
         .padding(.vertical, 12)
         .frame(width: 168)
+    }
+
+    /// Sidebar group header. Provider groups carry their brand icon, plain groups just the label.
+    private var sectionIconSize: CGFloat { 13 }
+
+    private func sectionHeader(_ title: String, icon: NSImage?, topPadding: CGFloat) -> some View {
+        HStack(spacing: 5) {
+            if let icon {
+                Image(nsImage: icon)
+                    .resizable()
+                    .frame(width: sectionIconSize, height: sectionIconSize)
+            }
+
+            Text(title)
+                .font(.caption2)
+                .fontWeight(.semibold)
+                .foregroundColor(.secondary)
+                .textCase(.uppercase)
+        }
+        .padding(.horizontal, 10)
+        .padding(.top, topPadding)
+        .padding(.bottom, 4)
     }
 
     private func sidebarRow(_ section: CredentialSection) -> some View {

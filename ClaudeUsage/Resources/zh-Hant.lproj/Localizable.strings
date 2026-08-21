@@ -47,7 +47,7 @@
 
 // MARK: - Settings - Tabs
 "settings.tab.general" = "一般";
-"settings.tab.auth" = "認證";
+"settings.tab.auth" = "帳戶";
 "settings.tab.about" = "關於";
 
 // MARK: - Settings - General

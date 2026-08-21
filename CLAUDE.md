@@ -264,9 +264,31 @@ What has been changed from upstream so far:
     `fixedSize` so it wraps instead of truncating to "...information in...".
 - Replaced the popover's ring with a list of full-width bars, one per limit, in
   `UsageDetailView` / `UsageRowComponents` / `CodexColumnView`:
-  - A row is title on the left, `NN% · <countdown>` on the right, and a 5pt capsule bar
-    under both. `UsageLimitBarRow` + `UsageLimitBar` are the new components; `UnifiedLimitRow`
-    keeps all the per-type label / percentage / reset-time logic and now just feeds them.
+  - A row is title plus countdown on the left, the percentage alone on the right, and a 5pt
+    capsule bar under both. `UsageLimitBarRow` + `UsageLimitBar` are the new components;
+    `UnifiedLimitRow` keeps all the per-type label / percentage / reset-time logic and now just
+    feeds them.
+    - The countdown used to sit on the right as one `NN% · <countdown>` string. It now sits with
+      the title, so the row reads as one phrase ("5-Hour Limit  24m left") and the percentage
+      stands alone at the right edge. `trailingText` became `percentageText`, which returns nil
+      when the limit has no percentage so the row cannot print a bare "%"; the countdown keeps
+      its own `TimelineView` and the title takes `layoutPriority(1)` so the countdown is what
+      gives way when the row is tight.
+    - All three labels share one size, `UsageLimitBarRow.labelSize` (12pt), so they sit on one
+      optical line. Hierarchy is weight and colour only: the title is medium and primary, the
+      countdown and percentage are regular and secondary. The countdown and percentage used to
+      be 11pt. Keep the constant as the single source or the three drift apart again.
+    - **No `minimumScaleFactor` on any of the three**, and do not reintroduce one. The title and
+      countdown carried `0.85` while the percentage did not, and since the percentage always has
+      room it never shrank: a tight row (`5-Hour Limit  4h 51m left  1%`) scaled the first two
+      down to 10.2pt while the percentage stayed at 12, so a row that declared one size rendered
+      two, and the percentage read as the largest label on the line. One shared constant is not
+      enough on its own, the scaling behaviour has to match too. Overflow now truncates, and the
+      title's `layoutPriority(1)` makes the countdown give way first.
+    - The gap between the title and the countdown is 4pt (the row's `HStack` spacing, down from 6),
+      tight enough that the two read as one phrase. Horizontal only, so it costs `PopoverMetrics`
+      nothing; the 5pt label-to-bar gap and the 12pt row spacing are unchanged, and the row height
+      that `PopoverMetrics` assumes still holds.
   - Bar colour still comes from the per-limit palette in `UsageColorScheme` and still escalates
     with the percentage, so the colour says both which limit it is and how close it is.
   - `showRemainingMode` now defaults to **true**, so rows read "2d 7h left", not "Aug 24 2 AM".
@@ -347,6 +369,34 @@ What has been changed from upstream so far:
   menu carried (account switching, check for updates, About, status pages, Buy me a coffee, Quit)
   is still on the status item's right click menu, `MenuBarUI.createStandardMenu`. The update dot
   moved onto the gear so the signal is not lost.
+- **The popover header shows the subscription tier next to the title**, so it reads "Claude Team",
+  the tier dimmed and regular weight (12pt secondary) because it names the plan rather than being
+  a second title. Not localized: it is the plan's own name. Claude only, Codex has no tier to show.
+  - Cached in `UserSettings.claudeSubscriptionTier` (UserDefaults `claude.subscriptionTier`)
+    rather than fetched on demand. Both free sources are read on a background queue, and the
+    header cannot touch the Keychain while rendering. Empty means unknown, and the header then
+    shows the plain title, so a tier this build cannot resolve degrades to today's UI.
+  - `claudeSubscriptionTierLabel` normalizes generically instead of matching a fixed list: lowercase,
+    drop a leading `claude_`, split on `_`/`-`/space, capitalize each word. So both `team` (the
+    Keychain spelling) and `claude_team` (the profile spelling) print "Team", and a tier this
+    build has never heard of still prints instead of vanishing. `free` / `none` / `unknown` return
+    empty, because "Claude Free" is not worth a badge.
+  - Three write points, in order of how fresh they are:
+    - `ClaudeAPIService.fetchCLISyncedUsage`, from `credentials.subscriptionType` on **every**
+      CLI synced poll. The entry is already being read there, so this costs nothing. This is what
+      makes an account that synced before the feature existed, or one whose plan changed, pick up
+      the right tier without a re-sync.
+    - `ClaudeCodeSyncService.upsertAccount` at sync time, preferring the profile's value and
+      falling back to the Keychain's (the Keychain is readable even when the token has expired).
+    - `ClaudeOAuthCoordinator.createAccount` for browser logins, which have no Keychain entry.
+  - `ClaudeOAuthService.fetchProfile` now returns a 4th tuple member, `tier`, read from
+    `organization.organization_type` (`claude_team` on a team or enterprise seat) and falling back
+    to `account.has_claude_max` / `has_claude_pro`, which is where a personal account carries it.
+    Verified live against the endpoint. The two call sites' tuple type annotations had to change
+    with it, in `ClaudeCodeSyncService.fetchProfile`/`upsertAccount` and `createAccount`.
+  - `UsageDetailView` now holds `@ObservedObject settings = UserSettings.shared`. It read
+    `UserSettings.shared` directly in a dozen places without observing it, so without this the
+    tier only appeared on whatever next rebuilt the popover.
 - Translated all hardcoded Chinese in UI strings and the 148 logger messages to English.
 - **CLI Account Sync**: the app now logs itself in from Claude Code's own Keychain entry, so a
   fresh install needs no pasted session key and no browser round trip. This is the login method
@@ -392,6 +442,42 @@ What has been changed from upstream so far:
   Diagnostics under TOOLS, each credential row carrying its own connected dot. Settings window
   went from 500x550 to 720x600 to fit it. `AuthSettingsView+Sidebar.swift` owns the shell;
   `legacyStackedBody` keeps the old layout around for reference only.
+  - Width is now **556** (720 minus 164), so re-check this sidebar plus detail pane: the 720 was
+    chosen to fit them side by side, and that was the one thing the narrower window put at risk.
+- **The settings window size lives in `SettingsView.contentSize`**, used by both the view's
+  `.frame` and the window, the same single-source-of-truth shape as `WelcomeView.contentSize`.
+  `MenuBarManager` re-applies it with `setContentSize` immediately after
+  `setFrameAutosaveName("ClaudeUsage.SettingsWindow")`, and that ordering is the whole point:
+  the autosave restore happens at that call and carries whatever size the window had when it
+  last closed, so a stale saved width silently wins over any change to `contentSize`. Verified
+  by reading the saved entry, which still held `571 313 720 632` after the source said 556.
+  Only the position is meant to be restored; the size is fixed and owned by the view. A stale
+  entry left on a machine can be cleared with
+  `defaults delete com.claudeusage.ClaudeUsage "NSWindow Frame ClaudeUsage.SettingsWindow"`.
+- **Appearance card removed from the General tab.** The System / Light / Dark radio group and its
+  hint are gone from `GeneralSettingsView`. Only the UI was removed: `UserSettings.appearance`,
+  `AppearanceManager` and the `MenuBarUI` popover-appearance switch are all untouched, so the
+  stored value (default `.system`) still applies. `L.SettingsGeneralAppearance.section` / `.hint`
+  and `AppAppearance.localizedName` are now unused by this tab but kept, as is the enum itself.
+- **The two Codex refresh probes are gone from the Debug Mode card**, in
+  `GeneralSettingsDebugSection`: "Level 1: SSR refresh" and "Level 2: WebView refresh", plus
+  their `tokenRefreshStatus` / `isTestingTokenRefresh` / `silentRefreshStatus` /
+  `isTestingSilentRefresh` state and the divider above them. They were upstream's cookie-scraping
+  probes, both `.disabled(!settings.hasValidCodexCredentials)` so they rendered permanently greyed
+  out without a Codex account, and irrelevant now that auth is the OAuth endpoint plus CLI
+  Keychain sync.
+  - UI only, and this was checked before deleting: `CodexTokenRefreshCoordinator` is still called
+    by `DataRefreshManager` (the real Codex refresh chain) and `DiagnosticRunner`, and
+    `CodexSilentRefreshCoordinator` by `DataRefreshManager`. Neither coordinator became dead code.
+  - The four toggles above them stay. The card is `#if DEBUG`, so none of it ships anyway.
+- **Leading glyphs removed from the General tab's inline descriptions too**, matching the
+  SettingCard lightbulb removal above so every description on the page is plain secondary text:
+  the blue `info.circle.fill` on the notification description (`GeneralSettingsView`) and the
+  blue one on the `circularIconConstraint` hint (`GeneralSettingsDisplayOptionsSection`). Each
+  collapsed from an `HStack` to the bare `Text`, carrying the `padding(.leading, 20)` over where
+  there was one. The orange `exclamationmark.circle.fill` on `coloredThemeUnavailable` is
+  deliberately **kept**: it is a warning about an unavailable state, not a description, and its
+  text is orange to match.
 - **API Console is new functionality, not just a row.** `Services/ConsoleAPIService.swift` talks
   to `console.anthropic.com/api`: `/organizations` to validate a pasted console session key,
   `/organizations/<id>/current_spend` and `/organizations/<id>/prepaid/credits` for the figures.

@@ -47,7 +47,7 @@
 
 // MARK: - Settings - Tabs
 "settings.tab.general" = "일반";
-"settings.tab.auth" = "인증";
+"settings.tab.auth" = "계정";
 "settings.tab.about" = "정보";
 
 // MARK: - Settings - General

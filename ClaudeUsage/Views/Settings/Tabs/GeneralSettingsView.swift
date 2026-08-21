@@ -77,15 +77,10 @@ struct GeneralSettingsView: View {
                             Text(L.SettingsNotification.enable)
                             Spacer()
                         }
-                        HStack(alignment: .top, spacing: 4) {
-                            Image(systemName: "info.circle.fill")
-                                .font(.caption2)
-                                .foregroundColor(.blue)
-                            Text(L.SettingsNotification.description)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
+                        Text(L.SettingsNotification.description)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
 
@@ -96,28 +91,14 @@ struct GeneralSettingsView: View {
                     title: L.SettingsGeneralTimeFormat.section,
                     hint: L.SettingsGeneralTimeFormat.hint
                 ) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Picker("", selection: $settings.timeFormatPreference) {
-                            ForEach(TimeFormatPreference.allCases, id: \.self) { format in
-                                Text(format.localizedName).tag(format)
-                            }
+                    Picker("", selection: $settings.timeFormatPreference) {
+                        ForEach(TimeFormatPreference.allCases, id: \.self) { format in
+                            Text(format.localizedName).tag(format)
                         }
-                        .pickerStyle(.radioGroup)
-                        .labelsHidden()
-                        .focusable(false)
-
-                        // Current time preview
-                        HStack(spacing: 4) {
-                            Text(L.SettingsGeneralTimeFormat.preview + ":")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Text(timePreviewString)
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundColor(.primary)
-                        }
-                        .padding(.leading, 20)
                     }
+                    .pickerStyle(.radioGroup)
+                    .labelsHidden()
+                    .focusable(false)
                 }
 
                 // Language settings card
@@ -205,12 +186,6 @@ struct GeneralSettingsView: View {
     }
 
     // MARK: - Computed Properties
-
-    /// Time preview string
-    private var timePreviewString: String {
-        let now = Date()
-        return TimeFormatHelper.formatTimeOnly(now)
-    }
 
     /// Status icon
     private var statusIcon: String {

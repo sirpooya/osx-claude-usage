@@ -46,7 +46,7 @@
 
 // MARK: - Settings - Tabs
 "settings.tab.general" = "Allgemein";
-"settings.tab.auth" = "Anmeldung";
+"settings.tab.auth" = "Konto";
 "settings.tab.about" = "Über";
 
 // MARK: - Settings - General

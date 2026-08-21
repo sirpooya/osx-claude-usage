@@ -110,6 +110,12 @@ struct UsageLimitBar: View {
 struct UsageLimitBarRow: View {
     /// One size for all three labels in the row, so title, countdown and percentage sit on one optical line.
     /// Hierarchy comes from weight and color instead, never from size.
+    ///
+    /// No `minimumScaleFactor` on any of them, deliberately. The title and countdown used to carry one,
+    /// and since the percentage always has room it never shrank: a tight row ("5-Hour Limit  4h 51m left")
+    /// scaled those two down to 10.2pt while the percentage stayed at 12, so a row declaring one size
+    /// rendered two. Overflow truncates instead, and the title's `layoutPriority` makes the countdown
+    /// give way first.
     private static let labelSize: CGFloat = 12
 
     let title: String
@@ -125,11 +131,10 @@ struct UsageLimitBarRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text(title)
                     .font(.system(size: Self.labelSize, weight: .medium))
                     .lineLimit(1)
-                    .minimumScaleFactor(0.85)
                     .layoutPriority(1)
 
                 // The countdown sits with the title rather than out on the right edge, so the row
@@ -140,7 +145,6 @@ struct UsageLimitBarRow: View {
                         .font(.system(size: Self.labelSize))
                         .foregroundColor(.secondary)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.85)
                 }
 
                 Spacer(minLength: 8)
