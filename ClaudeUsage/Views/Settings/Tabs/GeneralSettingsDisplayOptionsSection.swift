@@ -23,11 +23,6 @@ struct GeneralSettingsDisplayOptionsSection: View {
             VStack(alignment: .leading, spacing: 16) {
                 // Display mode picker
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(L.DisplayOptions.displayModeLabel)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundColor(.secondary)
-
                     Picker("", selection: $settings.displayMode) {
                         Text(L.DisplayOptions.smartDisplay).tag(DisplayMode.smart)
                         Text(L.DisplayOptions.customDisplay).tag(DisplayMode.custom)

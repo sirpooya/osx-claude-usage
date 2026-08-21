@@ -103,50 +103,106 @@ class ShapeIconRenderer {
         return path
     }
 
-    /// The period tick on a shape icon: a short segment of the outline at the point the window has
-    /// reached. Reuses the dash trick the progress stroke already uses, so the tick follows the
-    /// shape's corners without any per shape trigonometry.
-    static func drawOutlineTimeMarker(
-        outline: NSBezierPath,
-        perimeter: CGFloat,
-        fraction: CGFloat,
+    /// The period tick, drawn as a radial spoke crossing the border at `point`, measured outward
+    /// from `center`. Every icon shape routes through this one function, so a circle's ring and a
+    /// square's edge get an identical mark. Drawing it along the outline instead (the obvious
+    /// thing, since the progress stroke already walks that path) made the square's tick a dash
+    /// running *parallel* to its flat edge while the circles got a crossing spoke.
+    static func drawRadialTimeMarker(
+        at point: NSPoint,
+        center: NSPoint,
         strokeWidth: CGFloat,
         isMonochrome: Bool,
         button: NSStatusBarButton?
     ) {
-        guard perimeter > 0 else { return }
-        let clamped = min(max(fraction, 0), 1)
-        let distance = perimeter * clamped
+        var dx = point.x - center.x
+        var dy = point.y - center.y
+        let length = sqrt(dx * dx + dy * dy)
+        guard length > 0.001 else { return }
+        dx /= length
+        dy /= length
+        let half = strokeWidth / 2 + 0.25
 
-        /// One short "on" dash of `length`, centred on the marker distance.
-        func dashedCopy(length: CGFloat, width: CGFloat) -> NSBezierPath? {
-            guard let path = outline.copy() as? NSBezierPath else { return nil }
-            path.setLineDash([length, perimeter - length], count: 2, phase: -(distance - length / 2))
+        func segment(width: CGFloat) -> NSBezierPath {
+            let path = NSBezierPath()
+            path.move(to: NSPoint(x: point.x - dx * half, y: point.y - dy * half))
+            path.line(to: NSPoint(x: point.x + dx * half, y: point.y + dy * half))
             path.lineWidth = width
             path.lineCapStyle = .butt
             return path
         }
 
-        // Knock out a window through the ring first, then draw the tick inside it. Neither half
-        // works alone on a template icon: it keeps only alpha, so a mark drawn over the solid
-        // sweep is invisible, and a bare gap in the faint 0.3-alpha track is invisible too.
-        // Clearing a window and marking inside it reads against both.
-        if let window = dashedCopy(length: 3.0, width: strokeWidth + 2.0) {
-            NSGraphicsContext.current?.compositingOperation = .destinationOut
-            NSColor.black.setStroke()
-            window.stroke()
-            NSGraphicsContext.current?.compositingOperation = .sourceOver
+        // Knock out a window through the border first, then mark inside it. Neither half works
+        // alone on a template icon: it keeps only alpha, so a mark drawn over the solid sweep is
+        // invisible, and a bare gap in the faint 0.3-alpha track is invisible too. Clearing a
+        // window and marking inside it reads against both.
+        NSGraphicsContext.current?.compositingOperation = .destinationOut
+        NSColor.black.setStroke()
+        segment(width: 2.6).stroke()
+        NSGraphicsContext.current?.compositingOperation = .sourceOver
+
+        if isMonochrome {
+            // Template: only alpha survives, so any opaque colour gives a solid tick
+            NSColor.controlTextColor.setStroke()
+        } else {
+            UsageColorScheme.menuBarForeground(for: button).setStroke()
+        }
+        segment(width: 1.0).stroke()
+    }
+
+    /// The point `fraction` of the way along `path`, found by walking its flattened segments.
+    ///
+    /// Takes a fraction rather than a distance on purpose: flattening approximates the corner arcs
+    /// with straight lines, so the flattened length is slightly shorter than the analytic
+    /// perimeter, and mixing the two would drift the tick.
+    static func point(on path: NSBezierPath, atFraction fraction: CGFloat) -> NSPoint? {
+        let flat = path.flattened
+        guard flat.elementCount > 0 else { return nil }
+
+        /// Walks the flattened path. With `target` nil it just measures; otherwise it returns the
+        /// point once `target` is reached.
+        func walk(target: CGFloat?) -> (total: CGFloat, point: NSPoint?) {
+            var points = [NSPoint](repeating: .zero, count: 3)
+            var current = NSPoint.zero
+            var subpathStart = NSPoint.zero
+            var travelled: CGFloat = 0
+
+            for index in 0..<flat.elementCount {
+                let element = flat.element(at: index, associatedPoints: &points)
+                let next: NSPoint
+                switch element {
+                case .moveTo:
+                    current = points[0]
+                    subpathStart = current
+                    continue
+                case .lineTo:
+                    next = points[0]
+                case .closePath:
+                    next = subpathStart
+                case .curveTo:
+                    // A flattened path carries no curves; keep the pen in step regardless.
+                    current = points[2]
+                    continue
+                @unknown default:
+                    continue
+                }
+
+                let segmentLength = hypot(next.x - current.x, next.y - current.y)
+                if let target, segmentLength > 0, travelled + segmentLength >= target {
+                    let t = (target - travelled) / segmentLength
+                    return (travelled, NSPoint(x: current.x + (next.x - current.x) * t,
+                                               y: current.y + (next.y - current.y) * t))
+                }
+                travelled += segmentLength
+                current = next
+            }
+            return (travelled, current)
         }
 
-        if let tick = dashedCopy(length: 1.2, width: strokeWidth + 2.0) {
-            if isMonochrome {
-                // Template: only alpha survives, so any opaque colour gives a solid tick
-                NSColor.controlTextColor.setStroke()
-            } else {
-                UsageColorScheme.menuBarForeground(for: button).setStroke()
-            }
-            tick.stroke()
-        }
+        let total = walk(target: nil).total
+        guard total > 0 else { return nil }
+        let clamped = min(max(fraction, 0), 1)
+        return walk(target: total * clamped).point
     }
 
     // MARK: - Shape Drawing Methods
@@ -158,7 +214,9 @@ class ShapeIconRenderer {
     ///   - isMonochrome: whether monochrome mode is active
     ///   - button: status item button (used to read colors)
     ///   - removeBackground: whether to remove the background fill
-    static func drawRoundedSquareWithPercentage(in rect: NSRect, percentage: Double, isMonochrome: Bool, button: NSStatusBarButton?, removeBackground: Bool = false, markerFraction: CGFloat? = nil) {
+    static func drawRoundedSquareWithPercentage(in rect: NSRect, percentage: Double, isMonochrome: Bool, button: NSStatusBarButton?, removeBackground: Bool = false, markerFraction: CGFloat? = nil, colorPercentage: Double? = nil) {
+        // Pace-aware colours escalate on the projection; the sweep and glyph stay on actual usage
+        let escalationPercentage = colorPercentage ?? percentage
         // Battery style display: the progress border and the glyph show remaining; colors stay keyed off used
         let displayPercentage = UsagePercentDisplay.displayPercentage(percentage)
         let cornerRadius: CGFloat = 3.0
@@ -169,7 +227,9 @@ class ShapeIconRenderer {
         // 1. Draw the background fill (colored background mode)
         if !removeBackground && !isMonochrome {
             let backgroundFillPath = NSBezierPath(roundedRect: rect, xRadius: cornerRadius, yRadius: cornerRadius)
-            NSColor.white.withAlphaComponent(0.5).setFill()
+            // Same reason as the track: a hardcoded translucent white reads gray and muddy on a
+            // light bar. The circle icons use this faint foreground-derived plate.
+            UsageColorScheme.menuBarForeground(for: button).withAlphaComponent(0.10).setFill()
             backgroundFillPath.fill()
         }
 
@@ -178,7 +238,10 @@ class ShapeIconRenderer {
         if isMonochrome {
             NSColor.controlTextColor.withAlphaComponent(0.3).setStroke()
         } else {
-            NSColor.gray.withAlphaComponent(0.5).setStroke()
+            // Adaptive, not a hardcoded gray: on a dark menu bar a literal gray 0.5 reads as a
+            // dark track while the circle icons (which already use this) resolve to a light one,
+            // so the shapes looked wrong next to them.
+            UsageColorScheme.menuBarTrack(for: button).setStroke()
         }
         backgroundPath.lineWidth = borderWidth
         backgroundPath.stroke()
@@ -209,17 +272,17 @@ class ShapeIconRenderer {
             progressPath.lineCapStyle = displayPercentage >= 100 ? .butt : .round
 
             if isMonochrome {
-                let opacity = monochromeOpacity(for: percentage)
+                let opacity = monochromeOpacity(for: escalationPercentage)
                 NSColor.controlTextColor.withAlphaComponent(opacity).setStroke()
             } else {
-                UsageColorScheme.opusWeeklyColorAdaptive(percentage, for: button).setStroke()
+                UsageColorScheme.opusWeeklyColorAdaptive(escalationPercentage, for: button).setStroke()
             }
             progressPath.stroke()
         }
 
-        if let markerFraction {
-            drawOutlineTimeMarker(outline: outline, perimeter: perimeter, fraction: markerFraction,
-                                  strokeWidth: progressWidth, isMonochrome: isMonochrome, button: button)
+        if let markerFraction, let markerPoint = point(on: outline, atFraction: markerFraction) {
+            drawRadialTimeMarker(at: markerPoint, center: center, strokeWidth: progressWidth,
+                                 isMonochrome: isMonochrome, button: button)
         }
 
         // 3. Draw the percentage text
@@ -241,7 +304,9 @@ class ShapeIconRenderer {
     ///   - isMonochrome: whether monochrome mode is active
     ///   - button: status item button (used to read colors)
     ///   - removeBackground: whether to remove the background fill
-    static func drawDiamondWithPercentage(in rect: NSRect, percentage: Double, isMonochrome: Bool, button: NSStatusBarButton?, removeBackground: Bool = false, markerFraction: CGFloat? = nil) {
+    static func drawDiamondWithPercentage(in rect: NSRect, percentage: Double, isMonochrome: Bool, button: NSStatusBarButton?, removeBackground: Bool = false, markerFraction: CGFloat? = nil, colorPercentage: Double? = nil) {
+        // Pace-aware colours escalate on the projection; the sweep and glyph stay on actual usage
+        let escalationPercentage = colorPercentage ?? percentage
         // Battery style display: the progress border and the glyph show remaining; colors stay keyed off used
         let displayPercentage = UsagePercentDisplay.displayPercentage(percentage)
         // Exactly the same parameters as Opus
@@ -300,7 +365,9 @@ class ShapeIconRenderer {
         // 1. Draw the background fill (colored background mode)
         if !removeBackground && !isMonochrome {
             let backgroundFillPath = createChamferedRectPath(rect)
-            NSColor.white.withAlphaComponent(0.5).setFill()
+            // Same reason as the track: a hardcoded translucent white reads gray and muddy on a
+            // light bar. The circle icons use this faint foreground-derived plate.
+            UsageColorScheme.menuBarForeground(for: button).withAlphaComponent(0.10).setFill()
             backgroundFillPath.fill()
         }
 
@@ -309,7 +376,10 @@ class ShapeIconRenderer {
         if isMonochrome {
             NSColor.controlTextColor.withAlphaComponent(0.3).setStroke()
         } else {
-            NSColor.gray.withAlphaComponent(0.5).setStroke()
+            // Adaptive, not a hardcoded gray: on a dark menu bar a literal gray 0.5 reads as a
+            // dark track while the circle icons (which already use this) resolve to a light one,
+            // so the shapes looked wrong next to them.
+            UsageColorScheme.menuBarTrack(for: button).setStroke()
         }
         backgroundPath.lineWidth = borderWidth
         backgroundPath.stroke()
@@ -340,17 +410,17 @@ class ShapeIconRenderer {
             progressPath.lineCapStyle = displayPercentage >= 100 ? .butt : .round
 
             if isMonochrome {
-                let opacity = monochromeOpacity(for: percentage)
+                let opacity = monochromeOpacity(for: escalationPercentage)
                 NSColor.controlTextColor.withAlphaComponent(opacity).setStroke()
             } else {
-                UsageColorScheme.sonnetWeeklyColorAdaptive(percentage, for: button).setStroke()
+                UsageColorScheme.sonnetWeeklyColorAdaptive(escalationPercentage, for: button).setStroke()
             }
             progressPath.stroke()
         }
 
-        if let markerFraction {
-            drawOutlineTimeMarker(outline: outline, perimeter: perimeter, fraction: markerFraction,
-                                  strokeWidth: progressWidth, isMonochrome: isMonochrome, button: button)
+        if let markerFraction, let markerPoint = point(on: outline, atFraction: markerFraction) {
+            drawRadialTimeMarker(at: markerPoint, center: center, strokeWidth: progressWidth,
+                                 isMonochrome: isMonochrome, button: button)
         }
 
         // 3. Draw the percentage text (exactly as Opus does)
@@ -396,7 +466,9 @@ class ShapeIconRenderer {
 
         // 1. Draw the background fill (colored background mode)
         if !removeBackground && !isMonochrome {
-            NSColor.white.withAlphaComponent(0.5).setFill()
+            // Same reason as the track: a hardcoded translucent white reads gray and muddy on a
+            // light bar. The circle icons use this faint foreground-derived plate.
+            UsageColorScheme.menuBarForeground(for: button).withAlphaComponent(0.10).setFill()
             hexagonPath.fill()
         }
 
@@ -404,7 +476,10 @@ class ShapeIconRenderer {
         if isMonochrome {
             NSColor.controlTextColor.withAlphaComponent(0.3).setStroke()
         } else {
-            NSColor.gray.withAlphaComponent(0.5).setStroke()
+            // Adaptive, not a hardcoded gray: on a dark menu bar a literal gray 0.5 reads as a
+            // dark track while the circle icons (which already use this) resolve to a light one,
+            // so the shapes looked wrong next to them.
+            UsageColorScheme.menuBarTrack(for: button).setStroke()
         }
         hexagonPath.lineWidth = borderWidth
         hexagonPath.lineJoinStyle = .round
@@ -500,13 +575,13 @@ class ShapeIconRenderer {
     ///   - button: status item button
     ///   - removeBackground: whether to remove the background fill
     /// - Returns: icon image (18x18)
-    static func createVerticalRectangleIcon(percentage: Double, isMonochrome: Bool, button: NSStatusBarButton?, removeBackground: Bool = false, markerFraction: CGFloat? = nil) -> NSImage {
+    static func createVerticalRectangleIcon(percentage: Double, isMonochrome: Bool, button: NSStatusBarButton?, removeBackground: Bool = false, markerFraction: CGFloat? = nil, colorPercentage: Double? = nil) -> NSImage {
         let size = NSSize(width: 18, height: 18)
         let image = NSImage(size: size)
         image.lockFocus()
 
         let rect = NSRect(x: 0, y: 0, width: size.width, height: size.height).insetBy(dx: 2, dy: 2)
-        drawRoundedSquareWithPercentage(in: rect, percentage: percentage, isMonochrome: isMonochrome, button: button, removeBackground: removeBackground, markerFraction: markerFraction)
+        drawRoundedSquareWithPercentage(in: rect, percentage: percentage, isMonochrome: isMonochrome, button: button, removeBackground: removeBackground, markerFraction: markerFraction, colorPercentage: colorPercentage)
 
         image.unlockFocus()
         image.isTemplate = isMonochrome
@@ -520,13 +595,13 @@ class ShapeIconRenderer {
     ///   - button: status item button
     ///   - removeBackground: whether to remove the background fill
     /// - Returns: icon image (18x18)
-    static func createHorizontalRectangleIcon(percentage: Double, isMonochrome: Bool, button: NSStatusBarButton?, removeBackground: Bool = false, markerFraction: CGFloat? = nil) -> NSImage {
+    static func createHorizontalRectangleIcon(percentage: Double, isMonochrome: Bool, button: NSStatusBarButton?, removeBackground: Bool = false, markerFraction: CGFloat? = nil, colorPercentage: Double? = nil) -> NSImage {
         let size = NSSize(width: 18, height: 18)
         let image = NSImage(size: size)
         image.lockFocus()
 
         let rect = NSRect(x: 0, y: 0, width: size.width, height: size.height).insetBy(dx: 2, dy: 2)
-        drawDiamondWithPercentage(in: rect, percentage: percentage, isMonochrome: isMonochrome, button: button, removeBackground: removeBackground, markerFraction: markerFraction)
+        drawDiamondWithPercentage(in: rect, percentage: percentage, isMonochrome: isMonochrome, button: button, removeBackground: removeBackground, markerFraction: markerFraction, colorPercentage: colorPercentage)
 
         image.unlockFocus()
         image.isTemplate = isMonochrome

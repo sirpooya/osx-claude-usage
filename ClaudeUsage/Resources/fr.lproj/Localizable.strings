@@ -251,7 +251,7 @@
 // MARK: - Limit Types (v2.0.0)
 "five_hour_limit" = "Limite 5 heures";
 "seven_day_limit" = "Limite 7 jours";
-"opus_weekly_limit" = "Limite Opus 7j";
+"opus_weekly_limit" = "Limite Fable 7j";
 "sonnet_weekly_limit" = "Limite Sonnet 7j";
 "extra_usage" = "Utilisation supplémentaire";
 "codex_primary_limit" = "Limite Codex 5 heures";
@@ -261,7 +261,7 @@
 // MARK: - Detail Row Labels
 "detail_row.five_hour_limit" = "Limite 5 h";
 "detail_row.seven_day_limit" = "Limite 7 j";
-"detail_row.opus_weekly_limit" = "Limite Opus 7 j";
+"detail_row.opus_weekly_limit" = "Limite Fable 7 j";
 "detail_row.sonnet_weekly_limit" = "Limite Sonnet 7 j";
 "detail_row.extra_usage" = "Usage en plus";
 

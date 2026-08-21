@@ -287,6 +287,18 @@ class MenuBarIconRenderer {
     
     // MARK: - Icon Drawing - Colored Mode
 
+    /// The percentage the icon's *colour* escalates on: the projected end-of-window figure when
+    /// pace-aware colours are on, otherwise the current one. The glyph and the sweep always stay
+    /// on actual usage, so only the colour changes meaning, exactly as in the popover rows.
+    func colorPercentage(_ percentage: Double, resetsAt: Date?, type: LimitType) -> Double {
+        guard settings.paceAwareBarColors else { return percentage }
+        return UsagePaceCalculator.projectedPercentage(
+            usedPercentage: percentage,
+            resetsAt: resetsAt,
+            type: type
+        ) ?? percentage
+    }
+
     /// Where the period tick belongs for this limit, or nil for no tick: the setting is off, the
     /// limit has no fixed window (the Extra Usage buckets), or there is no reset time to measure.
     /// Mirrored in remaining-percentage mode, because the sweep is mirrored too.
@@ -309,40 +321,21 @@ class MenuBarIconRenderer {
         button: NSStatusBarButton?
     ) {
         let clamped = min(max(fraction, 0), 1)
+        // 12 o'clock is zero and it runs clockwise, matching the progress sweep
         let angle = (90 - Double(clamped) * 360) * .pi / 180
-        let half = ringWidth / 2 + 1.0
-
-        /// A radial segment crossing the ring. `width` is its thickness along the circumference.
-        func radialSegment(width: CGFloat) -> NSBezierPath {
-            let path = NSBezierPath()
-            path.move(to: NSPoint(x: center.x + (radius - half) * cos(angle),
-                                  y: center.y + (radius - half) * sin(angle)))
-            path.line(to: NSPoint(x: center.x + (radius + half) * cos(angle),
-                                  y: center.y + (radius + half) * sin(angle)))
-            path.lineWidth = width
-            path.lineCapStyle = .butt
-            return path
-        }
-
-        // Knock out a window through the ring first, then draw the tick inside it. Neither half
-        // works alone on a template icon: it keeps only alpha, so a mark drawn over the solid
-        // sweep is invisible, and a bare gap in the faint track is invisible too. Clearing a
-        // window and marking inside it reads against both.
-        NSGraphicsContext.current?.compositingOperation = .destinationOut
-        NSColor.black.setStroke()
-        radialSegment(width: 3.0).stroke()
-        NSGraphicsContext.current?.compositingOperation = .sourceOver
-
-        if isMonochrome {
-            // Template: only alpha survives, so any opaque colour gives a solid tick
-            NSColor.controlTextColor.setStroke()
-        } else {
-            UsageColorScheme.menuBarForeground(for: button).setStroke()
-        }
-        radialSegment(width: 1.2).stroke()
+        let pointOnRing = NSPoint(x: center.x + radius * cos(angle),
+                                  y: center.y + radius * sin(angle))
+        // Shared with the shape icons so every tick looks identical
+        ShapeIconRenderer.drawRadialTimeMarker(
+            at: pointOnRing,
+            center: center,
+            strokeWidth: ringWidth,
+            isMonochrome: isMonochrome,
+            button: button
+        )
     }
 
-    private func createCircleImage(percentage: Double, size: NSSize, useSevenDayColor: Bool = false, colorOverride: NSColor? = nil, useDashedStyle: Bool = false, button: NSStatusBarButton?, removeBackground: Bool = false, markerFraction: CGFloat? = nil) -> NSImage {
+    private func createCircleImage(percentage: Double, size: NSSize, useSevenDayColor: Bool = false, colorOverride: NSColor? = nil, useDashedStyle: Bool = false, button: NSStatusBarButton?, removeBackground: Bool = false, markerFraction: CGFloat? = nil, colorPercentage: Double? = nil) -> NSImage {
         // Battery style display: the sweep and the glyph show remaining; the color stays keyed off used
         let displayPercentage = UsagePercentDisplay.displayPercentage(percentage)
         let image = NSImage(size: size)
@@ -372,11 +365,15 @@ class MenuBarIconRenderer {
 
         backgroundPath.stroke()
 
+        // Pace-aware colours escalate on the projection; the sweep and glyph stay on actual usage
+        let escalationPercentage = colorPercentage ?? percentage
         let color: NSColor
         if let override = colorOverride {
             color = override
         } else {
-            color = useSevenDayColor ? UsageColorScheme.sevenDayColorAdaptive(percentage, for: button) : UsageColorScheme.fiveHourColorAdaptive(percentage, for: button)
+            color = useSevenDayColor
+                ? UsageColorScheme.sevenDayColorAdaptive(escalationPercentage, for: button)
+                : UsageColorScheme.fiveHourColorAdaptive(escalationPercentage, for: button)
         }
         color.setStroke()
 
@@ -614,32 +611,36 @@ class MenuBarIconRenderer {
         case .fiveHour:
             let percentage = data.fiveHour?.percentage ?? (showPlaceholder ? 0 : nil)
             guard let percentage = percentage else { return nil }
-            let marker = timeMarkerFraction(resetsAt: data.fiveHour?.resetsAt, type: type)
+            let resetsAt = data.fiveHour?.resetsAt
+            let marker = timeMarkerFraction(resetsAt: resetsAt, type: type)
+            let paced = colorPercentage(percentage, resetsAt: resetsAt, type: type)
             if isMonochrome {
                 return createCircleTemplateImage(percentage: percentage, size: NSSize(width: 18, height: 18), button: button, removeBackground: true, markerFraction: marker)
             } else {
-                return createCircleImage(percentage: percentage, size: NSSize(width: 18, height: 18), button: button, removeBackground: removeBackground, markerFraction: marker)
+                return createCircleImage(percentage: percentage, size: NSSize(width: 18, height: 18), button: button, removeBackground: removeBackground, markerFraction: marker, colorPercentage: paced)
             }
 
         case .sevenDay:
             let percentage = data.sevenDay?.percentage ?? (showPlaceholder ? 0 : nil)
             guard let percentage = percentage else { return nil }
-            let marker = timeMarkerFraction(resetsAt: data.sevenDay?.resetsAt, type: type)
+            let resetsAt = data.sevenDay?.resetsAt
+            let marker = timeMarkerFraction(resetsAt: resetsAt, type: type)
+            let paced = colorPercentage(percentage, resetsAt: resetsAt, type: type)
             if isMonochrome {
                 return createCircleTemplateImage(percentage: percentage, size: NSSize(width: 18, height: 18), useSevenDayStyle: true, button: button, removeBackground: true, markerFraction: marker)
             } else {
-                return createCircleImage(percentage: percentage, size: NSSize(width: 18, height: 18), useSevenDayColor: true, button: button, removeBackground: removeBackground, markerFraction: marker)
+                return createCircleImage(percentage: percentage, size: NSSize(width: 18, height: 18), useSevenDayColor: true, button: button, removeBackground: removeBackground, markerFraction: marker, colorPercentage: paced)
             }
 
         case .opusWeekly:
             let percentage = data.opus?.percentage ?? (showPlaceholder ? 0 : nil)
             guard let percentage = percentage else { return nil }
-            return ShapeIconRenderer.createVerticalRectangleIcon(percentage: percentage, isMonochrome: isMonochrome, button: button, removeBackground: removeBackground, markerFraction: timeMarkerFraction(resetsAt: data.opus?.resetsAt, type: type))
+            return ShapeIconRenderer.createVerticalRectangleIcon(percentage: percentage, isMonochrome: isMonochrome, button: button, removeBackground: removeBackground, markerFraction: timeMarkerFraction(resetsAt: data.opus?.resetsAt, type: type), colorPercentage: colorPercentage(percentage, resetsAt: data.opus?.resetsAt, type: type))
 
         case .sonnetWeekly:
             let percentage = data.sonnet?.percentage ?? (showPlaceholder ? 0 : nil)
             guard let percentage = percentage else { return nil }
-            return ShapeIconRenderer.createHorizontalRectangleIcon(percentage: percentage, isMonochrome: isMonochrome, button: button, removeBackground: removeBackground, markerFraction: timeMarkerFraction(resetsAt: data.sonnet?.resetsAt, type: type))
+            return ShapeIconRenderer.createHorizontalRectangleIcon(percentage: percentage, isMonochrome: isMonochrome, button: button, removeBackground: removeBackground, markerFraction: timeMarkerFraction(resetsAt: data.sonnet?.resetsAt, type: type), colorPercentage: colorPercentage(percentage, resetsAt: data.sonnet?.resetsAt, type: type))
 
         case .extraUsage:
             let percentage: Double?
@@ -670,20 +671,22 @@ class MenuBarIconRenderer {
     ) -> NSImage? {
         let removeBackground = settings.iconStyleMode == .colorTranslucent
         let marker = timeMarkerFraction(resetsAt: resetsAt, type: type)
+        // Pace-aware colours escalate on the projection; the sweep and glyph stay on actual usage
+        let paced = colorPercentage(percentage, resetsAt: resetsAt, type: type)
 
         switch type {
         case .codexPrimary:
             if isMonochrome {
                 return createCircleTemplateImage(percentage: percentage, size: NSSize(width: 18, height: 18), button: button, removeBackground: true, markerFraction: marker)
             }
-            let color = UsageColorScheme.codexPrimaryColorAdaptive(percentage, for: button)
+            let color = UsageColorScheme.codexPrimaryColorAdaptive(paced, for: button)
             return createCircleImage(percentage: percentage, size: NSSize(width: 18, height: 18), colorOverride: color, button: button, removeBackground: removeBackground, markerFraction: marker)
 
         case .codexSecondary:
             if isMonochrome {
                 return createCircleTemplateImage(percentage: percentage, size: NSSize(width: 18, height: 18), useSevenDayStyle: true, button: button, removeBackground: true, markerFraction: marker)
             }
-            let color = UsageColorScheme.codexSecondaryColorAdaptive(percentage, for: button)
+            let color = UsageColorScheme.codexSecondaryColorAdaptive(paced, for: button)
             return createCircleImage(percentage: percentage, size: NSSize(width: 18, height: 18), colorOverride: color, useDashedStyle: true, button: button, removeBackground: removeBackground, markerFraction: marker)
 
         case .codexExtraUsage:

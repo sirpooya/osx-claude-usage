@@ -84,40 +84,6 @@ struct GeneralSettingsView: View {
                     }
                 }
 
-                // Time format settings card
-                SettingSection(
-                    icon: "clock",
-                    iconColor: .cyan,
-                    title: L.SettingsGeneralTimeFormat.section,
-                    hint: L.SettingsGeneralTimeFormat.hint
-                ) {
-                    Picker("", selection: $settings.timeFormatPreference) {
-                        ForEach(TimeFormatPreference.allCases, id: \.self) { format in
-                            Text(format.localizedName).tag(format)
-                        }
-                    }
-                    .pickerStyle(.radioGroup)
-                    .labelsHidden()
-                    .focusable(false)
-                }
-
-                // Language settings card
-                SettingSection(
-                    icon: "globe",
-                    iconColor: .orange,
-                    title: L.SettingsGeneral.languageSection,
-                    hint: L.SettingsGeneral.languageHint
-                ) {
-                    Picker("", selection: $settings.language) {
-                        ForEach(AppLanguage.allCases, id: \.self) { lang in
-                            Text(lang.localizedName).tag(lang)
-                        }
-                    }
-                    .pickerStyle(.radioGroup)
-                    .labelsHidden()
-                    .focusable(false)
-                }
-
                 // Launch at login settings card
                 SettingSection(
                     icon: "power",
@@ -145,6 +111,23 @@ struct GeneralSettingsView: View {
                                 .foregroundColor(.secondary)
                         }
                     }
+                }
+
+                // Language settings card
+                SettingSection(
+                    icon: "globe",
+                    iconColor: .orange,
+                    title: L.SettingsGeneral.languageSection,
+                    hint: L.SettingsGeneral.languageHint
+                ) {
+                    Picker("", selection: $settings.language) {
+                        ForEach(AppLanguage.allCases, id: \.self) { lang in
+                            Text(lang.localizedName).tag(lang)
+                        }
+                    }
+                    .pickerStyle(.radioGroup)
+                    .labelsHidden()
+                    .focusable(false)
                 }
 
                 // Reset button

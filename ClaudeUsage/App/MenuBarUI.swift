@@ -645,6 +645,14 @@ class MenuBarUI {
             guard let fraction = iconRenderer.timeMarkerFraction(resetsAt: resetsAt, type: type) else { return "" }
             return "_\(label)m\(Int(fraction * 100))"
         }
+
+        // Pace-aware colours also move with the clock rather than with the data, so the escalation
+        // figure has to be in the key too, for the same reason as the tick.
+        func paceToken(_ label: String, _ percentage: Double, _ resetsAt: Date?, _ type: LimitType) -> String {
+            guard settings.paceAwareBarColors else { return "" }
+            let paced = iconRenderer.colorPercentage(percentage, resetsAt: resetsAt, type: type)
+            return "_\(label)p\(Int(paced))"
+        }
         guard let data = usageData else {
             var key = "no_data_\(settings.iconDisplayMode.rawValue)_\(settings.iconStyleMode.rawValue)_\(settings.displayMode.rawValue)_mp\(isMulti)\(remainingFlag)"
             if let codex = codexUsageData {
@@ -688,18 +696,22 @@ class MenuBarUI {
         if let fiveHour = data.fiveHour {
             key += "_5h\(Int(fiveHour.percentage))"
             key += markerToken("5h", fiveHour.resetsAt, .fiveHour)
+            key += paceToken("5h", fiveHour.percentage, fiveHour.resetsAt, .fiveHour)
         }
         if let sevenDay = data.sevenDay {
             key += "_7d\(Int(sevenDay.percentage))"
             key += markerToken("7d", sevenDay.resetsAt, .sevenDay)
+            key += paceToken("7d", sevenDay.percentage, sevenDay.resetsAt, .sevenDay)
         }
         if let opus = data.opus {
             key += "_opus\(Int(opus.percentage))"
             key += markerToken("opus", opus.resetsAt, .opusWeekly)
+            key += paceToken("opus", opus.percentage, opus.resetsAt, .opusWeekly)
         }
         if let sonnet = data.sonnet {
             key += "_sonnet\(Int(sonnet.percentage))"
             key += markerToken("sonnet", sonnet.resetsAt, .sonnetWeekly)
+            key += paceToken("sonnet", sonnet.percentage, sonnet.resetsAt, .sonnetWeekly)
         }
         if let extraUsage = data.extraUsage, extraUsage.enabled, let percentage = extraUsage.percentage {
             key += "_extra\(Int(percentage))"

@@ -811,13 +811,10 @@ class UserSettings: ObservableObject {
 
         // Appearance loading moved into AppearanceManager.init()
 
-        // Load the time format preference, following the system by default
-        if let timeFormatString = defaults.string(forKey: "timeFormatPreference"),
-           let timeFormat = TimeFormatPreference(rawValue: timeFormatString) {
-            self.timeFormatPreference = timeFormat
-        } else {
-            self.timeFormatPreference = .system
-        }
+        // Always follow the system. The Time Format card was removed from the General tab, so a
+        // stored 12 or 24 hour choice would be stuck with no way to change it; ignoring the key
+        // means everyone follows the system rather than only new installs.
+        self.timeFormatPreference = .system
 
         // Load the display mode, smart by default
         if let modeString = defaults.string(forKey: "displayMode"),
