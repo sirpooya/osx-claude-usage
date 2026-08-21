@@ -213,6 +213,7 @@ enum L {
         static var colorTranslucentDesc: String { localized("icon_style.color_translucent_desc") }
         static var colorWithBackgroundDesc: String { localized("icon_style.color_with_background_desc") }
         static var monochromeDesc: String { localized("icon_style.monochrome_desc") }
+        static var monochromeToggleHint: String { localized("icon_style.monochrome_toggle_hint") }
     }
     
     // MARK: - Refresh Interval
@@ -546,6 +547,24 @@ enum L {
     /// Returns the localized string for the language the user chose
     /// - Parameter key: the localized string key
     /// - Returns: the localized string in the selected language
+    // MARK: - Credentials Navigation
+    enum CredentialsNav {
+        static var sectionCredentials: String { localized("credentials_nav.section_credentials") }
+        static var sectionTools: String { localized("credentials_nav.section_tools") }
+        static var claudeAI: String { localized("credentials_nav.claude_ai") }
+        static var codex: String { localized("credentials_nav.codex") }
+        static var diagnostics: String { localized("credentials_nav.diagnostics") }
+        static var connected: String { localized("credentials_nav.connected") }
+        static var notConnected: String { localized("credentials_nav.not_connected") }
+        static var cliPaneTitle: String { localized("credentials_nav.cli_pane_title") }
+        static var cliPaneSubtitle: String { localized("credentials_nav.cli_pane_subtitle") }
+        static var claudePaneTitle: String { localized("credentials_nav.claude_pane_title") }
+        static var claudePaneSubtitle: String { localized("credentials_nav.claude_pane_subtitle") }
+        static var codexPaneTitle: String { localized("credentials_nav.codex_pane_title") }
+        static var codexPaneSubtitle: String { localized("credentials_nav.codex_pane_subtitle") }
+        static var diagnosticsSubtitle: String { localized("credentials_nav.diagnostics_subtitle") }
+    }
+
     // MARK: - CLI Account Sync
     enum CLISync {
         static var title: String { localized("cli_sync.title") }

@@ -463,3 +463,20 @@
 "cli_sync.error_no_credentials" = "Could not read Claude Code credentials. Sign in with the claude command, then try again.";
 "cli_sync.error_no_refresh_token" = "The Claude Code keychain entry has no refresh token. Sign in with the claude command again.";
 "cli_sync.default_account_name" = "Claude Code";
+
+/* MARK: - Credentials Navigation */
+"credentials_nav.section_credentials" = "CREDENTIALS";
+"credentials_nav.section_tools" = "TOOLS";
+"credentials_nav.claude_ai" = "Claude.ai";
+"credentials_nav.codex" = "Codex";
+"credentials_nav.diagnostics" = "Diagnostics";
+"credentials_nav.connected" = "Connected";
+"credentials_nav.not_connected" = "Not Connected";
+"credentials_nav.cli_pane_title" = "CLI Account";
+"credentials_nav.cli_pane_subtitle" = "Sync the account Claude Code is signed in to";
+"credentials_nav.claude_pane_title" = "Personal Usage";
+"credentials_nav.claude_pane_subtitle" = "Track your Claude.ai usage and sessions";
+"credentials_nav.codex_pane_title" = "Codex Usage";
+"credentials_nav.codex_pane_subtitle" = "Track your Codex usage and limits";
+"credentials_nav.diagnostics_subtitle" = "Check credentials and API connectivity";
+"icon_style.monochrome_toggle_hint" = "Uses adaptive color that matches the menu bar, instead of the green, orange and red status colors.";

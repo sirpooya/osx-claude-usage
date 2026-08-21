@@ -357,9 +357,21 @@ Deliberately **not** translated, because doing so breaks non-English locales:
   was the bug described above; the popover now checks `hasValidCredentials` instead.
 - `zh-Hans.lproj` / `zh-Hant.lproj`, and the language endonyms (`日本語`, `中文（简体）`) that
   every locale file carries. Those are correct as they are.
+- The doc-comment `- Returns:` / `- Examples:` lines in `TimeFormatHelper.swift` and
+  `UsageData+Formatting.swift` that quote sample output of those CJK patterns (`"12月16日 15:42"`,
+  `"15时"`). The prose around them is English; the quoted samples have to match what the formatter
+  actually prints, so translating them would make the doc comment wrong.
 
-Still upstream's, still Chinese: roughly 2,360 lines of code comments and doc comments across
-89 Swift files. Not user visible. Also `scripts/build.sh` and parts of `README.md`, `CHANGELOG.md`,
+All Chinese code comments and doc comments are now English: 2,573 line comments across 94 Swift
+files (including the two tests-only files), plus the `/* */` block holding the alternative colour
+schemes in `ColorScheme.swift`, the OSLog levels doc block in `LoggerExtension.swift`, and the one
+Chinese `XCTAssert` message in `NotificationDecisionEngineTests.swift`. Translated by extracting
+every unique comment payload (2,366 of them), translating each once, and rewriting only the comment
+side of each line, so string literals could not be touched by accident. Verified with a CJK sweep
+over `ClaudeUsage/` and `Tests/`: the only characters left are the ones listed above as deliberately
+kept. `swift test` still passes 128/128.
+
+Still upstream's, still Chinese: `scripts/build.sh` and parts of `README.md`, `CHANGELOG.md`,
 `docs/`, and `website/`.
 
 ## Menu bar icon colour modes

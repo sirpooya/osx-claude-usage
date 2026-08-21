@@ -28,8 +28,35 @@ struct AuthSettingsView: View {
     @State var successMessage: String?
     @State var showDeleteCodexConfirmation = false
     @State var codexAccountToDelete: Account?
+    /// The selected login method in the credentials sidebar (see AuthSettingsView+Sidebar.swift)
+    @State var credentialSection: CredentialSection = .cliAccount
 
     var body: some View {
+        credentialsSplitView
+        .alert(L.Account.deleteConfirmTitle, isPresented: $showDeleteConfirmation) {
+            Button(L.Account.cancel, role: .cancel) {}
+            Button(L.Account.delete, role: .destructive) {
+                if let account = accountToDelete {
+                    settings.removeAccount(account)
+                }
+            }
+        } message: {
+            Text(L.Account.deleteConfirmMessage)
+        }
+        .alert(L.Account.deleteConfirmTitle, isPresented: $showDeleteCodexConfirmation) {
+            Button(L.Account.cancel, role: .cancel) {}
+            Button(L.Account.delete, role: .destructive) {
+                if let account = codexAccountToDelete {
+                    settings.removeCodexAccount(account)
+                }
+            }
+        } message: {
+            Text(L.Account.deleteConfirmMessage)
+        }
+    }
+
+    /// The previous single scroll layout, kept for reference by the preview only
+    private var legacyStackedBody: some View {
         ScrollView {
             VStack(spacing: 16) {
                 if isAddingAccount {

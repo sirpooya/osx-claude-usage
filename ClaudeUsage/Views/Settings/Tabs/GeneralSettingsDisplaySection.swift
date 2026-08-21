@@ -21,35 +21,26 @@ struct GeneralSettingsDisplaySection: View {
             hint: L.SettingsGeneral.menubarHint
         ) {
             VStack(alignment: .leading, spacing: 16) {
-                // Icon style picker
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(L.SettingsGeneral.menubarTheme)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
+                // One switch rather than two sibling radios: naming the modes as peers
+                // ("Color Translucent" vs "Monochrome") asks the user to decode an
+                // implementation detail. Off keeps the status colors, which carry the
+                // information, so monochrome is the opt-in for a uniform menu bar.
+                VStack(alignment: .leading, spacing: 6) {
+                    Toggle(isOn: Binding(
+                        get: { settings.iconStyleMode == .monochrome },
+                        set: { settings.iconStyleMode = $0 ? .monochrome : .colorTranslucent }
+                    )) {
+                        Text(L.IconStyle.monochrome)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                    }
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+
+                    Text(L.IconStyle.monochromeToggleHint)
+                        .font(.caption)
                         .foregroundColor(.secondary)
-
-                    Picker("", selection: $settings.iconStyleMode) {
-                        ForEach(IconStyleMode.allCases, id: \.self) { mode in
-                            Text(mode.localizedName).tag(mode)
-                        }
-                    }
-                    .pickerStyle(.radioGroup)
-                    .labelsHidden()
-                    .focusable(false)
-
-                    // Description text
-                    if !settings.iconStyleMode.description.isEmpty {
-                        HStack(alignment: .top, spacing: 4) {
-                            Image(systemName: "info.circle.fill")
-                                .font(.caption2)
-                                .foregroundColor(.blue)
-                            Text(settings.iconStyleMode.description)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        .padding(.leading, 20)
-                    }
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Divider()

@@ -78,7 +78,7 @@ struct SettingsView: View {
                 }
             }
         }
-        .frame(width: 500, height: 550)
+        .frame(width: 720, height: 600)   // wide enough for the credentials sidebar plus its detail pane
         .id(localization.updateTrigger)  // Rebuild the view when the language changes
     }
 }

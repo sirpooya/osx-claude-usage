@@ -727,7 +727,8 @@ class UserSettings: ObservableObject {
            let style = IconStyleMode(rawValue: styleString) {
             self.iconStyleMode = style
         } else {
-            self.iconStyleMode = .monochrome  // Monochrome by default
+            // Color by default: the status colors carry the information, monochrome is the opt-in
+            self.iconStyleMode = .colorTranslucent
         }
         
         // Load the refresh mode, smart by default
@@ -886,7 +887,7 @@ class UserSettings: ObservableObject {
     func resetToDefaults() {
         appearance = .system
         iconDisplayMode = .percentageOnly
-        iconStyleMode = .monochrome
+        iconStyleMode = .colorTranslucent
         refreshMode = .smart
         refreshInterval = 180  // 3 minutes by default in fixed mode
         language = Self.detectSystemLanguage()
