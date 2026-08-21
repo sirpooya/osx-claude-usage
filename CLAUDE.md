@@ -139,7 +139,7 @@ Fuse source 1 and source 2. Nobody in the field does this well, and it is the wh
 | [tddworks/ClaudeBar](https://github.com/tddworks/ClaudeBar) | 1.4k | Swift 6.2, Tuist, Sparkle | per-provider CLIs + cookies + SQLite | 12 providers. Most active. No license file |
 | [Iamshankhadeep/ccseva](https://github.com/Iamshankhadeep/ccseva) | 800 | TypeScript | local logs | Electron weight |
 | [Nanako0129/TokenBar](https://github.com/Nanako0129/TokenBar) | 257 | Rust core + SwiftUI, MIT | local logs only | Best local-parsing design. No server truth. Apple Silicon only |
-| [f-is-h/Usage4Claude](https://github.com/f-is-h/Usage4Claude) | 364 | Swift, MVVM | cookie only | Clean small codebase, 8 languages, no history |
+| [f-is-h/ClaudeUsage](https://github.com/f-is-h/ClaudeUsage) | 364 | Swift, MVVM | cookie only | Clean small codebase, 8 languages, no history |
 | [aqua5230/usage](https://github.com/aqua5230/usage) | 287 | Python, AGPL | local logs | Cross-platform. AGPL, so do not copy code |
 | [lionhylra/cc-usage-bar](https://github.com/lionhylra/cc-usage-bar) | 16 | Swift, MIT | PTY scrape of `/usage` | Novel approach, cited above |
 | [SessionWatcher](https://sessionwatcher.com/) | paid | native | mixed | $6.99 one-time. Only commercial one with traction |
