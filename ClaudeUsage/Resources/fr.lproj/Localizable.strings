@@ -358,6 +358,7 @@
 "usage_data.compact_remaining_minutes" = "%dmin";
 "usage_data.compact_remaining_hours" = "%dh %dmin";
 "usage_data.compact_remaining_days" = "%dj %dh";
+"usage_data.compact_remaining_hours_only" = "%dh";
 "usage_data.compact_remaining_days_only" = "%dj";
 "usage_data.compact_remaining_days_with_minutes" = "%dj %dh %dmin";
 

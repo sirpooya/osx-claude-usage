@@ -116,11 +116,12 @@ extension UsageData.LimitData {
         }
 
         let totalHours = totalMinutes / 60
-        let remainingMinutes = totalMinutes % 60
 
-        // Under a day, show hours plus minutes
+        // Under a day, show hours only. Same reasoning as the days branch below: once hours are
+        // the unit being read, the minutes beside them are precision nobody acts on, and floored
+        // hours mean the reset can only land later than the label says, never earlier.
         if totalHours < 24 {
-            return L.UsageData.compactRemainingHours(totalHours, remainingMinutes)
+            return L.UsageData.compactRemainingHoursOnly(totalHours)
         }
 
         // Over a day, show days only. Days are the coarse unit the user is reading at that point,

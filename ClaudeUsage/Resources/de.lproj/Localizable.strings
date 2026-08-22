@@ -357,6 +357,7 @@
 "usage_data.compact_remaining_minutes" = "noch %dm";
 "usage_data.compact_remaining_hours" = "noch %dh %dm";
 "usage_data.compact_remaining_days" = "noch %dd %dh";
+"usage_data.compact_remaining_hours_only" = "noch %dh";
 "usage_data.compact_remaining_days_only" = "noch %dd";
 "usage_data.compact_remaining_days_with_minutes" = "noch %dd %dh %dm";
 
