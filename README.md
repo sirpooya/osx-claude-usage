@@ -7,13 +7,13 @@
 <img src="docs/images/icon@2x.png" width="256" alt="icon">
 
 [![macOS](https://img.shields.io/badge/macOS-13.0%2B-blue?style=flat-square)](https://www.apple.com/macos/)
-[![Swift](https://img.shields.io/badge/Swift-5.0%2B-orange?style=flat-square)](https://swift.org)
+[![Swift](https://img.shields.io/badge/Swift-6-orange?style=flat-square)](https://swift.org)
 [![SwiftUI](https://img.shields.io/badge/SwiftUI-✓-green?style=flat-square)](https://developer.apple.com/xcode/swiftui/)
 [![License](https://img.shields.io/badge/License-MIT-purple?style=flat-square)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/sirpooya/osx-claude-usage?style=flat-square)](https://github.com/sirpooya/osx-claude-usage/releases)
 [![Downloads (all assets, all releases)](https://img.shields.io/github/downloads/sirpooya/osx-claude-usage/total)](https://github.com/sirpooya/osx-claude-usage/releases)
 
-**Track your Claude (and Codex) subscription quota — beautifully, in your menu bar.**
+**Track your Claude (and Codex) subscription quota, beautifully, in your menu bar.**
 
 ✨ **Monitors all Claude platforms: Web • Claude Code • Desktop • Mobile App • Cowork** ✨
 
@@ -28,20 +28,22 @@
 ### 🎯 Core Features
 
 - **📊 Real-time Monitoring** - Display Claude subscription (Free/Pro/Team/Max) usage quota in menu bar, with optional Codex monitoring
+- **🔑 Authoritative Data** - Talks to Claude's own `/api/oauth/usage` endpoint, the same source Claude Code itself uses, so numbers are accurate across every device, not scraped from a cookie
+- **⚡️ Zero-Setup CLI Sync** - Already signed in to Claude Code? The app signs itself in from its Keychain entry automatically, no pasted session key and no browser login needed
+- **📈 Usage History** - Session and weekly usage charted over 5h / 24h / 7d / 30d windows, plus API billing spend, so trends are visible instead of a single live number
 - **🎯 Multi-Limit Support** - Claude supports 5-hour, 7-day, and Extra Usage limits plus weekly per-model usage for any number of models (e.g. Opus, Sonnet, Fable), while Codex supports 5-hour, 7-day, and Extra Usage/credits
 - **🎨 Smart Display Mode** - Auto-detect and display all limit types with available data
 - **⚙️ Custom Display** - Manually select which limit types to display, supports any combination
-- **🎨 Smart Colors** - Automatic color changes based on usage, each limit type has its own color scheme
+- **🎨 Color By: Limit / Usage / Monochrome** - Color bars and menu bar icons by which limit they are, by how fast usage is pacing toward the reset (burn-rate aware), or drop to one brand color entirely
+- **⏱️ Time Marker** - An optional tick on each bar showing how much of the window has elapsed, so usage can be read against time, not just against the cap
 - **🔔 Usage Notifications** - Warning notification at 90% usage, reset notification when quota resets
 - **👥 Multi-Account Management** - Support multiple Claude accounts / multiple organizations per account, plus independent Codex account management and quick switching
 - **🧩 Codex Support** - Optional Codex quota monitoring; use Codex alone or show it alongside Claude in a dual-column view (add a Codex account in settings to enable)
-- **🌐 Built-in Browser Login** - Claude login automatically extracts Session Key; Codex uses built-in browser login for ChatGPT authentication
-- **🎨 Appearance Settings** - Support system default / light / dark appearance modes
-- **🕐 Time Format** - Support system default / 12-hour / 24-hour format
-- **⏰ Precise Timing** - Quota reset time displayed with minute precision
-- **🔄 Smart Refresh System** - Intelligent 4-level adaptive refresh or fixed intervals (1/3/5/10 min)
+- **🕐 Time Format** - Follows the system 12/24-hour format
+- **⏰ Precise Timing** - Quota reset time displayed with minute precision, or as remaining time (like the macOS battery indicator)
+- **🔄 Smart Refresh System** - Intelligent adaptive refresh or fixed intervals (1/3/5/10 min)
 - **⚡ Manual Refresh** - Click refresh button to update data instantly (10-second debounce protection)
-- **💻 Native Experience** - Pure native macOS app, lightweight and elegant
+- **💻 Native Experience** - Pure native macOS app, lightweight and elegant, no Dock icon
 
 ### 🌐 Cross-Platform Support
 
@@ -60,6 +62,14 @@ All platforms share the same usage quota, monitored in one place!
 - Supports Codex 5-hour, 7-day, and Extra Usage/credits information
 - Add a Codex account by logging in to ChatGPT with the built-in browser
 - Claude-only users need no extra setup; the existing experience stays unchanged until a Codex account is added
+
+### 🔑 Authentication
+
+- **CLI Account Sync (recommended)** - Already signed in with `claude` on this Mac? The app reads Claude Code's own Keychain entry and signs itself in automatically, no browser and no pasted key
+- **Browser Login** - Sign in to your claude.ai account in the built-in browser
+- **Manual Session Key** - Paste a session key directly, as a fallback
+- **Codex** - Built-in browser login to ChatGPT (Codex has no manual key option)
+- Credentials never leave the Keychain; the app never displays, logs, or copies a raw token
 
 ### 🎨 Personalization
 
@@ -83,18 +93,18 @@ All platforms share the same usage quota, monitored in one place!
 - **⚙️ Visual Settings** - No code modification needed, GUI configuration for all options
 - **🆕 Smart Update Alerts** - Menu bar badge and rainbow animation notify new versions
 - **🚀 Launch at Login** - Optional automatic startup when system boots
-- **⌨️ Keyboard Shortcuts** - Common operations support shortcuts (⌘R | ⌘, | ⌘Q)
-- **👋 Friendly Onboarding** - Detailed setup wizard on first launch
-- **… Menu Display** - Multiple menu access methods, detail view and right-click
+- **⌨️ Keyboard Shortcuts** - Common operations support shortcuts (⌘R | ⌘, | ⌘⇧A | ⌘U | ⌘Q)
+- **👋 Zero-Friction Onboarding** - One sign-in window; already logged into Claude Code and it can skip onboarding entirely
+- **⚙️ Gear Menu** - Popover header gear opens Settings directly; account switching, updates, About and Quit live on the right-click menu bar menu
 - **🔔 Usage Notifications** - Claude usage warning and reset notifications, configurable in settings
-- **🛠️ Debug Mode** - Developer options: Claude/Codex fake data testing, simulated updates, instant refresh
 
 ### 🔒 Security & Privacy
 
 - 🏠 **Local Storage Only** - All data stored locally only, never collect or upload any personal information
 - 🔐 **Keychain Protection** - Claude Session Key and Codex authentication token secured in Keychain, no plain text keys
 - 📖 **Open Source Transparency** - Code fully public, anyone can audit
-- 🛡️ **Sandbox Protection** - App Sandbox enabled for enhanced security
+- 🚫 **No Telemetry** - No analytics, no accounts, no network calls except to `api.anthropic.com` and ChatGPT/Codex endpoints
+- ⚠️ **App Sandbox is off, deliberately** - CLI Account Sync needs to read Claude Code's own Keychain entry, which the sandbox would block regardless of entitlements. This trades Mac App Store distribution for zero-setup login.
 
 ---
 
@@ -159,31 +169,22 @@ Codex current colors:
 
 ### Settings
 
-**General** - Display options, menu bar theme, notification settings, appearance (system/light/dark), refresh mode, time format, language options, launch at login
-**Authentication** - Claude/Codex account management (add/delete/switch/alias editing), built-in browser login, Claude manual input, connection diagnostics
+**General** - Display options, color by (limit/usage/monochrome), time marker, remaining-time display, notification settings, refresh mode, language options, launch at login
+**Account** - Claude/Codex credentials in a sidebar grouped by provider: Claude.ai, API Console, CLI Account (sync status, masked token, re-sync), Codex, and Diagnostics
+**History** - Session and weekly usage charted over 5h / 24h / 7d / 30d, plus API billing spend
 **About** - Version info and related links
 
 ### Welcome Screen
 
-**Configure Authentication** - Claude supports built-in browser one-click login (recommended) or manual Session Key input, auto-retrieves Organization ID, and auto-creates multiple organizations under the same Session Key; Codex can be added later in settings through built-in browser login to ChatGPT
-**Configure Display Options** - Menu bar theme, display content, display mode (smart/custom) selection with live preview
-**Set Up Later** - Close welcome screen, configure later in settings
+A single sign-in window. Claude Code users already logged in via `claude` are signed in automatically and never see this screen; everyone else gets one button for built-in browser login (auto-detects Organization ID and multiple organizations under the same account) or a manual Session Key fallback. Codex and display options are configured later in Settings, there is no separate setup wizard.
 
 ---
 
 ## 💾 Installation
 
-### Option 1: Download Pre-built (Recommended)
+> **No prebuilt DMG yet.** The current release ([v1.1.0](https://github.com/sirpooya/osx-claude-usage/releases/tag/v1.1.0)) is source only. Build from source below until a DMG is published.
 
-1. Go to [Releases page](https://github.com/sirpooya/osx-claude-usage/releases)
-2. Download the latest `.dmg` file
-3. Double-click to open, drag app to Applications folder
-4. Right-click the app and select "Open" on first launch (allow unsigned app)
-5. Allow Keychain access for authentication info (you may need to allow again after version updates; the prompt shows the relevant authentication token name)
-
-> **Updates after the first install are in-app.** Sparkle checks for new versions automatically (and on demand via Menu → Check for Updates), then downloads, verifies the EdDSA signature, and installs with one click — no need to re-download the DMG for future releases.
-
-### Option 2: Build from Source
+### Build from Source
 
 #### Requirements
 - macOS 13.0 or later
@@ -195,13 +196,15 @@ Codex current colors:
 ```bash
 # Clone repository
 git clone https://github.com/sirpooya/osx-claude-usage.git
-cd ClaudeUsage
+cd osx-claude-usage
 
 # Open in Xcode
 open ClaudeUsage.xcodeproj
 
 # Press Cmd + R to run in Xcode
 ```
+
+Once a signed DMG is published, updates after the first install will be in-app: Sparkle checks for new versions automatically (and on demand via Settings gear → Check for Updates once re-enabled), downloads, verifies the EdDSA signature, and installs with one click.
 
 ---
 
@@ -210,40 +213,25 @@ open ClaudeUsage.xcodeproj
 ### Initial Setup
 
 1. **Launch App**
-   Welcome screen will appear on first run
+   If Claude Code is already signed in on this Mac (`claude` has a valid Keychain entry), the app syncs from it automatically and the welcome screen never appears.
 
-2. **Configure Authentication**
-   - **Claude Option 1: Browser Login (Recommended)**
-     - Click the "Browser Login" button
-     - Log in to your Claude account in the built-in browser
-     - Session Key will be automatically extracted after successful login
-   - **Claude Option 2: Manual Input**
-     - Open browser and visit the Claude usage page
-     - Open developer tools (F12 or Cmd + Option + I)
-     - Switch to "Network" tab, refresh the page
-     - Find the `usage` request, extract `sessionKey=sk-ant-...` from Cookie
-     - Paste into the input field
-   - **Codex Account (Optional)**
-     - Open Settings → Authentication
-     - Click "Browser Login" for Codex
-     - Log in to your ChatGPT account in the built-in browser
-     - Authentication info is saved automatically after successful login
-     - Codex does not currently support manual Session Key input
+2. **Configure Authentication** (only if CLI Sync didn't find anything)
+   - **Browser Login (Recommended)** - Click the sign-in button and log in to your Claude account in the built-in browser
+   - **Manual Session Key** - Paste a session key directly, as a fallback
+   - **Codex Account (Optional)** - Open Settings → Account → Codex, click Browser Login, and sign in to ChatGPT; Codex does not support manual key input
 
 ### Daily Usage
 
 - **Default Display** - Menu bar icon shows usage percentage
-- **View Details** - Click the menu bar icon to view details; when only Claude/Codex is configured, the detail window shows a Claude/Codex single column, and when both are configured it shows a dual-column view
-- **Manual Refresh** - Click refresh button in detail window or use shortcut ⌘R (data also auto-refreshes when opening the main window); in the dual-column view, Claude and Codex can also be refreshed separately
-- **Switch Account** - Click "…" menu in detail window or right-click menu bar icon to select a Claude / Codex account
+- **View Details** - Click the menu bar icon to view the popover; when only Claude/Codex is configured it shows a single column, and when both are configured it shows a dual-column view
+- **Manual Refresh** - Click refresh in the popover or use ⌘R; in dual-column mode, Claude and Codex can also be refreshed separately
+- **Switch Account** - Right-click the menu bar icon to select a Claude / Codex account
+- **Open Settings** - Click the gear in the popover header, or ⌘,
 - **Keyboard Shortcuts**
   - ⌘R - Manual refresh data
-  - ⌘, - Open General Settings
-  - ⌘⇧A - Open Authentication Settings
-  - ⌘U - Check for updates
+  - ⌘, - Open Settings
   - ⌘Q - Quit app
-- **Update Alerts** - When a new version is available, the menu bar icon shows a badge and menu items display rainbow text
-- **Check Updates** - Menu → Check for Updates. New versions download, verify (EdDSA signature), and install in-app — no manual re-download needed (powered by [Sparkle](https://sparkle-project.org))
+- **Update Alerts** - When a new version is available, the popover gear and menu bar menu show a badge
 
 ### Refresh Mode
 
@@ -269,8 +257,8 @@ open ClaudeUsage.xcodeproj
 <summary><b>Q: What if the app shows "Session Expired"?</b></summary>
 
 A: Claude Session Keys or Codex authentication tokens expire periodically (usually weeks to months), and you need to log in again:
-1. Open Settings → Authentication
-2. For Claude, click "Browser Login" to log in again (recommended), or manually re-obtain Session Key
+1. Open Settings → Account
+2. For Claude, use CLI Account Sync if `claude` is still logged in on this Mac, click "Browser Login" to sign in again, or manually re-obtain a Session Key
 3. For Codex, click Codex "Browser Login" and log in to ChatGPT in the built-in browser
 4. Done, monitoring will resume
 
@@ -343,8 +331,8 @@ A:
 - Community can audit and verify
 
 **Additional Protection:**
-- App Sandbox enabled (limits system access)
-- No access to your files, contacts, or other apps
+- App Sandbox is off, deliberately, so CLI Account Sync can read Claude Code's own Keychain entry (the sandbox would block that no matter what entitlements are granted)
+- No access to your files, contacts, or other apps beyond that one Keychain entry
 - Minimal permissions (only network + Keychain)
 
 You can verify all of this by reviewing the source code on GitHub!
@@ -372,7 +360,7 @@ You'll see your real-time total usage in the menu bar. No platform-specific conf
 <details>
 <summary><b>Q: How do I enable Codex support? Can I use Codex only?</b></summary>
 
-A: Yes. Open Settings → Authentication, click Codex "Browser Login", and log in to ChatGPT in the built-in browser.
+A: Yes. Open Settings → Account → Codex, click "Browser Login", and log in to ChatGPT in the built-in browser.
 
 - Codex only: the menu bar and detail window show Codex usage
 - Claude + Codex: the detail window shows both providers side by side
@@ -401,17 +389,17 @@ A: macOS system or third-party software (like Bartender, Hidden Bar, etc.) may a
 <summary><b>Q: How to manage multiple accounts?</b></summary>
 
 A: ClaudeUsage supports multiple Claude accounts, multiple organizations under the same Claude account, and independent Codex account management:
-- **Add Account** - Add via Claude browser login, Claude manual input, or Codex browser login in Settings → Authentication
-- **Switch Account** - Click "…" menu in detail window or right-click menu bar icon, select the Claude / Codex account to switch to
+- **Add Account** - Add via CLI Account Sync, Claude browser login, Claude manual input, or Codex browser login in Settings → Account
+- **Switch Account** - Right-click the menu bar icon, select the Claude / Codex account to switch to
 - **Edit Alias** - Set easily recognizable aliases for each account
-- **Delete Account** - Swipe left or use edit mode to remove unwanted accounts
+- **Delete Account** - Remove unwanted accounts from the Account settings pane
 
 </details>
 
 <details>
 <summary><b>Q: How to enable usage notifications?</b></summary>
 
-A: Toggle Claude usage notifications in Settings → General:
+A: Toggle Claude usage notifications in Settings → General → Notifications:
 - **Usage Warning** - System notification when Claude usage reaches 90%
 - **Reset Notification** - Notification when Claude quota resets
 - macOS notification permission required on first enable
@@ -424,13 +412,15 @@ A: Toggle Claude usage notifications in Settings → General:
 
 Built with modern macOS native technologies:
 
-- **Language**: Swift 5.0+
-- **UI Framework**: SwiftUI + AppKit hybrid
+- **Language**: Swift 6
+- **UI Framework**: SwiftUI + AppKit hybrid (`NSStatusItem` menu bar, SwiftUI popover and settings)
+- **Charts**: Swift Charts (History tab)
 - **Architecture**: MVVM
-- **Networking**: URLSession
+- **Networking**: URLSession, direct to `api.anthropic.com` (no cookie scraping)
 - **Reactive**: Combine Framework
-- **Localization**: Built-in i18n support
-- **Platform**: macOS 13.0+
+- **Updates**: Sparkle
+- **Localization**: Built-in i18n support, 7 locales
+- **Platform**: macOS 13.0+ deployment target
 
 ---
 
@@ -439,60 +429,55 @@ Built with modern macOS native technologies:
 ### ✅ Completed
 - [x] Basic monitoring features
 - [x] Menu bar real-time display
-- [x] Circular progress indicator
-- [x] Smart color alerts
+- [x] Authoritative OAuth usage endpoint (no cookie scraping)
+- [x] Zero-setup CLI Account Sync from Claude Code's own Keychain entry
+- [x] Bar-row popover, replacing the progress ring
+- [x] Color By: Limit / Usage (pace-aware) / Monochrome
+- [x] Time marker tick on bars and menu bar icons
+- [x] Remaining-time display mode (like the macOS battery indicator)
+- [x] Usage History tab (session, weekly, and API billing charts)
 - [x] Real-time countdown
 - [x] Multiple menu bar display modes
-- [x] Visual settings interface
-- [x] Multilingual support
-- [x] First-launch onboarding
-- [x] Update checking with visual alerts
+- [x] Visual settings interface, restyled sidebar for Account
+- [x] Multilingual support (7 locales)
+- [x] Zero-friction onboarding (skips entirely when CLI Sync succeeds)
 - [x] Keychain authentication storage
-- [x] Shell auto-package DMG
-- [x] GitHub Actions auto-release
 - [x] Settings interface display optimization
 - [x] Launch at login option
 - [x] Keyboard shortcuts support
 - [x] Manual refresh feature
-- [x] Three-dot menu dark mode adaptation
 - [x] Dual limit mode support (5-hour + 7-day)
-- [x] Dual-ring menu bar icon
 - [x] Unified color scheme management
-- [x] Debug mode (fake data, simulated updates)
-- [x] Detail window remove Focus state
-- [x] Multi-limit type support (5 types)
+- [x] Multi-limit type support (5+ types, including per-model weekly)
 - [x] Smart/custom display mode
 - [x] Auto-retrieve Organization ID
-- [x] Optimized welcome flow
-- [x] Monochrome theme icon display
 - [x] Korean language support
-- [x] GitHub Actions check online version
-- [x] Appearance settings (system/light/dark)
 - [x] Built-in browser auto-authentication
 - [x] Automatic credential configuration
 - [x] Usage notifications
 - [x] Multi-account management
-- [x] Unified time format settings
 - [x] Settings interface dark mode adaptation
 - [x] Codex usage monitoring support
 - [x] Codex-only mode
-- [x] Claude + Codex dual-column detail window
+- [x] Claude + Codex dual-column popover
 - [x] Codex account management and browser login
-- [x] French localization
+- [x] French and German localization
 - [x] Automatic refresh after system wake
+- [x] Resilient refresh: transient errors never blank the popover, last good data is cached
 
 ### Mid-term Plans
 1. **Feature Addition**
+    - Ship a signed DMG and re-enable Sparkle auto-updates
     - More language localizations
 
 ### Long-term Vision
-2. **More Display Methods**
+2. **Differentiators**
+   - Burn-rate forecast ("weekly cap Thursday ~3pm at this pace")
+   - Cost/token attribution per project, repo, and branch from local session logs
+
+3. **More Display Methods**
    - Desktop widgets
    - Browser extension icon usage display
-
-3. **Data Analysis**
-   - Usage history records
-   - Trend charts
 
 4. **Multi-platform Support**
    - iOS / iPadOS version
@@ -567,7 +552,8 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) file for
 ```
 MIT License
 
-Copyright (c) 2025-2026 f-is-h
+Copyright (c) 2026 Pooya Kamel
+Copyright (c) 2025-2026 f-is-h (original Usage4Claude)
 
 You are free to use, copy, modify, merge, publish, distribute, sublicense, 
 and/or sell copies of the Software.
@@ -586,8 +572,7 @@ and/or sell copies of the Software.
 ## 📞 Contact
 
 - **Issues**: [Submit issues or suggestions](https://github.com/sirpooya/osx-claude-usage/issues)
-- **Discussions**: [Join discussions](https://github.com/sirpooya/osx-claude-usage/discussions)
-- **GitHub**: [@f-is-h](https://github.com/f-is-h)
+- **GitHub**: [@f-is-h](https://github.com/f-is-h) (original Usage4Claude author)
 
 ---
 
