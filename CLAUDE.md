@@ -574,8 +574,9 @@ What has been changed from upstream so far:
   Developer row reads "Pooya Kamel"; `settings.about.copyright` is "© 2026 Pooya Kamel" in all
   7 locales (a name, so not translated). The `Created by f-is-h` / `Copyright f-is-h` headers in
   Swift files stay, per the attribution rows above.
-- **Version reset to 1.0.0** (`MARKETING_VERSION` in both configs; `CURRENT_PROJECT_VERSION`
-  tracks it). This fork versions independently of upstream's 3.x line.
+- **Version is 1.1.0** (`MARKETING_VERSION` in both configs; `CURRENT_PROJECT_VERSION` tracks it).
+  This fork versions independently of upstream's 3.x line: it was reset to 1.0.0 at the fork, and
+  1.1.0 is the first tagged release (`v1.1.0`, source only, no DMG or Sparkle feed entry yet).
 - **Settings tab bar restyled** to the icon-toolbar shared by osx-download-manager /
   osx-launchpad: `ToolbarButton` is now glyph (18pt hierarchical, filled variants) over an 11pt
   caption, accent-tinted when selected over a 0.05 primary pill (0.035 on hover), intrinsic width
